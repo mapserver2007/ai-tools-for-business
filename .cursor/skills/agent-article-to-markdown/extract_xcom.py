@@ -14,7 +14,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from ocr_utils import download_and_ocr, enrich_markdown_images
+from image_utils import download_image, replace_images_with_placeholders
 
 JST = timezone(timedelta(hours=9))
 OUTPUT_DIR = Path(__file__).resolve().parents[3] / "agent-articles"
@@ -330,9 +330,10 @@ async def _extract_content(url: str, browser: str) -> dict:
     return result
 
 
-def _build_markdown(data: dict, url: str) -> tuple[str, str]:
-    """Build Markdown content from extracted data. Returns (markdown, title)."""
+def _build_markdown(data: dict, url: str) -> tuple[str, str, list[dict]]:
+    """Build Markdown content from extracted data. Returns (markdown, title, images)."""
     content_type = data.get("content_type", "tweet")
+    all_images: list[dict] = []
 
     if content_type == "article":
         title = data.get("title", "").strip()
@@ -344,9 +345,12 @@ def _build_markdown(data: dict, url: str) -> tuple[str, str]:
         published_at = _format_published_at(data.get("datetime", ""))
 
         lines = _build_frontmatter(title, url, "article", author, handle, published_at)
-        enriched_body = enrich_markdown_images(_sanitize_local_links(body))
-        lines.extend(["", f"# {title}", "", enriched_body])
-        return "\n".join(lines), title
+        processed_body, body_images = replace_images_with_placeholders(
+            _sanitize_local_links(body)
+        )
+        all_images.extend(body_images)
+        lines.extend(["", f"# {title}", "", processed_body])
+        return "\n".join(lines), title, all_images
 
     tweets = data.get("tweets", [])
     if not tweets:
@@ -377,27 +381,33 @@ def _build_markdown(data: dict, url: str) -> tuple[str, str]:
         for img in tweet.get("images", []):
             alt = img.get("alt", "image")
             src = img.get("src", "")
-            ocr_text = download_and_ocr(src)
-            if ocr_text.strip():
-                desc_lines = ocr_text.strip().split("\n")
-                quoted = "\n> ".join(desc_lines)
-                lines.extend([f"> **[図]** {quoted}", ""])
-            elif alt and alt not in ("image", ""):
-                lines.extend([f"> **[図]** {alt}", ""])
+            local_path = download_image(src)
+            idx = len(all_images)
+            all_images.append({
+                "index": idx,
+                "alt": alt,
+                "original_url": src,
+                "local_path": local_path,
+            })
+            lines.extend([f"<!-- DESCRIBE_IMAGE_{idx} -->", ""])
 
-    return "\n".join(lines), title
+    return "\n".join(lines), title, all_images
 
 
 def extract_xcom(url: str, browser: str = DEFAULT_BROWSER) -> dict:
     data = asyncio.run(_extract_content(url, browser))
-    markdown, title = _build_markdown(data, url)
+    markdown, title, images = _build_markdown(data, url)
 
     filename = sanitize_filename(title) + ".md"
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     output_path = OUTPUT_DIR / filename
     output_path.write_text(markdown, encoding="utf-8")
 
-    return {"file_path": str(output_path.relative_to(OUTPUT_DIR.parent)), "title": title}
+    return {
+        "file_path": str(output_path.relative_to(OUTPUT_DIR.parent)),
+        "title": title,
+        "images": images,
+    }
 
 
 def main():

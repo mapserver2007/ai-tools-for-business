@@ -14,7 +14,7 @@ from markdownify import markdownify as md
 from bs4 import BeautifulSoup
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from ocr_utils import enrich_markdown_images
+from image_utils import replace_images_with_placeholders
 
 JST = timezone(timedelta(hours=9))
 OUTPUT_DIR = Path(__file__).resolve().parents[3] / "agent-articles"
@@ -106,7 +106,7 @@ def extract_article(url: str) -> dict:
     meta = extract_metadata(soup_full, url)
 
     body_md = html_to_markdown(content_html)
-    body_md = enrich_markdown_images(body_md)
+    body_md, images = replace_images_with_placeholders(body_md)
 
     frontmatter = build_frontmatter(title, meta)
     full_md = f"{frontmatter}\n\n# {title}\n\n{body_md}\n"
@@ -116,7 +116,11 @@ def extract_article(url: str) -> dict:
     output_path = OUTPUT_DIR / filename
     output_path.write_text(full_md, encoding="utf-8")
 
-    return {"file_path": str(output_path.relative_to(OUTPUT_DIR.parent)), "title": title}
+    return {
+        "file_path": str(output_path.relative_to(OUTPUT_DIR.parent)),
+        "title": title,
+        "images": images,
+    }
 
 
 def main():
