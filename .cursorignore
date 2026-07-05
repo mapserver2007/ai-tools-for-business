@@ -1,0 +1,13 @@
+# Python bytecode（ローカルパスが埋め込まれるため AI インデックス対象外）
+__pycache__/
+*.pyc
+*.pyo
+
+# 秘密情報（誤配置時の AI コンテキスト流出防止）
+.env
+.env.*
+
+# 仮想環境
+.venv/
+venv/
+env/

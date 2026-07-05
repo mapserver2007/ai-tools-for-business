@@ -25,6 +25,17 @@ def sanitize_filename(title: str) -> str:
     return sanitized[:100]
 
 
+def _sanitize_local_links(text: str) -> str:
+    """Remove links that expose local filesystem paths."""
+    text = re.sub(
+        r'\[([^\]]*)\]\((?:file://|file\+[^)]*vscode-resource[^)]*)\)',
+        r'\1',
+        text,
+    )
+    text = re.sub(r'(?:file://|file\+[^\s)>\]]+)', '', text)
+    return text
+
+
 def _get_cookies(browser: str) -> list[dict]:
     """Get x.com cookies from local browser via browser-cookie3."""
     try:
@@ -330,7 +341,7 @@ def _build_markdown(data: dict, url: str) -> tuple[str, str]:
         published_at = _format_published_at(data.get("datetime", ""))
 
         lines = _build_frontmatter(title, url, "article", author, handle, published_at)
-        lines.extend(["", f"# {title}", "", body])
+        lines.extend(["", f"# {title}", "", _sanitize_local_links(body)])
         return "\n".join(lines), title
 
     tweets = data.get("tweets", [])
@@ -357,7 +368,7 @@ def _build_markdown(data: dict, url: str) -> tuple[str, str]:
 
         text = tweet.get("text", "")
         if text:
-            lines.extend([text, ""])
+            lines.extend([_sanitize_local_links(text), ""])
 
         for img in tweet.get("images", []):
             alt = img.get("alt", "image")

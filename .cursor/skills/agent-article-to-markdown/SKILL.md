@@ -1,24 +1,33 @@
 ---
 name: agent-article-to-markdown
 description: >-
-  WebページのURLを受け取り、記事内容をLLM最適化Markdownに変換し、git pushまで自動実行する。
-  ユーザー承認は一切挟まない一気通貫スキル。
+  WebページのURLを受け取り、記事内容をLLM最適化Markdownに変換し、git commitまで自動実行する。
+  git push はユーザー確認後のみ実行。
   「記事を保存して」「この記事をmarkdownにして」「URLをmarkdown化して」等で起動する。
   認証なしサイトと x.com（認証あり）に対応。
 ---
 
 # agent-article-to-markdown
 
-URL を受け取り、記事を Markdown 化し、git push まで自動実行する。ユーザー承認は一切挟まない。
+URL を受け取り、記事を Markdown 化し、git commit まで自動実行する。**git push はユーザー確認後のみ。**
 
-## 実行手順（全自動・承認なし）
+## 実行手順
 
 1. URL からサイトを判定
 2. 適切なスクリプトを実行
-3. 出力ファイルを確認
-4. git add → commit → push
+3. 出力ファイルを確認（公開してよい内容か確認）
+4. git add → commit（自動）
+5. **ユーザーに push 可否を確認してから push**
 
-**AskQuestion は使わない。全ステップを自動で完了すること。**
+取得〜commit までは自動でよい。push だけは必ずユーザー承認を取ること。
+
+## 保存対象の制限
+
+以下は保存・commit しない。該当する場合はユーザーに報告して停止する:
+
+- 非公開・限定公開の x.com 投稿（フォロワー限定、鍵アカウント等）
+- 認証が必要な社内 URL・イントラネット URL
+- 取得内容にローカルパス（`file://`, `file+.vscode-resource` 等）が含まれる場合は除去してから保存
 
 ## フロー判定
 
@@ -51,13 +60,20 @@ python3 .cursor/skills/agent-article-to-markdown/extract_xcom.py "<URL>"
 
 ## Git 操作
 
-スクリプト実行後、以下を**承認なしで**実行する:
+スクリプト実行後、以下を**自動**実行する:
 
 ```bash
 git add agent-articles/{filename}.md
 git commit -m "docs(articles): add {タイトル要約}"
+```
+
+push は**ユーザー確認後のみ**:
+
+```bash
 git push
 ```
+
+push 前にユーザーへ「公開リポジトリへ push してよいか」を確認すること。明示的な承認なしに push しない。
 
 ### コミットメッセージ規則
 
@@ -107,7 +123,7 @@ content_type: "article"
 
 - 見出し(h1-h6)、段落、リスト、引用、コードブロックをそのまま Markdown に変換
 - 画像は `![alt](url)` 形式で残す（ダウンロードしない）
-- リンクは `[text](url)` 形式で保持
+- リンクは `[text](url)` 形式で保持（`file://` / `file+.vscode-resource` は除去）
 - 広告・ナビゲーション・フッターは除去
 - 内容自体は改変しない
 
@@ -121,10 +137,9 @@ content_type: "article"
 
 ## 制約
 
-- **AskQuestion 禁止**: ユーザー承認フローを挟まない
 - **Cookie 値の直接操作禁止**: AI は Cookie 値を読み取り・ログ出力しない
-- **ブラウザ Cookie DB への直接アクセス禁止**: browser-cookie3 経由のみ
-- **内容改変禁止**: 記事本文は要約・編集せず忠実に変換する
+- **push 無承認禁止**: ユーザー確認なしに git push しない
+- **内容改変禁止**: 記事本文は要約・編集せず忠実に変換する（ローカルパスリンクの除去を除く）
 - **エラー時のみ停止**: スクリプトが非ゼロ終了した場合のみユーザーに報告する
 
 ## エラーハンドリング
