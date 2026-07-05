@@ -1,0 +1,137 @@
+---
+name: agent-article-to-markdown
+description: >-
+  WebページのURLを受け取り、記事内容をLLM最適化Markdownに変換し、git pushまで自動実行する。
+  ユーザー承認は一切挟まない一気通貫スキル。
+  「記事を保存して」「この記事をmarkdownにして」「URLをmarkdown化して」等で起動する。
+  認証なしサイトと x.com（認証あり）に対応。
+---
+
+# agent-article-to-markdown
+
+URL を受け取り、記事を Markdown 化し、git push まで自動実行する。ユーザー承認は一切挟まない。
+
+## 実行手順（全自動・承認なし）
+
+1. URL からサイトを判定
+2. 適切なスクリプトを実行
+3. 出力ファイルを確認
+4. git add → commit → push
+
+**AskQuestion は使わない。全ステップを自動で完了すること。**
+
+## フロー判定
+
+| URL パターン | スクリプト |
+|---|---|
+| `x.com/*` または `twitter.com/*` | `extract_xcom.py` |
+| 上記以外 | `extract_article.py` |
+
+## フローA: 認証なしサイト
+
+```bash
+python3 .cursor/skills/agent-article-to-markdown/extract_article.py "<URL>"
+```
+
+スクリプトは以下を stdout に JSON で出力する:
+
+```json
+{"file_path": "agent-articles/タイトル.md", "title": "記事タイトル"}
+```
+
+## フローB: x.com（認証あり）
+
+```bash
+python3 .cursor/skills/agent-article-to-markdown/extract_xcom.py "<URL>"
+```
+
+- デフォルトブラウザ: **Brave**（固定、引数不要）
+- 前提: ユーザーが Brave で x.com にログイン済み
+- stdout 出力形式はフローA と同一
+
+## Git 操作
+
+スクリプト実行後、以下を**承認なしで**実行する:
+
+```bash
+git add agent-articles/{filename}.md
+git commit -m "docs(articles): add {タイトル要約}"
+git push
+```
+
+### コミットメッセージ規則
+
+- 形式: `docs(articles): add {タイトルを50文字以内に要約}`
+- 記事タイトルから、何の記事か分かる簡潔なメッセージを生成
+- 日本語記事は日本語で、英語記事は英語で要約
+- 例: `docs(articles): add React Server Components解説`
+- 例: `docs(articles): add @user thread on LLM agents`
+
+## 出力フォーマット仕様
+
+保存先: `agent-articles/{sanitized_title}.md`
+
+ファイル名のサニタイズ: `/\:*?"<>|` を除去、空白を `-` に変換、100文字以内に切り詰め。
+
+### Markdown 構造
+
+```markdown
+---
+title: "記事タイトル"
+source_url: "https://example.com/article"
+author: "著者名"
+published_at: "YYYY-MM-DD"
+retrieved_at: "YYYY-MM-DDTHH:MM:SS+09:00"
+site: "example.com"
+content_type: "article"
+---
+
+# 記事タイトル
+
+{本文}
+```
+
+### frontmatter フィールド
+
+| フィールド | 必須 | 説明 |
+|---|---|---|
+| title | Yes | 記事タイトル |
+| source_url | Yes | 元URL |
+| author | No | 著者名（取得できない場合は省略） |
+| published_at | No | 公開日（取得できない場合は省略） |
+| retrieved_at | Yes | 取得日時（ISO 8601） |
+| site | Yes | ドメイン名 |
+| content_type | Yes | `article` / `tweet` / `thread` |
+
+### 本文変換ルール
+
+- 見出し(h1-h6)、段落、リスト、引用、コードブロックをそのまま Markdown に変換
+- 画像は `![alt](url)` 形式で残す（ダウンロードしない）
+- リンクは `[text](url)` 形式で保持
+- 広告・ナビゲーション・フッターは除去
+- 内容自体は改変しない
+
+## 設定
+
+| 項目 | 値 |
+|---|---|
+| x.com 用ブラウザ | Brave（固定） |
+| 出力先 | `agent-articles/` |
+| macOS 依存 | あり（Keychain による Cookie 復号） |
+
+## 制約
+
+- **AskQuestion 禁止**: ユーザー承認フローを挟まない
+- **Cookie 値の直接操作禁止**: AI は Cookie 値を読み取り・ログ出力しない
+- **ブラウザ Cookie DB への直接アクセス禁止**: browser-cookie3 経由のみ
+- **内容改変禁止**: 記事本文は要約・編集せず忠実に変換する
+- **エラー時のみ停止**: スクリプトが非ゼロ終了した場合のみユーザーに報告する
+
+## エラーハンドリング
+
+| エラー | 対応 |
+|---|---|
+| ネットワークエラー | エラーメッセージを報告して停止 |
+| x.com 認証失敗 | 「Brave で x.com にログインし直してください」と報告 |
+| ページ内容取得不可 | エラー内容を報告して停止 |
+| git push 失敗 | エラー内容を報告（ファイルは保存済み） |

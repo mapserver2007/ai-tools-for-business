@@ -1,0 +1,6 @@
+requests
+beautifulsoup4
+readability-lxml
+markdownify
+browser-cookie3
+playwright
