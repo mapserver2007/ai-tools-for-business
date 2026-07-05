@@ -13,6 +13,9 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from urllib.parse import urlparse
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from ocr_utils import download_and_ocr, enrich_markdown_images
+
 JST = timezone(timedelta(hours=9))
 OUTPUT_DIR = Path(__file__).resolve().parents[3] / "agent-articles"
 DEFAULT_BROWSER = "brave"
@@ -341,7 +344,8 @@ def _build_markdown(data: dict, url: str) -> tuple[str, str]:
         published_at = _format_published_at(data.get("datetime", ""))
 
         lines = _build_frontmatter(title, url, "article", author, handle, published_at)
-        lines.extend(["", f"# {title}", "", _sanitize_local_links(body)])
+        enriched_body = enrich_markdown_images(_sanitize_local_links(body))
+        lines.extend(["", f"# {title}", "", enriched_body])
         return "\n".join(lines), title
 
     tweets = data.get("tweets", [])
@@ -373,7 +377,16 @@ def _build_markdown(data: dict, url: str) -> tuple[str, str]:
         for img in tweet.get("images", []):
             alt = img.get("alt", "image")
             src = img.get("src", "")
-            lines.extend([f"![{alt}]({src})", ""])
+            lines.append(f"![{alt}]({src})")
+            ocr_text = download_and_ocr(src)
+            if ocr_text.strip():
+                desc_lines = ocr_text.strip().split("\n")
+                quoted = "\n> ".join(desc_lines)
+                lines.extend(["", f"> **[図の説明]** {quoted}", ""])
+            elif alt and alt not in ("image", ""):
+                lines.extend(["", f"> **[図の説明]** {alt}", ""])
+            else:
+                lines.append("")
 
     return "\n".join(lines), title
 

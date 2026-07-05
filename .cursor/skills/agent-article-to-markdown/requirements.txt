@@ -4,3 +4,5 @@ readability-lxml
 markdownify
 browser-cookie3
 playwright
+pyobjc-core
+pyobjc-framework-Vision

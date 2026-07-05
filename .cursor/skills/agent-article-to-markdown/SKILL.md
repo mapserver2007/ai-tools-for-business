@@ -122,10 +122,44 @@ content_type: "article"
 ### 本文変換ルール
 
 - 見出し(h1-h6)、段落、リスト、引用、コードブロックをそのまま Markdown に変換
-- 画像は `![alt](url)` 形式で残す（ダウンロードしない）
+- **画像OCR**: 画像は `![alt](url)` 形式で保持しつつ、macOS Vision framework で OCR を実行し、読み取った内容を自然言語で説明するブロック引用を直下に付与する（画像自体はダウンロードしない）
 - リンクは `[text](url)` 形式で保持（`file://` / `file+.vscode-resource` は除去）
 - 広告・ナビゲーション・フッターは除去
 - 内容自体は改変しない
+
+### 画像OCR処理
+
+記事内の画像に対して自動的にOCR（文字認識）を実行し、画像内のテキストを読み取って説明を付与する。
+
+**処理フロー:**
+1. Markdown 内の `![alt](url)` パターンを検出
+2. 画像をダウンロード（一時ファイル）
+3. macOS Vision framework (`VNRecognizeTextRequest`) で OCR 実行（日本語・英語対応）
+4. 読み取ったテキストをブロック引用形式で画像直下に追記
+5. 一時ファイルを削除
+
+**出力フォーマット:**
+
+テキストが読み取れた場合:
+```markdown
+![alt](url)
+
+> **[図の説明]** OCRで読み取ったテキスト内容
+```
+
+テキストが読み取れないが alt テキストがある場合:
+```markdown
+![alt](url)
+
+> **[図の説明]** alt テキスト
+```
+
+テキストもaltも無い場合はそのまま:
+```markdown
+![alt](url)
+```
+
+**フォールバック:** `pyobjc-framework-Vision` が未インストールの場合、OCR をスキップして従来通り `![alt](url)` のみ出力する（stderr に警告を出力）。
 
 ## 設定
 
@@ -133,7 +167,9 @@ content_type: "article"
 |---|---|
 | x.com 用ブラウザ | Brave（固定） |
 | 出力先 | `agent-articles/` |
-| macOS 依存 | あり（Keychain による Cookie 復号） |
+| macOS 依存 | あり（Keychain による Cookie 復号、Vision framework による OCR） |
+| OCR 対応言語 | 日本語、英語 |
+| OCR エンジン | macOS Vision framework (`VNRecognizeTextRequest`) |
 
 ## 制約
 
