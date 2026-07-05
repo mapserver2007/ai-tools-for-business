@@ -377,16 +377,13 @@ def _build_markdown(data: dict, url: str) -> tuple[str, str]:
         for img in tweet.get("images", []):
             alt = img.get("alt", "image")
             src = img.get("src", "")
-            lines.append(f"![{alt}]({src})")
             ocr_text = download_and_ocr(src)
             if ocr_text.strip():
                 desc_lines = ocr_text.strip().split("\n")
                 quoted = "\n> ".join(desc_lines)
-                lines.extend(["", f"> **[図の説明]** {quoted}", ""])
+                lines.extend([f"> **[図]** {quoted}", ""])
             elif alt and alt not in ("image", ""):
-                lines.extend(["", f"> **[図の説明]** {alt}", ""])
-            else:
-                lines.append("")
+                lines.extend([f"> **[図]** {alt}", ""])
 
     return "\n".join(lines), title
 

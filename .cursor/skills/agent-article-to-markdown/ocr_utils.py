@@ -113,24 +113,25 @@ def download_and_ocr(image_url: str, languages: list[str] | None = None) -> str:
 
 
 def enrich_markdown_images(markdown_text: str) -> str:
-    """Find ![alt](url) references in markdown and append OCR-based descriptions."""
-    if not _check_vision():
-        return markdown_text
-
+    """Replace ![alt](url) with OCR-based text descriptions (no image links)."""
     pattern = re.compile(r"!\[([^\]]*)\]\(([^)]+)\)")
+    vision_ok = _check_vision()
 
     def _replace(match: re.Match) -> str:
         alt = match.group(1)
         url = match.group(2)
-        original = match.group(0)
 
-        ocr_text = download_and_ocr(url)
-        if ocr_text.strip():
-            desc_lines = ocr_text.strip().split("\n")
-            quoted = "\n> ".join(desc_lines)
-            return f"{original}\n\n> **[図の説明]** {quoted}"
+        if vision_ok:
+            ocr_text = download_and_ocr(url)
+            if ocr_text.strip():
+                desc_lines = ocr_text.strip().split("\n")
+                quoted = "\n> ".join(desc_lines)
+                return f"> **[図]** {quoted}"
+
         if alt and alt not in ("image", ""):
-            return f"{original}\n\n> **[図の説明]** {alt}"
-        return original
+            return f"> **[図]** {alt}"
+        return ""
 
-    return pattern.sub(_replace, markdown_text)
+    result = pattern.sub(_replace, markdown_text)
+    result = re.sub(r"\n{3,}", "\n\n", result)
+    return result
