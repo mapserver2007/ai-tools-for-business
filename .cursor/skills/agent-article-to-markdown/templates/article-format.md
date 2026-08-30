@@ -1,7 +1,7 @@
 # 出力フォーマット仕様
 
 このファイルは `agent-article-to-markdown` スキルが出力する Markdown の正規フォーマットを定義する。
-スクリプト (`extract_article.py` / `extract_xcom.py`) はこのフォーマットに準拠して出力する。
+スクリプト (`extract_article.py` / `extract_xcom.py` / `extract_speakerdeck.py`) はこのフォーマットに準拠して出力する。
 
 ## 構造
 
@@ -25,7 +25,7 @@ author: "著者名"                # 任意: 取得できない場合は省略
 published_at: "YYYY-MM-DD"      # 任意: 取得できない場合は省略
 retrieved_at: "YYYY-MM-DDTHH:MM:SS+09:00"  # 必須: 取得日時 ISO 8601
 site: "example.com"             # 必須: ドメイン名
-content_type: "article"         # 必須: article | tweet | thread
+content_type: "article"         # 必須: article | tweet | thread | slides
 ---
 ```
 
@@ -36,6 +36,7 @@ content_type: "article"         # 必須: article | tweet | thread
 | `article` | 一般的なWebページの記事 |
 | `tweet` | x.com の単一ツイート |
 | `thread` | x.com のスレッド（複数ツイートの連続） |
+| `slides` | Speaker Deck などのスライド資料 |
 
 ## 本文変換ルール
 
@@ -47,6 +48,7 @@ content_type: "article"         # 必須: article | tweet | thread
 - 画像: 画像リンクは出力しない。エージェントが画像を読み取り内容を自然言語で説明
 - リンク: `[text](url)`
 - スレッドのツイート区切り: `---` (水平線)
+- スライド区切り: `## {n} / {total}`（Speaker Deck のページ番号）
 
 ## ファイル名規則
 

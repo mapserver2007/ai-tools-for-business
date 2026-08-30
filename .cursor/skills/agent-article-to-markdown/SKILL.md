@@ -5,7 +5,7 @@ description: >-
   日本語以外の記事は自動的に日本語に翻訳する。
   git push はユーザー確認後のみ実行。
   「記事を保存して」「この記事をmarkdownにして」「URLをmarkdown化して」等で起動する。
-  認証なしサイトと x.com（認証あり）に対応。
+  認証なしサイト、speakerdeck.com、x.com（認証あり）に対応。
 ---
 
 # agent-article-to-markdown
@@ -29,6 +29,7 @@ URL を受け取り、記事を Markdown 化し、git commit まで自動実行�
 以下は保存・commit しない。該当する場合はユーザーに報告して停止する:
 
 - 非公開・限定公開の x.com 投稿（フォロワー限定、鍵アカウント等）
+- 非公開・パスワード保護の Speaker Deck
 - 認証が必要な社内 URL・イントラネット URL
 - 取得内容にローカルパス（`file://`, `file+.vscode-resource` 等）が含まれる場合は除去してから保存
 
@@ -37,6 +38,7 @@ URL を受け取り、記事を Markdown 化し、git commit まで自動実行�
 | URL パターン | スクリプト |
 |---|---|
 | `x.com/*` または `twitter.com/*` | `extract_xcom.py` |
+| `speakerdeck.com/*` | `extract_speakerdeck.py` |
 | 上記以外 | `extract_article.py` |
 
 ## フローA: 認証なしサイト
@@ -68,6 +70,20 @@ python3 .cursor/skills/agent-article-to-markdown/extract_xcom.py "<URL>"
 - デフォルトブラウザ: **Brave**（固定、引数不要）
 - 前提: ユーザーが Brave で x.com にログイン済み
 - stdout 出力形式はフローA と同一（`images` 配列を含む）
+
+## フローC: Speaker Deck
+
+```bash
+python3 .cursor/skills/agent-article-to-markdown/extract_speakerdeck.py "<URL>"
+```
+
+- 対象: 公開トーク `https://speakerdeck.com/{user}/{slug}`
+- 非公開・パスワード保護・埋め込み専用ページは保存しない（エラー報告して停止）
+- JSON-LD のスライド本文（Transcript）と各スライド画像を取得する
+- stdout 出力形式はフローA と同一（`images` 配列に全スライドを含む）
+- `content_type` は `slides`
+
+**画像説明の書き方（スライド）:** 図表・レイアウト・視覚的な関係性を優先する。トランスクリプトと同一の本文は繰り返さない。テキスト中心のスライドは1文で構図を述べてよい。
 
 ## Git 操作
 
@@ -129,7 +145,7 @@ content_type: "article"
 | published_at | No | 公開日（取得できない場合は省略） |
 | retrieved_at | Yes | 取得日時（ISO 8601） |
 | site | Yes | ドメイン名 |
-| content_type | Yes | `article` / `tweet` / `thread` |
+| content_type | Yes | `article` / `tweet` / `thread` / `slides` |
 | original_language | No | 原文の言語（翻訳した場合のみ。例: `en`, `zh`, `ko`）|
 
 ### 本文変換ルール
@@ -220,4 +236,5 @@ content_type: "article"
 | ネットワークエラー | エラーメッセージを報告して停止 |
 | x.com 認証失敗 | 「Brave で x.com にログインし直してください」と報告 |
 | ページ内容取得不可 | エラー内容を報告して停止 |
+| Speaker Deck 非公開・取得不可 | エラー内容を報告して停止 |
 | git push 失敗 | エラー内容を報告（ファイルは保存済み） |
