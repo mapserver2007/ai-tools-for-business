@@ -12,7 +12,7 @@ from bs4 import BeautifulSoup
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from extract_article import OUTPUT_DIR, build_frontmatter, sanitize_filename
-from image_utils import replace_images_with_placeholders
+from image_utils import download_image
 
 HEADERS = {
     "User-Agent": (
@@ -162,22 +162,35 @@ def probe_slide_count(pres_id: str, known_count: int) -> int:
     return count
 
 
-def build_body(description: str, slides: list[dict], pres_id: str, total: int) -> str:
+def build_body(
+    description: str,
+    slides: list[dict],
+    pres_id: str,
+    total: int,
+) -> tuple[str, list[dict]]:
     sections = []
+    images = []
     if description:
         sections.append(description.strip())
     for slide in slides:
         pos = slide["position"]
-        image_md = f"![スライド {pos}]({slide_image_url(pres_id, pos - 1)})"
-        heading = f"## {pos} / {total}"
-        text = slide["text"]
-        if text:
-            sections.append(f"{heading}\n\n{text}\n\n{image_md}")
-        else:
-            sections.append(f"{heading}\n\n{image_md}")
+        index = pos - 1
+        image_url = slide_image_url(pres_id, index)
+        images.append({
+            "index": index,
+            "slide_number": pos,
+            "alt": f"スライド {pos}",
+            "original_url": image_url,
+            "local_path": download_image(image_url),
+            "transcript": slide["text"],
+        })
+        sections.append(
+            f"## スライド {pos} / {total}\n\n"
+            f"<!-- INTERPRET_SLIDE_{index} -->"
+        )
     if not sections:
         raise ValueError("スライド本文も画像も取得できませんでした")
-    return "\n\n".join(sections) + "\n"
+    return "\n\n".join(sections) + "\n", images
 
 
 def extract_speakerdeck(url: str) -> dict:
@@ -245,8 +258,7 @@ def extract_speakerdeck(url: str) -> dict:
     if pub:
         meta["published_at"] = pub
 
-    body_md = build_body(description, slides, pres_id, total)
-    body_md, images = replace_images_with_placeholders(body_md)
+    body_md, images = build_body(description, slides, pres_id, total)
 
     safe_title = yaml_escape(title)
     frontmatter = build_frontmatter(safe_title, meta, content_type="slides")
