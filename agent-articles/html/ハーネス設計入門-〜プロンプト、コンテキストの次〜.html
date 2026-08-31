@@ -1,0 +1,802 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="title" content="ハーネス設計入門 〜プロンプト、コンテキストの次〜">
+<meta name="source_url" content="https://speakerdeck.com/kinopeee/hanesu-sekkei-nyuumon-kontekisuto-no-tsugi">
+<meta name="author" content="kinopee">
+<meta name="published_at" content="2026-08-29">
+<meta name="retrieved_at" content="2026-08-30T23:34:12+09:00">
+<meta name="site" content="speakerdeck.com">
+<meta name="content_type" content="slides">
+<title>ハーネス設計入門 〜プロンプト、コンテキストの次〜</title>
+<style>
+:root {
+  color-scheme: light;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.8;
+}
+body {
+  margin: 0;
+  background: #f6f7f9;
+  color: #202124;
+}
+.article {
+  box-sizing: border-box;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 5rem;
+  background: #fff;
+  min-height: 100vh;
+}
+.metadata {
+  margin: -0.5rem 0 2rem;
+  color: #5f6368;
+  font-size: 0.9rem;
+}
+a {
+  color: #1967d2;
+}
+img {
+  max-width: 100%;
+  height: auto;
+}
+pre {
+  overflow-x: auto;
+  padding: 1rem;
+  border-radius: 6px;
+  background: #f1f3f4;
+}
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+blockquote {
+  margin: 1rem 0;
+  padding: 0.25rem 1rem;
+  border-left: 4px solid #dadce0;
+  color: #5f6368;
+}
+table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+th, td {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #dadce0;
+  text-align: left;
+}
+@media (max-width: 600px) {
+  .article {
+    padding: 2rem 1rem 4rem;
+  }
+}
+</style>
+</head>
+<body>
+<main class="article">
+<p class="metadata"><span>著者: kinopee</span> · <span>公開日: 2026-08-29</span> · <a href="https://speakerdeck.com/kinopeee/hanesu-sekkei-nyuumon-kontekisuto-no-tsugi">原文</a></p>
+<h1>ハーネス設計入門 〜プロンプト、コンテキストの次〜</h1>
+<p>AirCle＠AIコミュニティ開催の「ハーネス設計入門」で使用されたスライド資料。全体は、ハーネスエンジニアリングの定義が収束していく過程と、AIエージェントを自走させるための実践的な設計方法の2部で構成される。</p>
+<h2>スライド 1 / 35</h2>
+<h3>AIエージェント時代のハーネス設計入門</h3>
+<p>本資料の目的は、AIエージェントが失敗を自ら検知・修正し、タスクを最後まで完走できる環境の設計方法を持ち帰ることにある。</p>
+<ul>
+<li><strong>第1部：系譜</strong> — ハーネスエンジニアリングの定義の揺れと収束</li>
+<li><strong>第2部：実践</strong> — 馬具・柵・ループという比喩を使った自走環境の設計</li>
+</ul>
+<p>登壇者は、株式会社キー・プランニング代表取締役の木下雄一朗（Kinopee）。</p>
+<h2>スライド 2 / 35</h2>
+<h3>登壇者プロフィール</h3>
+<p>木下雄一朗（Kinopee）は、AIとソフトウェア開発の現場に、情報を発信する側と実際に利用する側の両方から関わっている。</p>
+<ul>
+<li><strong>所属</strong>：株式会社キー・プランニング 代表取締役</li>
+<li><strong>著書</strong>：</li>
+<li>『AIを開発チームに採用する技術』</li>
+<li>『AIエディタCursor完全ガイド』ほか</li>
+<li><strong>連載</strong>：Software Design「プログラミング×AIの最前線」</li>
+<li><strong>活動</strong>：</li>
+<li>Devin Ambassador</li>
+<li>Cursor Ambassador Regional Leader（East Asia）</li>
+<li><strong>X</strong>：https://x.com/kinopee_ai</li>
+</ul>
+<h2>スライド 3 / 35</h2>
+<h3>第1部：ハーネスエンジニアリングの系譜</h3>
+<p>第1部では、ハーネスエンジニアリングをめぐる考え方を5つの流派に整理し、定義の違いを現場の実装と結び付けて読み解く。その後、2026年に語彙が収束・制度化され、効果が実証されていく過程を扱う。</p>
+<h2>スライド 4 / 35</h2>
+<h3>ハーネスエンジニアリングとは</h3>
+<p>ハーネスエンジニアリングとは、エージェントが失敗するたびに、同じ失敗が繰り返されないよう「モデルの外側」にある環境を改善する営みである。</p>
+<pre><code class="language-mermaid">flowchart LR
+    A[AIエージェント] --&gt; M[モデル]
+    A --&gt; H[ハーネス]
+    H --&gt; I[指示ファイル]
+    H --&gt; T[ツール]
+    H --&gt; V[検証]
+    H --&gt; G[ガードレール]
+    H --&gt; L[実行ループ]
+</code></pre>
+<p>モデルは推論を担当する。それ以外の指示、ツール、検証、ガードレール、ループなどがハーネスに当たる。焦点は、モデル自体の賢さではなく、モデルを取り巻く環境を工学することにある。</p>
+<p>この考え方は、次の順で発展した。</p>
+<ol>
+<li><strong>2022年〜：プロンプトエンジニアリング</strong></li>
+<li><strong>2024年〜：コンテキストエンジニアリング</strong></li>
+<li><strong>2026年〜：ハーネスエンジニアリング</strong></li>
+</ol>
+<p>資料では、2026年2月5日にMitchell Hashimotoが「失敗したら、二度と起きないよう環境を工学せよ」と命名し、同月11日にOpenAIが3人・100万行・95% AI生成という実践を公表したことが、その後の議論の起点として示されている。</p>
+<h2>スライド 5 / 35</h2>
+<h3>ハーネスエンジニアリングの5つの流派</h3>
+<p>同じ「ハーネス」という言葉でも、論者が基準とする実装によって定義の重心が異なる。</p>
+<table>
+<thead>
+<tr>
+<th>流派</th>
+<th>性格</th>
+<th>代表者</th>
+<th>中核となる主張</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Chase派</td>
+<td>広義・分類論</td>
+<td>Harrison Chase（LangChain）</td>
+<td>モデル以外のすべてがハーネス</td>
+</tr>
+<tr>
+<td>Hashimoto派</td>
+<td>運用哲学</td>
+<td>Mitchell Hashimoto</td>
+<td>失敗したら環境を再設計する</td>
+</tr>
+<tr>
+<td>Fowler派</td>
+<td>制御理論</td>
+<td>Birgitta Böckeler（Thoughtworks）</td>
+<td>ハーネスをコンテキスト設計の特殊形として捉える</td>
+</tr>
+<tr>
+<td>Chawla派</td>
+<td>同心円モデル</td>
+<td>Avi Chawla</td>
+<td>ハーネスはLLMに対するOS層である</td>
+</tr>
+<tr>
+<td>Codex派</td>
+<td>スケール駆動</td>
+<td>Ryan Lopopolo（OpenAI Codex）</td>
+<td>大規模運用で発生する故障モードをハーネスで解く</td>
+</tr>
+</tbody>
+</table>
+<h2>スライド 6 / 35</h2>
+<h3>Chase派：モデル以外のすべてがハーネス</h3>
+<p>Chase派は最も広い定義を採用する。モデルだけをハーネスの外に置き、モデルを動かす周辺要素をすべてハーネスに含める。</p>
+<pre><code class="language-text">ハーネス
+├── ツール
+├── オーケストレーション
+├── メモリ
+├── コンテキストビルダー
+├── ガードレール
+├── サブエージェント
+└── リトライ／状態管理
+
+モデル（LLM）だけがハーネスではない
+</code></pre>
+<p>この立場を端的に表す言葉が、次の一文である。</p>
+<blockquote>
+<p>If you're not the model, you're the harness.</p>
+</blockquote>
+<h2>スライド 7 / 35</h2>
+<h3>Hashimoto派：失敗からハーネスを育てる</h3>
+<p>Hashimoto派では、ハーネスを最初に完成させる設計物ではなく、失敗を通じて継続的に育てる運用の仕組みとして捉える。</p>
+<pre><code class="language-mermaid">flowchart LR
+    A[1. エージェントが実行] --&gt; B[2. 同じパターンで失敗]
+    B --&gt; C[3. AGENTS.mdに&lt;br/&gt;防止ルールを1行追加]
+    C --&gt; D[4. 同じ失敗を&lt;br/&gt;再発不能にする]
+    D -.新しいタスク.-&gt; A
+</code></pre>
+<p>失敗知識を <code>AGENTS.md</code> に蓄積することで、タスクを重ねるたびに環境が強くなる。</p>
+<h2>スライド 8 / 35</h2>
+<h3>Fowler派：事前制御と事後検証</h3>
+<p>Fowler派は、ハーネスを制御理論の視点で捉える。信頼できるエージェントには、実行前に進路を与える <code>guides</code> と、実行後に結果を測る <code>sensors</code> の両方が必要になる。</p>
+<pre><code class="language-mermaid">flowchart LR
+    R[ユーザー要求] --&gt; G[GUIDES&lt;br/&gt;ルール・制約]
+    G --&gt; A[AGENT&lt;br/&gt;LLM + ツール]
+    A --&gt; S[SENSORS&lt;br/&gt;テスト・lint]
+    S --&gt; O[成果物]
+    S -.自己修正フィードバック.-&gt; A
+</code></pre>
+<ul>
+<li><strong>Guides</strong>：フィードフォワードによる事前制御</li>
+<li><strong>Sensors</strong>：フィードバックによる事後検証</li>
+</ul>
+<p>この2つを組み合わせ、エージェントが自ら修正できる閉じた制御系を作る。</p>
+<h2>スライド 9 / 35</h2>
+<h3>Chawla派：ハーネスはLLMのOS</h3>
+<p>Chawla派は、LLMエージェントをコンピュータに見立てる。LLM単体はOSを持たないCPUに相当し、ハーネスがOSとして各構成要素を統合する。</p>
+<table>
+<thead>
+<tr>
+<th>コンピュータ</th>
+<th>LLMエージェント</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>OS</td>
+<td>ハーネス</td>
+</tr>
+<tr>
+<td>デバイスドライバ</td>
+<td>ツール</td>
+</tr>
+<tr>
+<td>ディスク</td>
+<td>外部DB・メモリ</td>
+</tr>
+<tr>
+<td>RAM</td>
+<td>コンテキスト</td>
+</tr>
+<tr>
+<td>CPU</td>
+<td>LLM</td>
+</tr>
+</tbody>
+</table>
+<h2>スライド 10 / 35</h2>
+<h3>Codex派：スケールで生じる問題を解く</h3>
+<p>Codex派は、本番環境での自律・並列実行を可能にする仕組みとしてハーネスを位置付ける。</p>
+<table>
+<thead>
+<tr>
+<th>段階</th>
+<th>主な対象</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Prompt Engineering（2022年〜）</td>
+<td>単発プロンプト</td>
+</tr>
+<tr>
+<td>Context Engineering（2024年〜）</td>
+<td>RAG、マルチターン</td>
+</tr>
+<tr>
+<td>Harness Engineering（2026年〜）</td>
+<td>自律実行、並列化、本番運用</td>
+</tr>
+</tbody>
+</table>
+<p>OpenAI Codexの「3人のエンジニア、100万行、95% AI生成」という規模は、モデルだけでなく、その外側にあるハーネスが本番運用の成否を決めることを示す例として提示される。</p>
+<blockquote>
+<p>Agents aren't hard; the Harness is hard.</p>
+</blockquote>
+<h2>スライド 11 / 35</h2>
+<h3>流派間で逆転する包含関係</h3>
+<p>流派間の最も大きな違いは、ハーネスとコンテキストのどちらを外側に置くかである。</p>
+<table>
+<thead>
+<tr>
+<th>観点</th>
+<th>包含関係</th>
+<th>最内層</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Chase派・Chawla派</td>
+<td>ハーネス ⊃ コンテキスト</td>
+<td>プロンプト</td>
+</tr>
+<tr>
+<td>Fowler派</td>
+<td>コンテキスト設計 ⊃ ハーネス</td>
+<td>guides + sensors</td>
+</tr>
+</tbody>
+</table>
+<p>前者はエージェント全体を組み立てる総合フレーム設計として、後者はフィードフォワードとフィードバックを扱う制御理論としてハーネスを捉える。この対立は2026年前半の中心的な論点だったが、その後、用語は急速に収束していった。</p>
+<h2>スライド 12 / 35</h2>
+<h3>語彙の収束と制度化</h3>
+<p>資料では、2026年3月以降、実装と標準化によってハーネスの定義が約5か月で収束したと説明している。</p>
+<ul>
+<li><strong>3月10日</strong>：LangChain「The Anatomy of an Agent Harness」により、構成要素の共通理解が形成</li>
+<li><strong>4月19日</strong>：Addy Osmani「Harness Engineering」が、モデル間よりハーネス間のほうが似てきていると指摘</li>
+<li><strong>6月2日</strong>：Microsoft Agent Frameworkの「Agent Harness」が安定版へ移行</li>
+<li><strong>6月23日</strong>：Pydantic v2.0.0がハーネス概念を中心に据えた変更を実施</li>
+<li><strong>2026年</strong>：Linux FoundationがAgentic AI Foundationを設立</li>
+<li><strong>2026年</strong>：「Agent Plugins」1.0がSkillsとMCPの可搬形式を標準化</li>
+<li><strong>8月13日</strong>：DeepSeekがハーネスを公開し、2日間で約9.5万GitHubスターを獲得</li>
+</ul>
+<p>この見方では、5流派の対立は2026年前半に限られた過渡的な現象だった。</p>
+<h2>スライド 13 / 35</h2>
+<h3>Agent Plugins 1.0：ハーネス部品の可搬標準</h3>
+<p>Agent Plugins 1.0は、SkillsとMCPサーバーを共通のフォルダ構造で配布・発見するための最小標準として紹介されている。</p>
+<h4>標準化前</h4>
+<ul>
+<li>ルールファイルが <code>CLAUDE.md</code>、<code>AGENTS.md</code>、<code>.cursorrules</code>、<code>copilot-instructions.md</code> に分散</li>
+<li>SkillsやMCP設定が <code>.claude/</code>、<code>.cursor/</code>、<code>.codex/</code>、<code>.github/</code> に重複</li>
+</ul>
+<h4>標準化後</h4>
+<pre><code class="language-text">plugin.json
+skills/
+mcp.json
+</code></pre>
+<p>この共通形式はVercelが発案し、AWS、Cursor、GitHub、Microsoft、OpenAIが共同策定したとされる。ただし、標準化されるのは入れ物だけであり、次の課題は残る。</p>
+<ul>
+<li>署名、審査、権限、シークレット管理は仕様外</li>
+<li>可搬対象はSkillsとMCPに限られ、Hooks・コマンド・Rulesはクライアント依存</li>
+<li>すべてのクライアントで同じように動く保証はない</li>
+<li>信頼境界、配布、UXは利用側の責任</li>
+</ul>
+<p>つまり、この標準は共通の「床」であり、安全性を保証する「守り」ではない。</p>
+<h2>スライド 14 / 35</h2>
+<h3>効果の実証と次の論点</h3>
+<p>ハーネスの効果は、モデルを変更せずに測定できるものになりつつある。</p>
+<table>
+<thead>
+<tr>
+<th>観測</th>
+<th style="text-align: right;">結果</th>
+<th>解釈</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Terminal Bench 2.0</td>
+<td style="text-align: right;">30位からトップ5へ</td>
+<td>LangChainがモデルを据え置き、ハーネス変更だけで順位を改善</td>
+</tr>
+<tr>
+<td>Benchmark Variance</td>
+<td style="text-align: right;">±5ポイント以上</td>
+<td>ハーネス設定だけでスコアが変動</td>
+</tr>
+<tr>
+<td>Quality Postmortem</td>
+<td style="text-align: right;">3件中3件</td>
+<td>Claude Codeの品質低下がすべてハーネス層の変更に起因</td>
+</tr>
+</tbody>
+</table>
+<p>一方、Han Leeの次の反論も紹介されている。</p>
+<blockquote>
+<p>ハーネスは隠れた技術的負債であり、その大半は次世代モデルに吸収されて消える。</p>
+</blockquote>
+<p>論点は「ハーネスとは何か」から、「どこまでハーネスに作り込み、どこからモデルに任せるか」へ移っている。</p>
+<h2>スライド 15 / 35</h2>
+<h3>第2部：ハーネス設計の実践</h3>
+<p>第2部では、AIエージェントを自走させるために必要な3つの要素を扱う。</p>
+<ol>
+<li>進路を伝える<strong>ハーネス</strong></li>
+<li>逸脱を検知する<strong>ガードレール</strong></li>
+<li>検知結果を修正へ戻す<strong>フィードバックループ</strong></li>
+</ol>
+<h2>スライド 16 / 35</h2>
+<h3>実践の流れとゴール</h3>
+<p>実践編のゴールは、エージェントが自分で失敗に気付き、修正し、完走できる仕組みを設計できるようになることである。</p>
+<pre><code class="language-mermaid">flowchart LR
+    H[1. ハーネスを作る&lt;br/&gt;進路を伝える] --&gt; G[2. ガードレールを張る&lt;br/&gt;逸脱を検知する]
+    G --&gt; L[3. ループを閉じる&lt;br/&gt;通るまで修正する]
+</code></pre>
+<ul>
+<li><strong>ハーネス</strong>：<code>AGENTS.md</code>、Skills、サブエージェントで構成</li>
+<li><strong>ガードレール</strong>：lint、型チェック、テストを「1コマンドの門」に統合</li>
+<li><strong>ループ</strong>：失敗結果を次の入力として返し、合格するまで修正</li>
+</ul>
+<h2>スライド 17 / 35</h2>
+<h3>生成AIは確率で動く</h3>
+<p>従来のプログラムは、同じ入力に対して同じ出力を返す決定的な仕組みである。一方、生成AIはトークンごとに確率分布から候補を選ぶため、同じ指示でも結果が変わる。</p>
+<p>資料内の説明例では、「テストを」に続く語の確率が次のように示される。</p>
+<table>
+<thead>
+<tr>
+<th>候補</th>
+<th style="text-align: right;">確率</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>書く</td>
+<td style="text-align: right;">54%</td>
+</tr>
+<tr>
+<td>実行する</td>
+<td style="text-align: right;">28%</td>
+</tr>
+<tr>
+<td>スキップする</td>
+<td style="text-align: right;">11%</td>
+</tr>
+<tr>
+<td>その他</td>
+<td style="text-align: right;">7%</td>
+</tr>
+</tbody>
+</table>
+<p>低確率の悪い選択もゼロではなく、数千トークンにわたる小さな揺らぎが、正常な別解だけでなく危険な逸脱にもつながる。</p>
+<p>したがって、揺らぎを異常として排除するのではなく、生成AIの仕様として受け入れ、「指示して祈る」のではなく環境と検証で受け止める必要がある。</p>
+<h2>スライド 18 / 35</h2>
+<h3>ハーネスとガードレール</h3>
+<p>ハーネスとガードレールは、AIコーディングの土台を構成する、役割の異なる2つの仕組みである。</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>ハーネス</th>
+<th>ガードレール</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>比喩</td>
+<td>進路を伝える馬具</td>
+<td>道を外れないための柵</td>
+</tr>
+<tr>
+<td>タイミング</td>
+<td>実行前</td>
+<td>実行後</td>
+</tr>
+<tr>
+<td>性質</td>
+<td>人間が決める主観的な事前設計</td>
+<td>機械が判定する客観的な事後検証</td>
+</tr>
+<tr>
+<td>例</td>
+<td>ルール、プラン、Skills、サブエージェント</td>
+<td>lint、フォーマット、型、ビルド、テスト</td>
+</tr>
+</tbody>
+</table>
+<p>機械的な判定が強いほど、エージェント自身が逸脱を検知でき、人間はより広い範囲を任せられる。</p>
+<h2>スライド 19 / 35</h2>
+<h3>ハーネス：走り出す前に進路を伝える</h3>
+<p>ハーネスは、プロジェクトの前提・規約・手順・禁止事項を、エージェントが参照できる形で明文化する事前設計の層である。</p>
+<p>内容は人間の判断で決めるため主観的であり、書いた分だけ効果を持つ。しかし、情報を増やしすぎるとコンテキストを圧迫するため、何を残して何を除くか自体が設計になる。</p>
+<p>「ハーネスエンジニアリング」の定義には幅があるが、日本の開発現場では名前が付く前から同種の工夫が行われてきた。重要なのは用語の定義ではなく、実行前に期待する進路を伝える仕組みそのものである。</p>
+<h2>スライド 20 / 35</h2>
+<h3>ガードレール：走った後に逸脱を検証する</h3>
+<p>ガードレールは、エージェントの成果が期待した道から外れていないかを機械的に検証する事後検証の層である。</p>
+<p>人間の目視ではなく、lint、型チェック、ビルド、テストがYes／Noを返す。誰が実行しても同じ結果になる客観的な判定だからこそ、エージェントは自分の失敗に気付き、自ら修正できる。</p>
+<p>ハーネスが主観的な進路指定であるのに対し、ガードレールは客観的な逸脱検知である。後者を強化するほど、エージェントの自律性を高められる。</p>
+<h2>スライド 21 / 35</h2>
+<h3>フィードバックループを閉じる</h3>
+<p>ハーネスで進路を示し、ガードレールで逸脱を検知するだけでは、エージェントは目的地に到達できない。検知した失敗を修正に戻すループが必要になる。</p>
+<pre><code class="language-mermaid">flowchart LR
+    A[1. タスクを実行] --&gt; B[2. 機械が逸脱を検知]
+    B --&gt; C[3. 失敗結果を受けて修正]
+    C --&gt; A
+</code></pre>
+<p>具体的には、次の判定結果をそのまま次の指示として返す。</p>
+<ul>
+<li>テストが落ちたら直す</li>
+<li>lintエラーが出たら修正する</li>
+<li>型チェックが通らなければやり直す</li>
+</ul>
+<p>完了条件は「すべての門が緑になること」である。定義の議論にこだわるより、ハーネス・ガードレール・ループを組み合わせて期待した結果を得ることが重要になる。</p>
+<h2>スライド 22 / 35</h2>
+<h3>ハーネスの4つの道具</h3>
+<p>事前に情報を与える道具は、適用範囲と深さによって使い分ける。</p>
+<table>
+<thead>
+<tr>
+<th>道具</th>
+<th>適用範囲</th>
+<th>役割</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ルール</td>
+<td>常時</td>
+<td><code>AGENTS.md</code>やCursor Rulesとして、全タスクに規約・コマンド・禁止事項を与える</td>
+</tr>
+<tr>
+<td>プラン</td>
+<td>タスク単位</td>
+<td>着手前に計画を提示し、人間の合意後に実行する</td>
+</tr>
+<tr>
+<td>Skills</td>
+<td>必要なとき</td>
+<td>特定作業の完全な手順を必要時だけ読み込む</td>
+</tr>
+<tr>
+<td>サブエージェント</td>
+<td>役割単位</td>
+<td>調査・実装・レビューを独立した文脈に分離し、委任・並列化する</td>
+</tr>
+</tbody>
+</table>
+<p>左から右へ進むほど、適用範囲は狭くなり、内容は深くなる。まず常時効くルールを固め、その上にSkillsとサブエージェントを積む。</p>
+<h2>スライド 23 / 35</h2>
+<h3>AGENTS.mdに書くこと・書かないこと</h3>
+<p>ルールは毎回コンテキストに入るため、1行ごとにコストがかかる。書く内容の選別が重要になる。</p>
+<table>
+<thead>
+<tr>
+<th>書くこと</th>
+<th>書かないこと</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>プロジェクト概要を1段落で</td>
+<td>モデルが知っている一般常識や言語の一般的作法</td>
+</tr>
+<tr>
+<td>ビルド・テスト・lintのコマンド</td>
+<td>コードを読めば分かる情報</td>
+</tr>
+<tr>
+<td>固有の命名・構成・エラー処理規約</td>
+<td>長大な設計書の全文</td>
+</tr>
+<tr>
+<td>触ってはいけないファイルや変更禁止API</td>
+<td>「きれいに書く」など検証不能な精神論</td>
+</tr>
+</tbody>
+</table>
+<p>最初は約50行を目安にし、運用中に逸脱が起きたときだけ防止ルールを1行追加して育てる。</p>
+<h2>スライド 24 / 35</h2>
+<h3>効果的なルールの4原則</h3>
+<ol>
+<li><strong>簡潔かつ構造的に書く</strong><br>
+   見出しと箇条書きを使い、重要な指示が長文に埋もれないようにする。</li>
+<li><strong>検証可能な表現にする</strong><br>
+   「きれいに書く」ではなく、「関数は50行以内」「命名はcamelCase」のように機械判定できる形にする。</li>
+<li><strong>良い実例を1つ示す</strong><br>
+   規約の説明を重ねるより、<code>src/</code> 内の模範ファイルを指し示すほうが伝わりやすい。</li>
+<li><strong>失敗から育てる</strong><br>
+   最初から完璧を目指さず、逸脱が起きるたびにルールを1行追加する。</li>
+</ol>
+<p>草案はAIにリポジトリを分析させて作成し、人間が不要な行を削って締める方法が効率的である。</p>
+<h2>スライド 25 / 35</h2>
+<h3>Skills：必要なときだけ読む手順書</h3>
+<p>すべての手順を常時読み込むルールに書くと、コンテキストがあふれる。特定作業の定型手順はSkillとして切り出し、必要な場面だけ読み込ませる。</p>
+<pre><code class="language-markdown"># エンドポイント追加
+
+## 使いどころ
+REST APIに新しいルートを追加するとき
+
+## 手順
+1. `routes/` にルート定義を追加
+2. `handlers/` に処理を実装
+3. `schemas/` にバリデーションを定義
+4. `__tests__/` にテストを追加
+5. `docs/api.md` を更新
+
+## 模範例
+`routes/health.ts` を参照
+</code></pre>
+<p>判断基準は単純である。</p>
+<ul>
+<li>毎回必要な前提は<strong>ルール</strong></li>
+<li>特定作業だけで必要な手順は<strong>Skill</strong></li>
+<li>調査・実装・レビューを独立した文脈に分けるなら<strong>サブエージェント</strong></li>
+</ul>
+<h2>スライド 26 / 35</h2>
+<h3>サブエージェントの2つの呼び出し方</h3>
+<p>サブエージェントは、親のコンテキストを汚さずに役割を委任する仕組みである。</p>
+<h4>A. オンデマンド生成</h4>
+<p>必要になった時点で親エージェントが子を作り、その場限りの作業を委任する。</p>
+<ul>
+<li>大量の調査・比較を並列化する</li>
+<li>コンテキストを多く使う探索を分離する</li>
+<li>結果の要約だけを親へ戻す</li>
+</ul>
+<h4>B. 事前定義</h4>
+<p>役割・観点・出力形式をファイルに定義し、名前で繰り返し呼び出す。</p>
+<ul>
+<li>毎回同じ観点でレビューする</li>
+<li>セキュリティ監査やテスト設計を専門化する</li>
+<li>チームで評価観点を共有する</li>
+</ul>
+<p>並列化は待ち時間を短縮する一方、同時実行数に比例して時間当たりのトークン消費を増やす。両方式に共通する本質は文脈の分離であり、子エージェントにも専用のハーネスが必要になる。</p>
+<h2>スライド 27 / 35</h2>
+<h3>Skillとサブエージェントの実例</h3>
+<h4>Skillに向く反復手順</h4>
+<ul>
+<li><strong>リリースノート作成</strong>：<code>git log</code>を分類し、<code>CHANGELOG.md</code>へ追記</li>
+<li><strong>画面・エンドポイント追加</strong>：ルーティング、実装、バリデーション、テスト、ドキュメント更新を一連の手順にする</li>
+<li><strong>バグ調査</strong>：再現、ログ収集、原因仮説、最小修正、再発防止テストを標準化</li>
+</ul>
+<h4>サブエージェントに向く反復観点</h4>
+<ul>
+<li><strong>code-reviewer</strong>：規約、セキュリティ、テスト網羅性の3観点で差分をレビュー</li>
+<li><strong>refactorer</strong>：重複、肥大化した関数、命名の揺らぎを検出し、挙動を変えない改善案を出す</li>
+<li><strong>test-designer</strong>：仕様や差分から境界値・異常系のテストケースを設計</li>
+</ul>
+<p>どちらも作って終わりにせず、実タスクで繰り返し使い、効果の弱い指示を1行ずつ直して育てる。</p>
+<h2>スライド 28 / 35</h2>
+<h3>ガードレールの階層</h3>
+<p>ガードレールはすべて、機械がYes／Noを返す仕組みである。右へ進むほど、検査対象が表記から整合性、振る舞いへ深くなり、判定も強くなる。</p>
+<pre><code class="language-mermaid">flowchart LR
+    F[フォーマッタ&lt;br/&gt;表記の統一] --&gt; L[リンター&lt;br/&gt;作法の検査]
+    L --&gt; T[型チェック&lt;br/&gt;整合性の検証]
+    T --&gt; B[ビルド&lt;br/&gt;成立の確認]
+    B --&gt; E[テスト&lt;br/&gt;振る舞いの保証]
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>段階</th>
+<th>例</th>
+<th>検証内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>フォーマッタ</td>
+<td>Prettier、gofmt</td>
+<td>議論の余地なく表記を統一</td>
+</tr>
+<tr>
+<td>リンター</td>
+<td>ESLint、Clippy</td>
+<td>バグの芽や規約違反を静的検出</td>
+</tr>
+<tr>
+<td>型チェック</td>
+<td>tsc、mypy</td>
+<td>データフローの矛盾を実行前に検出</td>
+</tr>
+<tr>
+<td>ビルド</td>
+<td>各言語のビルドコマンド</td>
+<td>成果物として成立するか確認</td>
+</tr>
+<tr>
+<td>テスト</td>
+<td>ユニット・結合・E2E</td>
+<td>仕様どおりの振る舞いを保証</td>
+</tr>
+</tbody>
+</table>
+<p>IDEの赤線はエージェントから見えない場合がある。ガードレールとして機能させるには、<code>npm run lint</code> のように、エージェント自身が実行して出力を読めるコマンドへ接続する必要がある。</p>
+<h2>スライド 29 / 35</h2>
+<h3>「1コマンドの門」を作る</h3>
+<p>フォーマット、lint、型、テストを別々に実行するのではなく、1つの <code>check</code> コマンドへ束ねる。人間とAIが同じ合格基準を使うことで、「自分の環境では動く」という差をなくせる。</p>
+<pre><code class="language-json">{
+  &quot;scripts&quot;: {
+    &quot;format&quot;: &quot;prettier --check .&quot;,
+    &quot;lint&quot;: &quot;eslint src/&quot;,
+    &quot;types&quot;: &quot;tsc --noEmit&quot;,
+    &quot;test&quot;: &quot;vitest run&quot;,
+    &quot;check&quot;: &quot;npm run format &amp;&amp; npm run lint &amp;&amp; npm run types &amp;&amp; npm run test&quot;
+  }
+}
+</code></pre>
+<p>導入時には次の3か所を揃える。</p>
+<ol>
+<li>人間とAIの双方が <code>check</code> を実行する</li>
+<li><code>AGENTS.md</code> に「<code>check</code> が通ること」を完了条件として記載する</li>
+<li>CIでも同じ <code>check</code> を実行し、手元をすり抜けた問題を捕捉する</li>
+</ol>
+<p>既存プロジェクトでは一度に厳格化せず、フォーマッタ、lint、型、テストの順に、通せる柵から段階的に導入する。</p>
+<h2>スライド 30 / 35</h2>
+<h3>成果物への柵と行動への柵</h3>
+<p>ガードレールには、作った成果物を事後検証するものと、危険な行動を実行前に止めるものがある。</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>成果物への柵</th>
+<th>行動への柵</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>問い</td>
+<td>正しく作れたか</td>
+<td>実行してよいか</td>
+</tr>
+<tr>
+<td>タイミング</td>
+<td>実行後</td>
+<td>実行前</td>
+</tr>
+<tr>
+<td>判定対象</td>
+<td>コードや成果物</td>
+<td>コマンドや外部操作</td>
+</tr>
+<tr>
+<td>例</td>
+<td>lint、型、ビルド、テスト</td>
+<td>Hooks、許可リスト、サンドボックス</td>
+</tr>
+<tr>
+<td>失敗時</td>
+<td>修正ループの入力にする</td>
+<td>事故が起きる前にブロックする</td>
+</tr>
+</tbody>
+</table>
+<p>成果物への柵を最初の主戦場としつつ、<code>rm</code>、外部送信、本番操作など不可逆な行動には事前の柵を設ける。どちらも、人間の注意力ではなく機械に止めさせる点で共通する。</p>
+<h2>スライド 31 / 35</h2>
+<h3>自律エージェントのセキュリティ</h3>
+<p>自律性を高めるほど、エージェントは攻撃され得る実行主体になる。代表的なリスクは4つある。</p>
+<ol>
+<li><strong>間接プロンプトインジェクション</strong><br>
+   Web、Issue、READMEなどの外部コンテンツに悪意ある指示が混入し、エージェントがユーザー指示と区別できない。</li>
+<li><strong>秘密情報の漏洩</strong><br>
+<code>.env</code>、認証情報、顧客データがコンテキストや外部送信に載る。規約だけでなく、deny設定やアクセス制限で読めなくする。</li>
+<li><strong>破壊的操作</strong><br>
+<code>rm</code>、force push、本番への直接操作を、許可リスト・確認ゲート・サンドボックスで物理的に実行不能にする。</li>
+<li><strong>サプライチェーン攻撃</strong><br>
+   エージェントが提案する依存パッケージには、幻覚やtyposquattingの可能性がある。導入は人間の承認を通す。</li>
+</ol>
+<p>危険が最大化するのは、次の3条件が同時に成立するときである。</p>
+<pre><code class="language-text">秘密データへのアクセス
+× 不審な外部コンテンツの読み取り
+× 外部への送信
+= lethal trifecta
+</code></pre>
+<p>3条件のうち少なくとも1つを構造的に断つ。さらに、行動への柵、クラウドエージェントによる隔離、審査済みSkill・Pluginだけを許可する信頼境界を組み合わせる。</p>
+<h2>スライド 32 / 35</h2>
+<h3>ハーネスは隠れた技術的負債</h3>
+<p>ハーネスは作り込むほど良いとは限らない。モデル世代が進むと、以前は外側で補っていた回避策や専用実装がモデルへ吸収され、不要になることがある。</p>
+<pre><code class="language-mermaid">flowchart LR
+    subgraph Current[現行モデル世代]
+        M1[モデル] --&gt; H1[中核ハーネス]
+        H1 --&gt; C1[作り込み]
+        C1 --&gt; W1[回避策]
+    end
+    Current --&gt;|モデル更新| Next
+    subgraph Next[次世代モデル]
+        M2[より賢く大きなモデル] --&gt; H2[中核ハーネスは残る]
+        H2 -.吸収.-&gt; C2[作り込みは縮小]
+        C2 -.吸収.-&gt; W2[回避策は消える]
+    end
+</code></pre>
+<p>資料ではHan Leeの言葉として、「良いチームほど多くのハーネスを作り込むが、そのほぼすべてが次世代モデルに溶けていく」と紹介している。</p>
+<p>特定時点の形に固執せず、ハーネスを薄く軽く保ち、モデル更新に合わせて定期的に棚卸しする必要がある。</p>
+<h2>スライド 33 / 35</h2>
+<h3>ハーネスエンジニアリングの実施順序</h3>
+<p>効果のないルールや使われない道具を増やさないため、次の順序で進める。</p>
+<ol>
+<li><strong>素の状態を観察する</strong><br>
+   ハーネスなしで一度実行し、実際に起きた逸脱を記録する。</li>
+<li><strong>ルールを書く</strong><br>
+<code>AGENTS.md</code>を約50行から始め、実在する失敗や固有規約に対応する行だけを残す。</li>
+<li><strong>柵を立て、1コマンドの門へ束ねる</strong><br>
+   lint、型、テストと、必要な行動制限を機械実行可能にする。</li>
+<li><strong>ループを閉じる</strong><br>
+   失敗出力を次の入力に返し、すべての門が緑になるまで修正させる。</li>
+<li><strong>反復が見えてから道具を増やす</strong><br>
+   繰り返す手順はSkillsへ、繰り返す観点はサブエージェントへ昇格させる。</li>
+<li><strong>運用で育て、棚卸しする</strong><br>
+   逸脱時に1行追加するだけでなく、数か月ごとに全体を見直して必要なものだけを戻す。</li>
+</ol>
+<p>観察より先にルールを書かず、ルールより先に道具を増やさないことが重要である。</p>
+<h2>スライド 34 / 35</h2>
+<h3>ハーネスエンジニアリングの3原則</h3>
+<ol>
+<li><strong>進路はハーネスで示す</strong><br>
+   規約・コマンド・禁止事項を明文化し、逸脱が起きるたびに運用で育てる。</li>
+<li><strong>逸脱はガードレールで検知する</strong><br>
+   lint・型・テストを1コマンドに束ね、人間とAIが同じ機械判定を使う。</li>
+<li><strong>ループを閉じて自走させる</strong><br>
+   失敗出力を次の入力に戻し、手動、Hooks、テストへと自動化を進める。</li>
+</ol>
+<p>用語の定義そのものより、期待した結果を得られる仕組みを作ることが大切である。</p>
+<h2>スライド 35 / 35</h2>
+<h3>連絡先と関連情報</h3>
+<ul>
+<li><strong>X</strong>：<a href="https://x.com/kinopee_ai">@kinopee_ai</a></li>
+<li><strong>書籍</strong>：『AIを開発チームに採用する技術』</li>
+<li><strong>連載</strong>：Software Design「プログラミング×AIの最前線」</li>
+<li><strong>コミュニティ</strong>：AIAU（AIエージェントユーザー会）</li>
+</ul>
+<p>登壇者：木下雄一朗（Kinopee）／株式会社キー・プランニング</p>
+</main>
+</body>
+</html>

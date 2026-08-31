@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="title" content="ループエンジニアリング - プロンプティングからループへ">
+<meta name="source_url" content="https://x.com/0x_kaize/status/2073438517775003671">
+<meta name="author" content="kaize (@0x_kaize)">
+<meta name="published_at" content="2026-06-07">
+<meta name="retrieved_at" content="2026-07-09T11:16:56+09:00">
+<meta name="site" content="x.com">
+<meta name="content_type" content="article">
+<meta name="original_language" content="en">
+<title>ループエンジニアリング - プロンプティングからループへ</title>
+<style>
+:root {
+  color-scheme: light;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.8;
+}
+body {
+  margin: 0;
+  background: #f6f7f9;
+  color: #202124;
+}
+.article {
+  box-sizing: border-box;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 5rem;
+  background: #fff;
+  min-height: 100vh;
+}
+.metadata {
+  margin: -0.5rem 0 2rem;
+  color: #5f6368;
+  font-size: 0.9rem;
+}
+a {
+  color: #1967d2;
+}
+img {
+  max-width: 100%;
+  height: auto;
+}
+pre {
+  overflow-x: auto;
+  padding: 1rem;
+  border-radius: 6px;
+  background: #f1f3f4;
+}
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+blockquote {
+  margin: 1rem 0;
+  padding: 0.25rem 1rem;
+  border-left: 4px solid #dadce0;
+  color: #5f6368;
+}
+table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+th, td {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #dadce0;
+  text-align: left;
+}
+@media (max-width: 600px) {
+  .article {
+    padding: 2rem 1rem 4rem;
+  }
+}
+</style>
+</head>
+<body>
+<main class="article">
+<p class="metadata"><span>著者: kaize (@0x_kaize)</span> · <span>公開日: 2026-06-07</span> · <a href="https://x.com/0x_kaize/status/2073438517775003671">原文</a></p>
+<h1>ループエンジニアリング - プロンプティングからループへ</h1>
+<p>毎朝コンピュータを起動して、何度も同じコマンドを与える必要がなくなるよう、自分で仕事をしてくれるプログラム可能なエージェントの作り方を、この記事に捧げることにした。</p>
+<p>それは自分で起き、自分でタスクを見つけ、自分で問題を特定し、結果を保存してあなたの机に並べ、レビューできるようにしてくれる。</p>
+<h2>序文</h2>
+<p>Loop のアイデアは突然降ってきたものではない。2026年6月の1週間のうちに、業界の3人の専門家がほぼ同時に同じ考えを口にした：このレベルの開発を始める時が来た、と。</p>
+<p>1週間後、Andrew Ng がこの会話を「0から1でプロダクトを作る」というより広い文脈に位置づけ、より包括的な絵を提供してくれた。</p>
+<p>この記事はその話から始まり、ゼロから最小限かつ完全なループを構築する手順を案内する：5つのムーブ、6つのパーツ、「no」と言う1つのドア、そして1つの人間用ドア——すべて自分のマシン上で動き、どんなソフトウェアプロジェクトでも再利用できる。</p>
+<blockquote>
+<p><strong>[図]</strong> DELIVER（5つのレッスンの成果物として6つのパーツを接続した朝のトリアージループ）、CHANGE（ループが壊れたときは「モデルが弱い」と言う前にどのステップが欠けたかを問う）、UNLOCK（ループは理解力や怠惰を忠実に増幅する）の3つの目標を示すインフォグラフィック。下部にはClaude Code、Cursor、Codexを使いながら自分自身をループから抜け出す姿勢を教える本レッスンの角度が記載されている。</p>
+</blockquote>
+<p>出典: HuaShu Orange Book, Loop Engineering: Stop Asking Me What It Is (v260615, June 2026)</p>
+<h2>3人が導火線に火をつけた週</h2>
+<p>2026年6月：3人が、互いに調整することなく、数日のうちにほぼ同じことを言った。</p>
+<p>OpenClaw の創設者 Peter Steinberger が、890万ビューを記録した2文を X に投稿した：</p>
+<blockquote>
+<p><strong>[図]</strong> Peter Steinberger（@steipete）のプロフィール画像。</p>
+</blockquote>
+<p>Peter Steinberger &gt; <strong>[図]</strong> 赤いザリガニ（ロブスター）の絵文字🦞。OpenClawのマスコット。</p>
+<blockquote>
+<p><strong>[図]</strong> 赤い背景に大きなハサミを構えた擬人化された赤いザリガニキャラクターのプロフィールアイコン。</p>
+</blockquote>
+<p>@steipete · <a href="https://x.com/steipete/status/2063697162748260627">6月8日</a></p>
+<blockquote>
+<p>こちらが今月のリマインダーです。もうコーディングエージェントにプロンプトを与えるべきではありません。</p>
+<p>あなたは、エージェントにプロンプトを与えるループを設計すべきです。</p>
+</blockquote>
+<p>その投稿が議論の実際の起点だった。マニフェストでも長文エッセイでもなく、人々が静かにすでにやっていたことを名付けた2行だった。</p>
+<p>Boris Cherny：もう Claude にプロンプトは与えない。動いているループがある。ループが Claude にプロンプトを与え、何をすべきかを考えている。</p>
+<p>Addy Osmani：ループエンジニアリングとは、エージェントにプロンプトを与える自分自身を置き換えること。代わりにそれを行うシステムを設計する。</p>
+<p>実践は名前より数ヶ月先にあった。みんなすでにループを書いていたが、まだ誰も名前をつけていなかった。</p>
+<p>つまり、ループは今や AI エージェントが長期にわたって反復的にソフトウェアを作るために不可欠な部分になっている。</p>
+<blockquote>
+<p><strong>[図]</strong> ソフトウェア開発における3層のフィードバックループを示す入れ子の図。内側の Agentic coding loop（秒〜分：コードを書く→自己テスト→修正）、中間の Developer feedback loop（数十分钟〜時間：出力をレビュー→仕様編集→エージェント配信）、外側の External feedback loop（時間〜週：ローンチ→ユーザー利用→データ返却）。右側に「time scale grows - outer is bigger」と表示。</p>
+</blockquote>
+<p>Andrew Ng は、時間スケールに基づいて3つのループを最内側から最外側に並べた。最内側のループが最速で、最外側が最遅。さらに、最外側ループへの入力は最内側ループの出力から来る：</p>
+<table>
+<thead>
+<tr>
+<th>Loop</th>
+<th>誰が実行するか</th>
+<th>サイクル長</th>
+<th>外側の層へ何を出力するか</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Agentic coding loop</td>
+<td>エージェント自身</td>
+<td>秒〜分</td>
+<td>動くバージョン</td>
+</tr>
+<tr>
+<td>Developer feedback loop</td>
+<td>人間 + エージェント</td>
+<td>数十分钟〜時間</td>
+<td>より明確なプロダクトビジョンと仕様</td>
+</tr>
+<tr>
+<td>External feedback loop</td>
+<td>ユーザー + チーム</td>
+<td>時間〜週</td>
+<td>ビジョンを進化させる実データ</td>
+</tr>
+</tbody>
+</table>
+<p>Andrew Ng は時間による地図を与えてくれた：異なる速度で動く3つのループ。Addy Osmani は抽象化による2つ目の地図を描いた：prompt → context → harness → loop。</p>
+<blockquote>
+<p><strong>[図]</strong> AIエージェント開発の4層を示す積み重ね図。下から Prompt engineering（良いプロンプトを書く）、Context engineering（ウィンドウに何を入れるか）、Harness engineering（単一実行を武装させる）、最上部の Loop engineering（ラウンドごとに自分で動かす・ハーネス上のスケジューリング）。右側に「scope grows」と矢印。</p>
+</blockquote>
+<p>ループエンジニアリングは最上部に位置し、ハーネスが持たない3つの動詞を追加する。タイマーで動き、ヘルパーを生成し、自分自身にフィードする——今日の出力が明日の入力になる。最後のそれが、同じタスクを N 回実行するのではなくループにするものだ。</p>
+<p>最も重要な直感：同じバグでも、層ごとにコストが違う：</p>
+<table>
+<thead>
+<tr>
+<th>層</th>
+<th>何を気にするか</th>
+<th>核心的な問い</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Prompt eng.</td>
+<td>プロンプトを書く</td>
+<td>モデルに何を言うか</td>
+</tr>
+<tr>
+<td>Context eng.</td>
+<td>ウィンドウに何がロードされているか</td>
+<td>何を引くか、要約するか、クリアするか</td>
+</tr>
+<tr>
+<td>Harness eng.</td>
+<td>単一実行を武装させる</td>
+<td>どのツール、どのアクション、何が完了とみなすか</td>
+</tr>
+<tr>
+<td>Loop eng.</td>
+<td>ハーネスの上でスケジューリング</td>
+<td>ラウンドごとに自分で動かす方法</td>
+</tr>
+</tbody>
+</table>
+<p>ループは設計上「ターン数」を大きくするマシンだ。ここからのすべての決定——evaluator、人間ゲート、トークン上限、状態ファイル——は「ミスが起きる」と「誰かがそれを見る」の間の距離を短くするために存在する。</p>
+<p>1ターンの中で何が起きるか：</p>
+<p>「Loop」は「その場でくるくる回る」と誤読されがちだ。そうではない。すべてのターンには5つの具体的なムーブがある。どれか1つでも削れば、ループは動かない——あるいは、どこにも進まずに動くだけになる。</p>
+<blockquote>
+<p><strong>[図]</strong> ループの5つのムーブを示すフローチャート。左から Discovery（作業を見つける）→ Handoff（配信）→ Verification（「no」と言う、紫色で強調）→ Persistence（記録）→ Scheduling（次をキュー）の順に進み、下部の括弧で Scheduling が次のターンへ未完了作業をフィードバックする循環を示す。</p>
+</blockquote>
+<ul>
+<li>Verification は「no」と言うムーブだ。</li>
+<li>Scheduling はこのターンを次にフィードするムーブだ。</li>
+</ul>
+<p>それがまさにループにする部分だ。</p>
+<p>これから構築するプロジェクトにマッピングすると：小さなチーム向けの朝のトリアージループ：</p>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>何をするか</th>
+<th>TRIAGE LOOP での役割</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Discovery</td>
+<td>このターンで何をすべきか把握する</td>
+<td>スキルが CI / issues / 最近のコミットを読む</td>
+</tr>
+<tr>
+<td>Handoff</td>
+<td>タスクを配信し、分離する</td>
+<td>各 finding に専用の worktree</td>
+</tr>
+<tr>
+<td>Verification</td>
+<td>別のエージェントを入れ替えて no と言わせる</td>
+<td>テストとスキルを突くレビュアーとして第2のサブエージェント</td>
+</tr>
+<tr>
+<td>Persistence</td>
+<td>会話の外に状態を書く</td>
+<td>PR + Linear チケット + ./state/triage.md</td>
+</tr>
+<tr>
+<td>Scheduling</td>
+<td>ターンごとに動かす</td>
+<td>GitHub Actions の cron が 06:00 にトリガー</td>
+</tr>
+</tbody>
+</table>
+<p>以下の5つのレッスンは、それぞれ正確に1つのムーブを育てる。</p>
+<p>5つのレッスン = 完全な Loop。</p>
+<p>そして最初の Discovery から始める。なぜなら、Loop が今日何に価値があるかを決められなければ、その後の何も意味がないからだ。</p>
+<h2>Lesson 1 Discovery：morning-triage SKILL.md を書く</h2>
+<p>スキルであり、プロンプトの壁ではない。</p>
+<p>想像してみてほしい。月曜の朝6時、ラップトップは閉じている。GitHub Action が起きて <code>claude --skill morning-triage</code> を発火する：何を読むか、何を actionable と判断するか、結果をどこに書くか——すべて、これから書く SKILL.md の中にある。</p>
+<p>Osmani の重要な一文：自動化はスキルをトリガーすべきだ——書き留められた、更新可能なプロジェクト知識であり、cron ジョブに貼り付けたプロンプトの壁ではない。貼り付けたプロンプトはただ腐る。だれもスケジュールの中に埋もれたものを更新しに戻らないからだ。</p>
+<p>このレッスンのタスク：<code>.claude/skills/morning-triage/SKILL.md</code> にスキルを書く。3つのソース（CI / issues / commits）を自分で読み、何に価値があるかを自分で決め、結果を <code>./state/triage.md</code> に書き、ループが何をしてはいけないかを明示する Stop セクションを持つこと。</p>
+<p>スターターはこれ——3つ変えればあなたのものになる：</p>
+<pre><code class="language-json"># .claude/skills/morning-triage/SKILL.md
+---
+name: morning-triage
+trigger: invoked by daily automation
+---
+
+## Read   (discovery inputs — swap for sources YOUR repo actually has)
+- CI runs that failed since the last run      # gh run list --status failure
+- issues opened in the last 24h               # gh issue list --search &quot;created:&gt;=…&quot;
+- commits merged since yesterday              # git log --since=yesterday
+- the previous ./state/triage.md              # the &quot;yesterday → today&quot; handoff
+
+## Judge  (the ceiling — let the loop pick, don't hand it a list)
+For each candidate, decide:
+- is it actionable NOW, or noise?
+- does it block a release? → priority = P0
+- is it already being tracked? → skip
+Keep only what is worth a worktree TODAY.
+
+## Write  (persistence — land it in markdown, not chat)
+Append to ./state/triage.md:
+| finding | source | priority | status |
+Commit the file so tomorrow can read it.
+
+## Handoff  (prep for Lesson 2)
+For each kept finding, emit a task line:
+  worktree=fix/&lt;slug&gt;
+  goal=&lt;stop-condition&gt;
+
+## Stop   (the ONE non-boilerplate section — think hard here)
+Never merge. Never delete.
+Anything you're less than confident about → ./inbox/ for a human.
+NOT a PR.
+</code></pre>
+<p>ここで本当に働くのは3つのセクションだ：</p>
+<p>Read：これが Discovery の入力——具体的なソースを、実際のコマンドまで落としてリストする。「コンテキストを読む」はソースではないが、<code>gh run list --status failure</code> はソースだ。</p>
+<p>Judge：これがループ全体の上限だ。ループは「actionable か noise か」を自分で決める——あなたからリストを受け取らない。なぜなら、毎朝まだリストを渡しているなら、実行は自動化したが選択は自動化していないからだ。そして選択のほうが通常はより高コストだ。ソースがどれだけ良くても、Judge がゴミを選べば、残り4つのムーブは価値のない仕事をくるくる回すだけだ。</p>
+<p>Stop：このファイルでボイラープレートではない唯一の部分。ループはスキルが言うことをすべて行い、スキルが言うことだけを行う。「never merge」を書かなければ——いつかマージしてくれる。「never delete」「never push to main」、不確かなものはすべて <code>./inbox/</code> に人間向けに、PR には入れない、と赤線を明示する。</p>
+<p>もう1つ知っておく価値があること：同じスキル構造は朝のトリアージ以外でも使える。Read を「昨日のアクセスログ + 新規 issues + 現在のデプロイバージョン」に差し替えれば、夕方のサイトヘルスループになる。Judge に1行「昨日からのリグレッションか？」を足せば、日をまたぐ比較ができる。</p>
+<p>このレッスンが防ぐ病——Blind Loop：</p>
+<p>最も一般的な「ループに見えるがループではない」もの：ループは動くが、毎朝まだ仕事を割り当てている（「ねえ、この3つのバグを見て」）。それは発見の自動化ではなく、実行の自動化だ。症状：ループは決して驚かせない。すでにやるべきだと知っていたことしかしない。修正：Judge をスキル内に置き、今日の仕事を自分で選ばせる。</p>
+<p>先に進む前に、この3つに答えてほしい：</p>
+<p>1/ Stop セクションは何行あるか？「never merge」だけなら——もう1つ足す：このループに他に何をしてほしくないか？（never close issues / never push to main / never take more than 3 findings at once など）</p>
+<p>2/ Read の最初の行を、あなたのプロジェクトで実際に動くコマンドに書き換える</p>
+<p>3/ このスキルが1年変わらなかったら何が起きるか？比較してみてほしい：cron ジョブに貼ったプロンプトの壁が1年そのままだったら何が起きるか？</p>
+<h2>Lesson 2 Handoff：仕事を配り、分離する</h2>
+<p>Lesson 1 のスキルが終わった。<code>./state/triage.md</code> に actionable な finding が5つある。最も自然な次の考え——5つのエージェントを一斉に発火、速く行こう。そのまさにそのステップが Tangled Loop を育てる方法だ：複数のエージェントが同じディレクトリの同じファイルを編集し、マージの日が考古学になる。</p>
+<p>解毒剤は1行：すべての finding に専用の worktree。</p>
+<p><code>git worktree</code> は組み込みの git メカニズム：1つのリポジトリ、複数の独立した作業ディレクトリ、それぞれ独自のブランチにチェックアウト。<code>git worktree add ../fix-auth fix/auth</code> は <code>../fix-auth</code> に完全に分離されたワークスペースを開く。ビルド、編集、テスト——誰にも触れない。finding ごとに1 worktree = エージェントは物理的に分離される。</p>
+<p>このレッスンのタスク：<code>./state/triage.md</code> から各 finding を読み、finding ごとに分離された worktree（<code>fix/&lt;slug&gt;</code> と名付け）を開き、エージェントを送ってその中で修正を起草する——そして無限に生成しないよう並列上限を設定する。</p>
+<pre><code class="language-json"># read state/triage.md, one worktree per finding
+# change: MAX_PARALLEL to what your machine / bill can handle
+MAX_PARALLEL=3
+
+# change: parsing to match your actual triage.md columns
+findings=$(awk -F'|' 'NR&gt;2 &amp;&amp; $5 ~ /open/ {print $2}' \
+           state/triage.md | head -n $MAX_PARALLEL)
+
+for finding in $findings; do
+  slug=$(echo &quot;$finding&quot; | tr ' ' '-' | tr -cd '[:alnum:]-')
+
+  # the key line: physical isolation per agent
+  git worktree add ../wt-$slug -b fix/$slug
+
+  # change: goal is the stop condition Lesson 3's evaluator will read
+  claude --worktree ../wt-$slug \
+    --goal &quot;tests in tests/$slug pass and lint is clean&quot; \
+    &quot;draft a fix for: $finding&quot; &amp;
+done
+
+wait   # let all parallel agents finish
+
+# closing rule: agents never auto-merge — worktrees wait
+# for the human gate in Lesson 5
+echo &quot;All worktrees ready for review:&quot;
+git worktree list
+</code></pre>
+<p>ここで重要なルール：main では絶対に作業しない。</p>
+<p>main は人間レビューのための着陸帯——エージェントの机ではない。すべてのエージェントは <code>fix/*</code> worktree に住む。</p>
+<p>並列性に上限を：上限なしの生成はトークン爆発への正面玄関（Lesson 5 がこれに戻ってくる）。<code>MAX_PARALLEL</code> は正直な問いに基づいて選ぶ：「マシンが何個動かせるか」ではなく「実際に何個の PR をレビューできるか」。</p>
+<p>マージは人間の決定：Stripe はこのようなループで週1000以上の PR を回し、人間は依然としてすべてをレビューする。人間はプロセスから去ったのではない——机を変えた：コードを書くことから、コードをレビューすることへ。</p>
+<p>Stripe のケースから盗む価値のある1つの詳細：彼らは直感に反して、利用可能な最大モデルではなく、厳格な決定論的ゲート付きの小さなモデルを使った。</p>
+<p>教訓：ループ作業では、生のモデルパワーよりもタイトな検証ゲートが勝つ。</p>
+<p>このレッスンが防ぐ病——Tangled Loop：</p>
+<p>単一エージェントのループは完全に健康に見える。問題は並列化した日にだけ現れる——5つのエージェントが動き、5つの diff が同じファイルで衝突し、マージは混沌となる。修正：すべてのタスクに専用の worktree、エージェント間で作業ディレクトリを共有しない。</p>
+<p>先に進む前に、この3つに答えてほしい：</p>
+<p>1/ <code>MAX_PARALLEL</code> を何に設定したか——そしてなぜか？（お金？マシン？それとも「正直にレビューできる PR の数」？）</p>
+<p>2/ worktree がクラッシュしたら——エージェントは何も触らずに終了する——明日の状態ファイルには何を記録すべきか？</p>
+<p>3/ Stripe は最大モデルの代わりに小さなモデル + 厳格な決定論的ゲートを使った——あなたのループにとってその選択は何を意味するか？</p>
+<h2>Lesson 3 Verification：「no」と言うドアを設置する（最も重いレッスン）</h2>
+<p>これはループエンジニアリングで最も難しいムーブで、他のどのレッスンよりも多くの努力に値する。</p>
+<p>Anthropic のエンジニア Prithvi Rajasekaran は、長時間動くエージェンティックアプリに取り組む中で気づいた：エージェントに自分が書いたコードを採点させると、人間が一目で平凡だと分かる場合でも、ほぼ常に自分を褒める。</p>
+<p>これはモデルが愚かだからではない：自分の宿題を採点することは構造的に壊れている。コードが完成した時点で、エージェントのコンテキストはなぜそう書いたかの自己正当化チェーンで詰まっている。自分の出力を見ても、結果は見えない——結果への論拠が見える。</p>
+<p>それをループの中に置くと災害に増幅する：すべてのターンの「これで十分か？」が、書いたばかりのエージェントに答えられる。すべてのターンが自分にうなずく。長く動くほど、実際の品質から遠ざかる。それが Nodding Loop——リストで最も高コストな病だ。</p>
+<p>Rajasekaran の修正を、彼自身の言葉で：</p>
+<p>「独立した evaluator を懐疑的にチューニングするほうが、ジェネレーターを自分の仕事に批判的にさせるよりはるかに実行可能だ。」</p>
+<p>これは文言の問題ではなく構造の問題だ。著者に自分の頭の外に出るよう頼めないが、完全に異なる指示を持ち、ゼロからコードを見る別のエージェントを連れてくることはできる——自己正当化チェーンは付いていない。類推は GAN から来る：1つのネットワークが構築し、もう1つが攻撃する——maker と checker。同じ古い銀行のルール：送金する人と承認する人は別の人でなければならない。</p>
+<p>このレッスンのタスク——2つを書く：</p>
+<p>1) <code>.claude/agents/reviewer.md</code> に evaluator システムプロンプト。5セクション：ROLE + ASSUME + CHECK + USE + VERDICT。
+2) このループの停止条件を宣言する <code>/goal</code> コマンド——ジェネレーターではなく、別のフレッシュなモデルが判断する。</p>
+<pre><code class="language-json"># .claude/agents/reviewer.md  (change 3 things)
+ROLE: Adversarial code reviewer.
+ASSUME: this code is BROKEN until proven otherwise.
+DO NOT praise. Find what fails.
+
+# change: order CHECK by your project's real failure modes,
+# runnable checks first
+CHECK, in order:
+  1. Does it run?  (execute, don't read)
+  2. Tests: run them, paste real output.
+  3. Edge cases the author skipped.
+  4. Does behavior match the ticket?
+
+# change: which MCP depends on what you're testing —
+# frontend → Playwright, API → curl/httpie
+USE Playwright MCP: open the page, click,
+screenshot, inspect the DOM.
+Judge behavior, not intent.
+
+VERDICT: PASS only if every check holds.
+         Otherwise REJECT + list each reason.
+</code></pre>
+<pre><code class="language-json"># stop condition — judged by a fresh small model, NOT the generator
+# change: swap for the real verifiable condition of your finding
+/goal all tests in test/auth pass and the lint step is clean
+
+# careful: /goal and /loop are NOT the same thing
+#   /loop = rerun on interval (no stop judgment — dangerous)
+#   /goal = run until a fresh model judges the condition true
+</code></pre>
+<p>2つのエージェント、理想的には2つのモデル：「同じモデル、異なるプロンプト」はしばしば同じ盲点を保持する。可能ならモデルも入れ替える。</p>
+<p>デフォルトの懐疑：evaluator のベースラインは ASSUME BROKEN——信頼はチェックを通過することで得られ、デフォルトで与えられるものではない。</p>
+<p>意図ではなく振る舞いを判断：「この JSX は問題なさそう」と「ボタンをクリックした、ページが遷移した、スクリーンショットはこれ」は別世界だ。evaluator は行動しなければならない——テストを実行し、ページをクリックし、コードを読んで vibe しない。</p>
+<p>理由付きで REJECT：理由がリストされていない REJECT は reject ではない——ジェネレーターは何を直せばいいか分からない。</p>
+<p>そして酸テスト：evaluator は過去5ターン以上で実際に何かを reject したか？数百ターンで一度も「no」と言わないループは、実際のワークロードでは統計的にありえない。つまり evaluator が機能していないことを証明する。</p>
+<p>このレッスンが防ぐ病——Nodding Loop：</p>
+<p>ループは動き、エージェントはコードを書き、同じエージェントが「良さそう」と言う。すべてのターンが自己承認し、もっともらしいミスをマシンスピードで積み上げる。修正：このレッスン全体——構造的分離 + デフォルトの懐疑 + 行動による判断 + 第三者の停止条件。</p>
+<p>先に進む前に、この3つに答えてほしい：</p>
+<p>1/ evaluator は異なるプロンプトの同じモデルか、異なるモデルか？なぜか？</p>
+<p>2/ 「意図ではなく振る舞いを判断」をあなたのプロジェクトの具体的な文に翻訳：「私の evaluator はコードを読まない——<strong><em>_</em> を実行し、</strong>___ を見たときだけ PASS する」</p>
+<p>3/ 「十分近い」フレッシュモデルが <code>/goal</code> 条件を誤って PASS する可能性はどれくらいか？最も怖い失敗モードが X なら——今すぐ停止条件に X のチェックを追加する</p>
+<h2>Lesson 4 Persistence：今日の仕事を明日まで生き残らせる</h2>
+<p>Lesson 3 が終わった。evaluator は3つの finding を判断した——2つ PASS、1つ REJECT。問い：その3つの判定は今どこにあるか？</p>
+<p>答えが「コンテキストウィンドウの中」なら——明日の朝6時、ループはフラッシュされたコンテキストで目を覚まし、何も覚えていない。ゼロから再トリアージし、昨日の未修正 REJECT につまずき、また別のエージェントを割り当てるかもしれない、見落とすかもしれない、同じ穴に落ちるかもしれない。</p>
+<p>それが Amnesiac Loop——毎日が同じマスから始まる。</p>
+<p>解毒剤は1行：メモリはディスクに書かれた状態であり、コンテキストではない。markdown ファイル、Linear ボード、データベース——一度書き下されれば、エージェントがどれだけ忘れても関係ない。</p>
+<p>この2つは常に混同されるので、違いを固定しておく：</p>
+<p>CONTEXT = エージェントがこのターンで見るウィンドウ → リフレッシュのたびにクリアされる。</p>
+<p>MEMORY = ターンと日をまたいで生きる状態 → ディスクに書かれる（markdown / DB / ボード）。</p>
+<p>ループは MEMORY だけを通じて今日 → 明日を橋渡しする。</p>
+<p>このレッスンのタスク：</p>
+<ul>
+<li>少なくとも4列（finding / source / priority / status）の <code>./state/triage.md</code> を作成——Lesson 1 のスキルが書き、Lesson 2 の worktree が読む。</li>
+<li>コネクタ（MCP）を配線：PASS 判定は自動で PR を開き、REJECT は自動でチケットを更新。</li>
+<li>明日のループが実際に今日の状態を読み戻せることを検証する。</li>
+</ul>
+<pre><code class="language-json"># ./state/triage.md  (the loop's memory — change as needed)
+
+| finding         | source       | priority | status     |
+|-----------------|--------------|----------|------------|
+| auth test flaky | CI #4821     | P0       | fixing     |
+| null deref      | issue 92     | P1       | PR open    |
+| stale dep       | commit a3f9c | P2       | inbox      |
+
+# extend columns as needed: last_seen, retry_count, assigned_to
+# this file MUST be committed to the repo —
+# otherwise tomorrow's cloud runner can't see it
+</code></pre>
+<pre><code class="language-json">// .mcp/connectors.json — plug the loop into the outside world
+{
+  &quot;github_pr&quot;: {
+    &quot;type&quot;: &quot;mcp&quot;,
+    &quot;on_event&quot;: &quot;evaluator.verdict.PASS&quot;,
+    &quot;action&quot;: &quot;open_pr&quot;,
+    &quot;branch&quot;: &quot;fix/${slug}&quot;,
+    &quot;auto_merge&quot;: false        // ← MUST be false. human gate = Lesson 5
+  },
+  &quot;linear&quot;: {
+    &quot;type&quot;: &quot;mcp&quot;,
+    &quot;on_event&quot;: &quot;evaluator.verdict.REJECT&quot;,
+    &quot;action&quot;: &quot;update_ticket&quot;,
+    &quot;fields&quot;: { &quot;status&quot;: &quot;Blocked&quot;, &quot;reason&quot;: &quot;${verdict.reasons}&quot; }
+  }
+}
+</code></pre>
+<p>各列がなぜ重要か：source がなければ finding の出所を監査できない。priority がなければ仕事を順序づけられない。status がなければ明日はバトンを受け取れない。</p>
+<p>そしてこのレッスンの検証は、偽装できない唯一のもの：明日まで待つ。目を覚まして確認——inbox はまだあるか？未完了の finding は status を保持しているか？6時の実行は最初からやり直すのではなく、昨日の続きから始まったか？これは推論ではなく、実行して初めて分かる。</p>
+<p>永続化とともに来る静かな規律——サンプルを読む、常に。</p>
+<p>永続化が機能すると、罠が開く：ループは PR をスピードで出し、生産的に感じる——そしてコードベースのメンタルマップが静かに古くなる。ルール：すべてを読まない（それではループの意味がない）、しかし1日1つのサンプル PR を読み、ループが何を変え、なぜ変えたかを説明できるように自分に強制する。</p>
+<p>説明できなくなった瞬間——マップは遅れを取っている。穏やかな朝に直すのは10分。本番インシデント中に直すのはもっと高コストだ。</p>
+<p>このレッスンが防ぐ病——Amnesiac Loop：</p>
+<p>ループは良い仕事を見つけ、行い、それを行ったことを忘れる——結果がフラッシュされたコンテキストにしか生きなかったから。次のターンで同じ仕事を再発見するか、より悪いことに——やり直して最初の試みを潰す。症状：蓄積された進捗がない、毎日が同じ場所から始まる。修正：ディスク上の状態ファイル。</p>
+<p>先に進む前に、この3つに答えてほしい：</p>
+<p>1/ 「メモリ ≠ コンテキスト」をあなた自身のプロジェクトから1つの具体的な文に翻訳：「私の <strong><em>_</em> はメモリ、私の </strong>___ はコンテキスト」</p>
+<p>2/ 明日のループが目を覚ます——state.md のどの列を最初に読んで最初のムーブを決めるか？その列名は正しいか、それとも地雷を埋めただけか？</p>
+<p>3/ 規律：1日のどの時間にサンプル PR を読むか？今すぐカレンダーリマインダーを設定——これは自分との契約だ。</p>
+<h2>Lesson 5 Scheduling：現実にし、安全にし、1つのドアを開けたままにする</h2>
+<p>Lesson 1-4 はインストールされたが、ループはボタンを押すのをやめた瞬間に止まる。最後のムーブは1つの動詞：トリガーに吊るす。</p>
+<p>しかしこのレッスンで最も危険な部分は cron を間違えることではない。cron を正しくすることだ——そうすればループは本当に単独で動き、1つのバグが一晩中くるくる回し、ヘルパーがヘルパーを生成し、見覚えのない請求書で目を覚ますことになるから。</p>
+<p>だからこのレッスンは実際に3つのことをする：トリガーを吊るす、上限を設定する、人間用ドアを開けたままにする。</p>
+<p>まず——スケジューラを選ぶ：</p>
+<pre><code class="language-json">Cloud (GH Actions)   Desktop scheduled   /loop (in CC)
+runs where          cloud                your machine        your machine
+machine on?         not needed           needed              needed
+session open?       not needed           not needed          needed
+min interval        1 hour               1 minute            1 minute
+sees local files?   no                   yes                 yes
+</code></pre>
+<p>決定的な問い：この仕事はラップトップから出せるか？</p>
+<pre><code class="language-json">&quot;check my local dev server every minute&quot;
+   → must be local + /loop (cloud's 1-hour interval can't reach it)
+
+&quot;scan GitHub issues at 3am and open PRs&quot;
+   → must be cloud (your laptop is closed — the loop can't 
+     be waiting on it)
+</code></pre>
+<p>そして実践全体で最も狡猾な自己欺瞞：ローカルタイマーを「寝ている間も動いている」と扱うこと。そうではない。「まだそばにいる間に、追加のターンをいくつか回している」だけだ。</p>
+<p>このレッスンのタスク：</p>
+<ul>
+<li>cron トリガーで morning-triage スキルを発火する <code>.github/workflows/triage.yml</code> を書く。</li>
+<li>3つの上限を設定：実行ごとの予算、日次予算、最大リトライ。</li>
+<li>ワークフローをこのルールで終える：PR は決して自動マージしない、不確かなものは <code>./inbox/</code> へ。</li>
+</ul>
+<pre><code class="language-json"># .github/workflows/triage.yml  (change 3 things)
+name: morning-triage
+
+on:
+  schedule:
+    - cron: '0 6 * * *'        # change: your timezone's 06:00 in UTC
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45          # ← per-run cap · change
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: morning triage
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DAILY_BUDGET_USD: '20'   # ← daily cap · change
+          MAX_RETRIES: '3'          # ← retries cap · change
+        run: |
+          claude --skill morning-triage \
+            --max-retries &quot;$MAX_RETRIES&quot; \
+            --daily-budget-usd &quot;$DAILY_BUDGET_USD&quot;
+
+      - name: open PRs (NEVER auto-merge)
+        run: |
+          # PRs open automatically. merging stays human.
+          gh pr create --draft --base main \
+            --title &quot;[loop] $(date +%F) triage&quot; \
+            --body-file ./state/triage.md
+          # there is no `gh pr merge` here — on purpose
+
+      - name: route uncertain to inbox
+        run: |
+          ls ./inbox/ &amp;&amp; echo &quot;items waiting for human review&quot;
+</code></pre>
+<p>6ヶ月目まで生き続ける3つのルール：</p>
+<p>出荷前に上限を：3レベル——実行ごとのタイムアウト、日次予算、最大リトライ——最初の自律実行の前に設定し、最初の怖い請求の後ではない。トークン上限はお金を節約するためではない。無限リスクを有界リスクに変えるサーキットブレーカーだ。上限のないループは、支出権限を自分のバグにアウトソースしている。</p>
+<p>スケールのために：Uber は4ヶ月で AI 予算を使い切った後、エンジニア1人あたりツール1つ月1500ドルに上限を設定した。あなたのループごとの上限は、その教訓の粒度版だ。</p>
+<p>1つのドアを開けたままに：PR は自動マージしない。不確かな項目は inbox に着地する。1日1つのサンプルを読む。ドアがあるのは人間が常に通るからではない——ドアが存在することで、通れる立場にいられるからだ。すべてのドアを溶接して閉じれば、入る必要がある日に鍵を失う。</p>
+<p>実際に目を覚ますことを検証する。少なくとも3ターン実行する（ドライランもカウント）。最も一般的な失敗：デモの日は眩しく、木曜には死んでいる。「最後の実行はデモした日だった」は Manual Loop の診断的特徴だ。</p>
+<p>Claude Code の外でも同じように動く——機能はベンダーロックではなく、名前が変わるだけ：</p>
+<pre><code class="language-json">CAPABILITY          Claude Code          Codex
+scheduling          /loop · worker       Automations tab
+run-to-condition    /goal                automation rerun + judge
+parallel isolation  --worktree           background worktree
+sub-agents          .claude/agents/      .codex/agents/
+external connect    MCP + plugins        MCP connector
+explicit skill      SKILL.md             $skill-name
+runs machine-off    Cloud Routines       cloud (planned)
+</code></pre>
+<p>問いは決して「どのベンダーか」ではなかった。「6つの機能がすべてインストールされているか」だ。</p>
+<p>このレッスンが防ぐ病——Manual Loop：</p>
+<p>4つのムーブが美しく構築されたが、cron がない。ループではない——一度実行して忘れたスクリプトだ。修正：覚えることに依存しないトリガーを吊るす。</p>
+<p>出荷前に、この3つに答えてほしい：</p>
+<p>1/ 3つの上限の正確な数値は？バグが一晩中回ったら——どの上限が最初に落下を止める？どれも止めないなら……それは何を語るか？</p>
+<p>2/ あなたの人間用ドアはどんな形か？（PR レビュー / inbox / 日次サンプル / 週次照合？）書き留める = 自分との契約に署名する</p>
+<p>3/ 締めの問い：6ヶ月後、このループはあなたを強くしたか（理解、判断、システムへの感覚）——それとも読めないマシンの世話人になったか？2つ目を避ける計画は何か？</p>
+<h2>4つの負債と、エンジニアであり続けること</h2>
+<p>ループは構築された：目を覚まし、仕事を見つけ、自分を批判し、記憶し、明日を自分でスケジュールする。</p>
+<p>ループが動いている間、4つのものが静かに積み上がる——共通の特徴は、どれもアラームを鳴らさないことだ。</p>
+<pre><code class="language-json">VERIFICATION DEBT     reject されない出力の積み上がり
+COMPREHENSION ROT     コードベースは成長するが、メンタルマップはしない
+COGNITIVE SURRENDER   「もう精査する気がしない」
+TOKEN BLOWOUT         バグが一晩中回る → 請求書として気づく
+</code></pre>
+<p>互いにフィードする：未検証の出力が理解を侵食する → 侵食された理解が降伏を招く → 降伏がループを長く動かし、もっと使わせる → それがさらに未検証の出力を生む。</p>
+<p>最初の単独実行の前に、新鮮なループを4つすべてで監査する：</p>
+<ul>
+<li>私の evaluator は実際に reject する——装飾ではない。</li>
+<li>1日1つのサンプル PR を読み、何が変わったか説明できる。</li>
+<li>「これは間違っている」と言う習慣を保った。</li>
+<li>上限は最初の実行の前に設定した。最初の請求の後ではない。</li>
+</ul>
+<p>そしてすべてを決める部分：</p>
+<p>同じループを2人が構築しても、正反対の場所に終わりうる。1人はコードを読み、方向を保持しながら速く動くために使う——ループはすでに持っている判断を増幅する。もう1人はまさに何も理解しなくなるために同じループを使う——6ヶ月後、最初の人はより鋭く、2人目は読めないマシンの世話人だ。</p>
+<p>Addy Osmani：「ループを構築せよ。しかし、go を押す人だけでなく、エンジニアであり続けるつもりの人のように構築せよ。」</p>
+<p>ループは生成をほぼ無料にする。希少なままのものは判断だ：どの計画が正しいか、どの行で止めるか、動くが根本的に間違っているものはどれか。ループは判断を軽視しない——判断以外のすべてを剥ぎ取り、それだけを残す。</p>
+<p>ループは忠実な乗数だ：</p>
+<p>理解を持ち込めば——理解を増幅する。
+怠惰を持ち込めば——怠惰を増幅する。</p>
+<p>構築する前に、何を増幅したいかを決めよ。</p>
+<p>お楽しみに！</p>
+<p>Good luck :)</p>
+</main>
+</body>
+</html>

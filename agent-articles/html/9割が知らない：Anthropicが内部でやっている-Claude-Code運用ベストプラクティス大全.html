@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="title" content="9割が知らない：Anthropicが内部でやっている Claude Code運用ベストプラクティス大全">
+<meta name="source_url" content="https://x.com/ClaudeCode_love/status/2044672857998016940">
+<meta name="author" content="Claude Code Studio (@ClaudeCode_love)">
+<meta name="published_at" content="2026-04-16">
+<meta name="retrieved_at" content="2026-07-05T16:35:57+09:00">
+<meta name="site" content="x.com">
+<meta name="content_type" content="article">
+<title>9割が知らない：Anthropicが内部でやっている Claude Code運用ベストプラクティス大全</title>
+<style>
+:root {
+  color-scheme: light;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.8;
+}
+body {
+  margin: 0;
+  background: #f6f7f9;
+  color: #202124;
+}
+.article {
+  box-sizing: border-box;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 5rem;
+  background: #fff;
+  min-height: 100vh;
+}
+.metadata {
+  margin: -0.5rem 0 2rem;
+  color: #5f6368;
+  font-size: 0.9rem;
+}
+a {
+  color: #1967d2;
+}
+img {
+  max-width: 100%;
+  height: auto;
+}
+pre {
+  overflow-x: auto;
+  padding: 1rem;
+  border-radius: 6px;
+  background: #f1f3f4;
+}
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+blockquote {
+  margin: 1rem 0;
+  padding: 0.25rem 1rem;
+  border-left: 4px solid #dadce0;
+  color: #5f6368;
+}
+table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+th, td {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #dadce0;
+  text-align: left;
+}
+@media (max-width: 600px) {
+  .article {
+    padding: 2rem 1rem 4rem;
+  }
+}
+</style>
+</head>
+<body>
+<main class="article">
+<p class="metadata"><span>著者: Claude Code Studio (@ClaudeCode_love)</span> · <span>公開日: 2026-04-16</span> · <a href="https://x.com/ClaudeCode_love/status/2044672857998016940">原文</a></p>
+<h1>9割が知らない：Anthropicが内部でやっている Claude Code運用ベストプラクティス大全</h1>
+<p>皆さんClaudeCodeを使っててこんな悩みありませんか？</p>
+<blockquote>
+<p><strong>[図]</strong> Claude Codeセッション管理のよくある4つの問題を示すインフォグラフィック。セッション長と回答精度の低下、/compactと/clearの使い分けの迷い、サブエージェントの使用タイミング、コンテキストウィンドウ管理の無視をオレンジのピクセル風ロボットが図解している。</p>
+</blockquote>
+<p>・Claude Codeのセッションが長くなると、なぜかバカになって回答の質が落ちる</p>
+<p>・コマンドって何？違いがよくわからない</p>
+<p>・サブエージェントをいつ使えばいいのか判断できない</p>
+<p>・コンテキストがぐちゃぐちゃあああ</p>
+<p>今、Anthropicの社員であるThariq氏（<a href="https://x.com/@trq212">@trq212</a></p>
+<p>）が書いた「Claude Codeのセッション管理と100万トークンコンテキスト」に関する投稿が54万ビューの大バズ中😳</p>
+<blockquote>
+<p><strong>[図]</strong> 「なぜこの記事を読むべきか？」と題したプロモーション画像。@trq212（Thariq氏）のポートレートと、540K Views・Anthropic社員の実践知・100万トークン活用術・コンテキスト管理完全版という4つの訴求点が記載されている。</p>
+</blockquote>
+<p>なのでそんな悩みを持たれてるみなさんに、今回はその内容をわかりやすく噛み砕いて解説します👇</p>
+<p>元ポストはこちら：<a href="https://x.com/trq212/status/2044548257058328723?s=20">https://x.com/trq212/status/2044548257058328723?s=20</a></p>
+<p>■ 𝗰𝗼𝗻𝘁𝗲𝘅𝘁 𝘄𝗶𝗻𝗱𝗼𝘄（コンテキストウィンドウ）の基本</p>
+<p>まず前提として、Claude Codeのコンテキストウィンドウは100万トークンです。</p>
+<blockquote>
+<p><strong>[図]</strong> 「Context Window Basics」をタイトルとするインフォグラフィック。100万トークンの容器が4つの領域（System Prompt、Conversation History、Tool Calls &amp; Outputs、File Contents）に分かれ、コンテキストウィンドウの構成要素を視覚化している。</p>
+</blockquote>
+<p>コンテキストには以下のすべてが含まれます：</p>
+<p>・システムプロンプト</p>
+<p>・これまでの会話履歴</p>
+<p>・すべてのツール呼び出しとその出力</p>
+<p>・読み込まれたファイルの内容</p>
+<p>つまり、セッションが長くなればなるほど、このコンテキストにはどんどん情報が積み重なっていきます。</p>
+<p>■ 𝗰𝗼𝗻𝘁𝗲𝘅𝘁 𝗿𝗼𝘁（コンテキスト腐敗）とは何か</p>
+<blockquote>
+<p><strong>[図]</strong> 「コンテキスト腐敗」を説明する図。0〜30万トークンはFresh Session、30万〜40万でContext Rot Begins、40万以上でDegraded Performanceとなる3段階の劣化を、ピクセルキャラクターと書類の山で示している。</p>
+</blockquote>
+<p>ここで重要な概念が「コンテキスト腐敗（context rot）」です。</p>
+<p>コンテキストが大きくなると、モデルの注意が多くのトークンに分散され、古い・関係ない情報がノイズになって現在のタスクの邪魔をし始めます。</p>
+<p>Thariq氏によると、100万トークンモデルでは約30万〜40万トークンあたりからコンテキスト腐敗が観察されるとのこと。ただしこれはタスクに大きく依存するため、厳密なルールではありません。</p>
+<p>コンテキストウィンドウはハードカットオフ（上限に達すると強制終了）なので、上限に近づくとこれまでの作業を要約して新しいコンテキストで続行する必要があります。これが「コンパクション」と呼ばれる処理です。</p>
+<p>■ 毎ターンが「分岐点」である</p>
+<blockquote>
+<p><strong>[図]</strong> 「Every Turn is a Decision Point」のインフォグラフィック。中央のオレンジのピクセルキャラクターから5つの選択肢（Continue、/rewind、/clear、/compact、Subagents）が分岐し、各コマンドの役割が日本語で説明されている。</p>
+</blockquote>
+<p>Claude Codeが1つのタスクを終えた後、次に何をするか。実はここが最も重要な判断ポイントです。</p>
+<p>Thariq氏は5つの選択肢を挙げています：</p>
+<ol start="𝟭">
+<li>𝗖𝗼𝗻𝘁𝗶𝗻𝘂𝗲（続行）</li>
+</ol>
+<p>同じセッションでそのまま次のメッセージを送る。最も自然な選択肢。</p>
+<ol start="𝟮">
+<li>/𝗿𝗲𝘄𝗶𝗻𝗱（Esc Escダブルタップ）</li>
+</ol>
+<p>過去のメッセージまで戻り、そこからやり直す。それ以降のメッセージはコンテキストから削除される。</p>
+<ol start="𝟯">
+<li>/𝗰𝗹𝗲𝗮𝗿（新規セッション）</li>
+</ol>
+<p>自分で重要な情報をまとめ、まっさらなセッションを開始する。</p>
+<ol start="𝟰">
+<li>/𝗰𝗼𝗺𝗽𝗮𝗰𝘁（圧縮）</li>
+</ol>
+<p>これまでの会話をモデルに要約させ、その要約の上に新しい会話を続ける。</p>
+<ol start="𝟱">
+<li>𝗦𝘂𝗯𝗮𝗴𝗲𝗻𝘁𝘀（サブエージェント）</li>
+</ol>
+<p>次の作業チャンクを独自のクリーンなコンテキストを持つエージェントに委任し、結果だけを親セッションに返す。</p>
+<p>■ 新しいセッションを始めるべきタイミング</p>
+<p>100万トークンのコンテキストウィンドウのおかげで、フルスタックアプリをゼロから構築するような長いタスクもより安定して実行できるようになりました。</p>
+<p>しかし、コンテキストがまだ余っているからといって、同じセッションを続けるべきとは限りません。</p>
+<p>Thariq氏の経験則はシンプルです：</p>
+<blockquote>
+<p><strong>[図]</strong> 「Thariq's Rule of Thumb」の図。マイクを持つThariq氏の肖像と「NEW TASK = NEW SESSION」の大きな文字、TASK Aが完了・アーカイブされた後にTASK Bの新セッションを開始するUI画面が描かれている。</p>
+</blockquote>
+<p>🔥 「新しいタスクを始めるなら、新しいセッションも始めるべき」</p>
+<p>ただし例外もあります。たとえば、機能を実装した直後にそのドキュメントを書く場合。新しいセッションを始めるとClaude Codeは先ほど実装したファイルをもう一度読み直す必要があり、遅くてコストもかかります。ドキュメント作成のような「高度な知性を要求しない」タスクなら、多少のコンテキスト汚染を受け入れてそのまま続行する方が効率的です。</p>
+<blockquote>
+<p><strong>[図]</strong> 「EXCEPTION TO NEW SESSION RULE（例外ケース）」の比較図。新セッション開始は非効率（ファイル再読み込み必要）だが、同一セッション継続は効率的（コンテキスト保持）で、低知性タスクはコンテキストノイズを許容できると示している。</p>
+</blockquote>
+<p>■ 𝗿𝗲𝘄𝗶𝗻𝗱 が最も過小評価されている機能</p>
+<blockquote>
+<p><strong>[図]</strong> 「/rewind」の力を説明する図。Esc Escショートカットとともに、タイムライン上の会話履歴が巻き戻されてコンテキストから完全に除去される様子を、消えゆくチャットバブルで視覚化している。</p>
+</blockquote>
+<p>Thariq氏が「良いコンテキスト管理を示す最大の習慣」として挙げたのが、rewindです。</p>
+<p>Claude Codeでは、Escキーをダブルタップ（または/rewindコマンド）することで、過去の任意のメッセージまで戻ってやり直せます。その地点より後のメッセージはコンテキストから完全に削除されます。</p>
+<p>具体的なシナリオを考えてみましょう：</p>
+<blockquote>
+<p><strong>[図]</strong> 「悪い例 vs 良い例」の比較インフォグラフィック。5ファイル読み込み＋失敗のアプローチ（95トークン）と、rewind後に直接正しいアプローチを指示（15トークン）を対比し、コンテキスト節約の効果を示している。</p>
+</blockquote>
+<p>Claudeが5つのファイルを読み、あるアプローチを試みたが失敗した。</p>
+<p>❌ 普通の反応：「それじゃダメだった。代わりにXを試して」</p>
+<p>→ 失敗したアプローチの全ログがコンテキストに残り続ける</p>
+<p>✅ 良いやり方：ファイル読み込み直後までrewindし、学んだことを含めて再指示</p>
+<p>→ 「アプローチAは使わないで。fooモジュールはそれを公開していない。直接Bで行って」</p>
+<p>こうすることで、失敗した試行錯誤のトークンがコンテキストから消え、クリーンな状態で再挑戦できます。</p>
+<p>さらに「ここから要約して」機能を使えば、Claudeが自分の学びをまとめて「過去の自分から未来の自分へのメモ」を作成することもできます。</p>
+<p>■ /𝗰𝗼𝗺𝗽𝗮𝗰𝘁 と /𝗰𝗹𝗲𝗮𝗿 の決定的な違い</p>
+<blockquote>
+<p><strong>[図]</strong> 「Control vs Convenience Tradeoff」の比較図。/compact（要約）はAI自動要約・損失あり・手間なし、/clear（クリア）は手動要約・完全コントロール・手間かかる、という2つのトレードオフを並列表示している。</p>
+</blockquote>
+<p>セッションが長くなった時、重量を減らす方法は2つ。似ているようで全く違います。</p>
+<p>【/compact（圧縮）】</p>
+<p>・モデルがこれまでの会話を要約し、履歴をその要約に置き換える</p>
+<p>・不可逆（lossy）── 何が重要かはClaudeの判断に委ねられる</p>
+<p>・自分で何も書かなくていいが、Claudeが見落とす可能性がある</p>
+<p>・指示を渡して方向付けもできる（例：/compact auth refactorに集中して、テストのデバッグは削除して）</p>
+<p>【/clear（新規セッション）】</p>
+<p>・自分で重要な情報を書き出し、まっさらなセッションを開始</p>
+<p>・「リファクタ対象はauth middleware、制約はX、関連ファイルはAとB、アプローチYは除外済み」のように</p>
+<p>・手間はかかるが、結果のコンテキストは自分が選んだ情報だけで構成される</p>
+<p>どちらを選ぶかは、コントロールと手軽さのトレードオフです。</p>
+<p>■ なぜ𝗰𝗼𝗺𝗽𝗮𝗰𝘁が失敗するのか</p>
+<blockquote>
+<p><strong>[図]</strong> 「WHY COMPACT FAILS - THARIQ'S INSIGHT」のフロー図。長いデバッグセッションがAUTO-COMPACTで要約される際、モデルが現在のタスク（fetch error）に最適化し将来必要な情報（bar.ts warning）を失う問題を説明している。</p>
+</blockquote>
+<p>長時間のセッションを使っていると、compactの品質が極端に悪くなることがあります。</p>
+<p>Thariq氏によると、悪いcompactが起きる最大の原因は「モデルが作業の方向性を予測できない時」です。</p>
+<p>具体例：</p>
+<p>長いデバッグセッションの後にautocompactが発動し、調査内容を要約した。</p>
+<p>→ 次のメッセージで「bar.tsのあの警告も直して」と言ったら、デバッグ中心の要約からその警告の情報が抜け落ちていた。</p>
+<p>さらに厄介なのは、コンテキスト腐敗によってcompact実行時のモデルが「最も知性が低い状態」にあるということ。つまり、最も正確な要約が必要な瞬間に、最も質の低い要約が生成されるというジレンマです。</p>
+<p>100万トークンのコンテキストがある今、余裕のあるうちに自分から/compactを実行し、次にやることの説明を添えるのが最善策です。</p>
+<p>■ 𝗦𝘂𝗯𝗮𝗴𝗲𝗻𝘁𝘀（サブエージェント）の使い所</p>
+<blockquote>
+<p><strong>[図]</strong> 「Subagents as context management tool」の図。親セッション（最小コンテキスト）がサブエージェント（1M Tokens CLEAN）に重い作業を委任し、要約と結論のみを返す「Clean context isolation」の概念を示している。</p>
+</blockquote>
+<p>サブエージェントもコンテキスト管理の一形態です。</p>
+<p>Claude CodeがAgentツールでサブエージェントを生成すると、そのサブエージェントは独自のクリーンなコンテキストウィンドウを持ちます。必要なだけ作業を行い、結果を要約して親セッションに返します。</p>
+<p>判断基準はシンプル：</p>
+<p>👀 「このツール出力は後でまた必要か？それとも結論だけあればいいか？」</p>
+<p>結論だけでいいなら、サブエージェントに任せるべきです。</p>
+<p>Claude Codeは自動的にサブエージェントを呼び出しますが、明示的に指示するのも効果的です：</p>
+<p>・「サブエージェントを立ち上げて、このスペックファイルに基づいて作業結果を検証して」</p>
+<p>・「サブエージェントで別のコードベースのauth flowの実装方法を読んで要約して。それを参考に同じように実装して」</p>
+<p>・「サブエージェントでgitの差分からこの機能のドキュメントを書いて」</p>
+<p>中間出力を親コンテキストに持ち込まないことで、コンテキストをクリーンに保てます。</p>
+<p>■ まとめ：5つのコンテキスト管理術</p>
+<blockquote>
+<p><strong>[図]</strong> 5つのコンテキスト管理術をまとめたインフォグラフィック。（1）タスク変更→/clear、（2）アプローチ失敗→/rewind、（3）長いセッション→/compact、（4）重い中間出力→サブエージェント委任、（5）関連タスク→続行、Thariq氏の推奨として記載。</p>
+</blockquote>
+<p>Claudeが1ターン終了し、次のメッセージを送る前に必ず判断すべきこと：</p>
+<ol>
+<li>
+<p>タスクが変わったか？ → /clear で新規セッション</p>
+</li>
+<li>
+<p>アプローチが失敗したか？ → /rewind でファイル読み込み直後に戻る</p>
+</li>
+<li>
+<p>セッションが長くなってきたか？ → 余裕のあるうちに /compact（方向性を添えて）</p>
+</li>
+<li>
+<p>大量の中間出力が出る作業か？ → サブエージェントに委任</p>
+</li>
+<li>
+<p>関連タスクでコンテキストが使えるか？ → そのまま続行</p>
+</li>
+</ol>
+<p>将来的にはClaude自身がこの判断を助けてくれるようになるとのことですが、今はユーザーがこの判断をすることで、Claude Codeの出力品質を大きく向上させることができます。</p>
+<p>セッション管理は地味ですが、Claude Codeの体験を根本から変えるスキルです🔥</p>
+<p>この記事が少しでも参考になった方へ。</p>
+<blockquote>
+<p><strong>[図]</strong> Claude Code Studio @Japan（@ClaudeCode_love）のXプロフィール画面。ピクセルアート風のヘッダーとプロフィール画像、3人で運営するClaude Code実務アカウントの紹介文、フォロワー2,069人が表示されている。</p>
+</blockquote>
+<p>𝗖𝗹𝗮𝘂𝗱𝗲 𝗖𝗼𝗱𝗲 𝗦𝘁𝘂𝗱𝗶𝗼 @ 𝗝𝗮𝗽𝗮𝗻（<a href="https://x.com/@ClaudeCode_love">@ClaudeCode_love</a></p>
+<p>）は、</p>
+<p>Claude Codeガチ勢3人で運営しているアカウントです。</p>
+<p>実務レベルのCLI活用・自動化を毎日発信しています。</p>
+<p>現在は上場企業とAIエージェントを共同開発中。</p>
+<p>普段の発信内容👇</p>
+<p>・Claude CodeやClaudeを活用したリアルなプロダクト開発事例</p>
+<p>・Claude Code活用／Vibe Coding／開発トレンドの整理</p>
+<p>・海外のClaude Codeに関する最新情報</p>
+<p>開発思想から設計、実装、改善まで、</p>
+<p>「作って終わり」ではなく動くプロダクトを世に出すところまでを</p>
+<p>海外の情報や１次情報をまとめています。</p>
+<p>ご関心のある方は、ぜひフォローしてチェックしてみてください👀有益だと思います！</p>
+</main>
+</body>
+</html>

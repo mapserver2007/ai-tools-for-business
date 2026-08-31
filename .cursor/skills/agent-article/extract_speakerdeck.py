@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Extract Speaker Deck presentations as LLM-optimized Markdown."""
+"""Extract Speaker Deck presentations and save LLM-optimized Markdown and HTML."""
 
 import json
 import re
@@ -11,8 +11,9 @@ import requests
 from bs4 import BeautifulSoup
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from extract_article import OUTPUT_DIR, build_frontmatter, sanitize_filename
+from extract_article import OUTPUT_DIR, REPO_ROOT, build_frontmatter, sanitize_filename
 from image_utils import download_image
+from html_utils import write_html
 
 HEADERS = {
     "User-Agent": (
@@ -268,9 +269,11 @@ def extract_speakerdeck(url: str) -> dict:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     output_path = OUTPUT_DIR / filename
     output_path.write_text(full_md, encoding="utf-8")
+    html_path = write_html(full_md, filename)
 
     return {
-        "file_path": str(output_path.relative_to(OUTPUT_DIR.parent)),
+        "file_path": str(output_path.relative_to(REPO_ROOT)),
+        "html_file_path": str(html_path.relative_to(REPO_ROOT)),
         "title": title,
         "images": images,
     }

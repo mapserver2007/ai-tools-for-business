@@ -1,6 +1,6 @@
 # 出力フォーマット仕様
 
-このファイルは `agent-article-to-markdown` スキルが出力する Markdown の正規フォーマットを定義する。
+このファイルは `agent-article` スキルが出力する Markdown の正規フォーマットを定義する。
 スクリプト (`extract_article.py` / `extract_xcom.py` / `extract_speakerdeck.py`) はこのフォーマットに準拠して出力する。
 
 ## 構造
@@ -66,9 +66,16 @@ Speaker Deck はスライド画像を主資料、Transcript を OCR 補助資料
 
 ## ファイル名規則
 
-- 出力先: `agent-articles/{sanitized_title}.md`
+- 出力先: `agent-articles/md/{sanitized_title}.md`
 - サニタイズ: `/\:*?"<>|` を除去、空白を `-` に変換
 - 最大100文字に切り詰め
+
+## HTML 出力
+
+- Markdown と同じ内容を `agent-articles/html/{sanitized_title}.html` に出力する
+- HTML は単独で開ける HTML5 文書とし、frontmatter は `<meta>` 要素、本文は HTML 要素へ変換する
+- Markdown の画像リンクは出力せず、Markdown 側で生成した画像説明を本文に反映する
+- Markdown の画像説明・翻訳・Speaker Deck の意味変換が完了した後、`render_html.py` で HTML を再生成する
 
 ## 画像説明フォーマット
 

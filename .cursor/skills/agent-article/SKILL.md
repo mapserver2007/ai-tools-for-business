@@ -1,16 +1,16 @@
 ---
-name: agent-article-to-markdown
+name: agent-article
 description: >-
-  WebページのURLを受け取り、記事内容をLLM最適化Markdownに変換し、git commitまで自動実行する。
+  WebページのURLを受け取り、記事内容をLLM最適化MarkdownとHTMLに変換し、git commitまで自動実行する。
   日本語以外の記事は自動的に日本語に翻訳する。
   git push はユーザー確認後のみ実行。
-  「記事を保存して」「この記事をmarkdownにして」「URLをmarkdown化して」等で起動する。
+  「記事を保存して」「この記事をmarkdownにして」「URLをmarkdown化して」「記事をHTML化して」等で起動する。
   認証なしサイト、speakerdeck.com、x.com（認証あり）に対応。
 ---
 
-# agent-article-to-markdown
+# agent-article
 
-URL を受け取り、記事を Markdown 化し、git commit まで自動実行する。**日本語以外の記事は自動翻訳する。git push はユーザー確認後のみ。**
+URL を受け取り、記事を Markdown と HTML に変換し、git commit まで自動実行する。**日本語以外の記事は自動翻訳する。git push はユーザー確認後のみ。**
 
 ## 実行手順
 
@@ -18,9 +18,10 @@ URL を受け取り、記事を Markdown 化し、git commit まで自動実行�
 2. 適切なスクリプトを実行
 3. **画像処理**: 通常記事・x.com は画像説明を生成し、Speaker Deck はスライドを意味変換する（後述）
 4. **言語判定・翻訳**: 記事が日本語以外の場合、日本語に翻訳する（後述の「翻訳ルール」を参照）
-5. 出力ファイルを確認（公開してよい内容か確認）
-6. git add → commit（自動）
-7. **ユーザーに push 可否を確認してから push**
+5. 画像処理・翻訳・意味変換後の Markdown から HTML を再生成する（後述）
+6. Markdown と HTML の出力ファイルを確認（公開してよい内容か確認）
+7. git add → commit（自動）
+8. **ユーザーに push 可否を確認してから push**
 
 取得〜commit までは自動でよい。push だけは必ずユーザー承認を取ること。
 
@@ -44,14 +45,15 @@ URL を受け取り、記事を Markdown 化し、git commit まで自動実行�
 ## フローA: 認証なしサイト
 
 ```bash
-python3 .cursor/skills/agent-article-to-markdown/extract_article.py "<URL>"
+python3 .cursor/skills/agent-article/extract_article.py "<URL>"
 ```
 
 スクリプトは以下を stdout に JSON で出力する:
 
 ```json
 {
-  "file_path": "agent-articles/タイトル.md",
+  "file_path": "agent-articles/md/タイトル.md",
+  "html_file_path": "agent-articles/html/タイトル.html",
   "title": "記事タイトル",
   "images": [
     {"index": 0, "alt": "alt text", "original_url": "https://...", "local_path": "/tmp/article-images/abc123.jpg"}
@@ -64,7 +66,7 @@ python3 .cursor/skills/agent-article-to-markdown/extract_article.py "<URL>"
 ## フローB: x.com（認証あり）
 
 ```bash
-python3 .cursor/skills/agent-article-to-markdown/extract_xcom.py "<URL>"
+python3 .cursor/skills/agent-article/extract_xcom.py "<URL>"
 ```
 
 - デフォルトブラウザ: **Brave**（固定、引数不要）
@@ -74,7 +76,7 @@ python3 .cursor/skills/agent-article-to-markdown/extract_xcom.py "<URL>"
 ## フローC: Speaker Deck
 
 ```bash
-python3 .cursor/skills/agent-article-to-markdown/extract_speakerdeck.py "<URL>"
+python3 .cursor/skills/agent-article/extract_speakerdeck.py "<URL>"
 ```
 
 - 対象: 公開トーク `https://speakerdeck.com/{user}/{slug}`
@@ -147,10 +149,10 @@ flowchart LR
 
 ## Git 操作
 
-スクリプト実行 → 画像説明またはスライド意味変換後、以下を**自動**実行する:
+スクリプト実行 → 画像説明またはスライド意味変換 → HTML 再生成後、以下を**自動**実行する:
 
 ```bash
-git add agent-articles/{filename}.md
+git add agent-articles/md/{filename}.md agent-articles/html/{filename}.html
 git commit -m "docs(articles): add {タイトル要約}"
 ```
 
@@ -173,9 +175,22 @@ push 前にユーザーへ「公開リポジトリへ push してよいか」を
 
 ## 出力フォーマット仕様
 
-保存先: `agent-articles/{sanitized_title}.md`
+保存先:
+
+- Markdown: `agent-articles/md/{sanitized_title}.md`
+- HTML: `agent-articles/html/{sanitized_title}.html`
 
 ファイル名のサニタイズ: `/\:*?"<>|` を除去、空白を `-` に変換、100文字以内に切り詰め。
+
+### HTML の再生成
+
+各抽出スクリプトは初期 Markdown と HTML を同時に作成する。画像説明の挿入、Speaker Deck の意味変換、翻訳などで Markdown を変更した場合は、最終版を反映するため次を実行する:
+
+```bash
+python3 .cursor/skills/agent-article/render_html.py "agent-articles/md/{filename}.md"
+```
+
+HTML は Markdown の frontmatter を `<meta>` 要素、本文を HTML5 要素に変換した単独で閲覧可能な文書として生成される。HTML 側にプレースホルダー、原文画像リンク、未翻訳の本文を残さない。
 
 ### Markdown 構造
 
@@ -278,7 +293,8 @@ content_type: "article"
 | 項目 | 値 |
 |---|---|
 | x.com 用ブラウザ | Brave（固定） |
-| 出力先 | `agent-articles/` |
+| Markdown 出力先 | `agent-articles/md/` |
+| HTML 出力先 | `agent-articles/html/` |
 | 画像一時保存先 | `/tmp/article-images/` |
 | macOS 依存 | あり（Keychain による Cookie 復号） |
 

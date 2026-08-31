@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Extract tweet/thread content from x.com using browser cookies and Playwright."""
+"""Extract tweet/thread content and save Markdown and HTML using Playwright."""
 
 import asyncio
 import json
@@ -15,9 +15,10 @@ from urllib.parse import urlparse
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from image_utils import download_image, replace_images_with_placeholders
+from html_utils import REPO_ROOT, write_html
 
 JST = timezone(timedelta(hours=9))
-OUTPUT_DIR = Path(__file__).resolve().parents[3] / "agent-articles"
+OUTPUT_DIR = REPO_ROOT / "agent-articles" / "md"
 DEFAULT_BROWSER = "brave"
 
 
@@ -402,9 +403,11 @@ def extract_xcom(url: str, browser: str = DEFAULT_BROWSER) -> dict:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     output_path = OUTPUT_DIR / filename
     output_path.write_text(markdown, encoding="utf-8")
+    html_path = write_html(markdown, filename)
 
     return {
-        "file_path": str(output_path.relative_to(OUTPUT_DIR.parent)),
+        "file_path": str(output_path.relative_to(REPO_ROOT)),
+        "html_file_path": str(html_path.relative_to(REPO_ROOT)),
         "title": title,
         "images": images,
     }

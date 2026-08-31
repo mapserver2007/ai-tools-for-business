@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Extract article content from unauthenticated web pages and save as LLM-optimized Markdown."""
+"""Extract article content and save LLM-optimized Markdown and HTML."""
 
 import json
 import re
@@ -15,9 +15,10 @@ from bs4 import BeautifulSoup
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from image_utils import replace_images_with_placeholders
+from html_utils import REPO_ROOT, write_html
 
 JST = timezone(timedelta(hours=9))
-OUTPUT_DIR = Path(__file__).resolve().parents[3] / "agent-articles"
+OUTPUT_DIR = REPO_ROOT / "agent-articles" / "md"
 
 
 def sanitize_filename(title: str) -> str:
@@ -115,9 +116,11 @@ def extract_article(url: str) -> dict:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     output_path = OUTPUT_DIR / filename
     output_path.write_text(full_md, encoding="utf-8")
+    html_path = write_html(full_md, filename)
 
     return {
-        "file_path": str(output_path.relative_to(OUTPUT_DIR.parent)),
+        "file_path": str(output_path.relative_to(REPO_ROOT)),
+        "html_file_path": str(html_path.relative_to(REPO_ROOT)),
         "title": title,
         "images": images,
     }
