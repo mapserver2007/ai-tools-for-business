@@ -190,7 +190,7 @@ push 前にユーザーへ「公開リポジトリへ push してよいか」を
 python3 .cursor/skills/agent-article/render_html.py "agent-articles/md/{filename}.md"
 ```
 
-HTML は Markdown の frontmatter を `<meta>` 要素、本文を HTML5 要素に変換した単独で閲覧可能な文書として生成される。HTML 側にプレースホルダー、原文画像リンク、未翻訳の本文を残さない。
+HTML は Markdown の frontmatter を `<meta>` 要素、本文を HTML5 要素に変換した単独で閲覧可能な文書として生成される。参照用のリッチUIと同等のダークテーマ、カード型レイアウト、読みやすい日本語タイポグラフィ、見出し・引用・コード・表の装飾を採用し、目次、読了進捗バー、セクション追従、コードコピー、レスポンシブ表示、印刷表示を提供する。HTML 側にプレースホルダー、原文画像リンク、未翻訳の本文を残さない。
 
 ### Markdown 構造
 

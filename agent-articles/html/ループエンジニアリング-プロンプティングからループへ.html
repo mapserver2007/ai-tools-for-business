@@ -15,74 +15,721 @@
 <style>
 :root {
   color-scheme: light;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  line-height: 1.8;
+  --ink: #172033;
+  --muted: #64748b;
+  --line: #dbe4ef;
+  --accent: #2563eb;
+  --accent-dark: #1d4ed8;
+  --accent-soft: #eff6ff;
+  font-family: -apple-system, BlinkMacSystemFont, "Avenir Next",
+    "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
 }
 body {
   margin: 0;
-  background: #f6f7f9;
-  color: #202124;
+  background:
+    radial-gradient(circle at 8% 0%, #dbeafe 0, transparent 32rem),
+    radial-gradient(circle at 100% 12%, #e0e7ff 0, transparent 28rem),
+    #f4f7fb;
+  color: var(--ink);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(120deg, transparent 0 48%, rgba(255, 255, 255, 0.4));
 }
 .article {
+  position: relative;
+  isolation: isolate;
   box-sizing: border-box;
-  max-width: 860px;
-  margin: 0 auto;
-  padding: 3rem 1.5rem 5rem;
-  background: #fff;
+  max-width: 920px;
+  margin: clamp(1rem, 5vw, 4rem) auto;
+  padding: clamp(2rem, 6vw, 5rem) clamp(1.25rem, 7vw, 5.5rem);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  border-radius: 24px;
   min-height: 100vh;
+  box-shadow:
+    0 24px 70px rgba(30, 64, 175, 0.1),
+    0 4px 16px rgba(15, 23, 42, 0.04);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 5px;
+  content: "";
+  background: linear-gradient(90deg, #2563eb, #7c3aed, #db2777);
 }
 .metadata {
-  margin: -0.5rem 0 2rem;
-  color: #5f6368;
-  font-size: 0.9rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin: 0 0 2.5rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.72rem;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-dark);
+  font-weight: 700;
 }
 a {
-  color: #1967d2;
+  color: var(--accent-dark);
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: #7c3aed;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--ink);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 18ch;
+  margin: 0 0 2.5rem;
+  font-size: clamp(2.15rem, 5vw, 3.65rem);
+  letter-spacing: -0.045em;
+}
+h2 {
+  position: relative;
+  margin: 3.8rem 0 1.25rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--line);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 4.2rem;
+  height: 3px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), #7c3aed);
+  border-radius: 999px;
+}
+h3 {
+  margin: 2.6rem 0 0.8rem;
+  color: var(--accent-dark);
+  font-size: 1.3rem;
+}
+h4, h5, h6 {
+  margin-top: 2rem;
+}
+p {
+  margin: 1.15rem 0;
+}
+ul, ol {
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.35rem 0;
+}
+li::marker {
+  color: var(--accent);
+  font-weight: 700;
+}
+strong {
+  color: #111827;
+}
+blockquote {
+  margin: 1.6rem 0;
+  padding: 0.8rem 1.25rem;
+  color: #475569;
+  background: linear-gradient(90deg, var(--accent-soft), #fff);
+  border-left: 4px solid var(--accent);
+  border-radius: 0 12px 12px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 3rem 0;
+  border: 0;
+  border-top: 1px solid var(--line);
 }
 img {
+  display: block;
   max-width: 100%;
+  margin: 1.75rem auto;
   height: auto;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
 }
 pre {
   overflow-x: auto;
-  padding: 1rem;
-  border-radius: 6px;
-  background: #f1f3f4;
+  margin: 1.6rem 0;
+  padding: 1.15rem 1.25rem;
+  color: #e2e8f0;
+  background: #111827;
+  border: 1px solid #253047;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
 }
 code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
 }
-blockquote {
-  margin: 1rem 0;
-  padding: 0.25rem 1rem;
-  border-left: 4px solid #dadce0;
-  color: #5f6368;
+:not(pre) > code {
+  padding: 0.15rem 0.4rem;
+  color: #9f1239;
+  background: #fff1f2;
+  border-radius: 5px;
 }
 table {
   display: block;
   max-width: 100%;
   overflow-x: auto;
+  margin: 1.6rem 0;
   border-collapse: collapse;
+  border: 1px solid var(--line);
+  border-radius: 12px;
 }
 th, td {
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #dadce0;
+  min-width: 7rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
   text-align: left;
+}
+th {
+  color: #1e3a8a;
+  background: #eff6ff;
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: #f8fafc;
 }
 @media (max-width: 600px) {
   .article {
+    margin: 0;
     padding: 2rem 1rem 4rem;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(2rem, 10vw, 2.75rem);
+  }
+  .metadata {
+    margin-bottom: 2rem;
+  }
+}
+@media print {
+  body {
+    background: #fff;
+  }
+  .article {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  a {
+    color: inherit;
+  }
+}
+</style>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0f1419;
+  --surface: #1a2332;
+  --surface-raised: #202c3f;
+  --surface-soft: rgba(26, 35, 50, 0.72);
+  --border: #2d3a4f;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #58a6ff;
+  --accent-strong: #79c0ff;
+  --green: #3fb950;
+  --purple: #bc8cff;
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+    "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  line-height: 1.75;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+  background: var(--bg);
+}
+body {
+  min-width: 320px;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 2rem 1.5rem 5rem;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(31, 111, 235, 0.18), transparent 32rem),
+    radial-gradient(circle at 100% 12%, rgba(137, 87, 229, 0.14), transparent 28rem),
+    var(--bg);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black, transparent 75%);
+}
+.reading-progress {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 20;
+  height: 3px;
+  background: rgba(45, 58, 79, 0.7);
+}
+.reading-progress > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  box-shadow: 0 0 14px rgba(88, 166, 255, 0.8);
+  transition: width 80ms linear;
+}
+.article {
+  position: relative;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  background: rgba(15, 20, 25, 0.76);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(88, 166, 255, 0.035) inset;
+  backdrop-filter: blur(16px);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  border-radius: 16px 16px 0 0;
+}
+.article-header {
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.eyebrow-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--green);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(63, 185, 80, 0.75);
+}
+.eyebrow-separator {
+  color: var(--border);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  background: rgba(32, 44, 63, 0.68);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+.source-link {
+  color: var(--text);
+  text-decoration: none;
+}
+.source-link:hover {
+  border-color: var(--accent);
+  background: rgba(88, 166, 255, 0.12);
+}
+a {
+  color: var(--accent);
+  overflow-wrap: anywhere;
+  text-decoration: none;
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 24ch;
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  background: linear-gradient(120deg, #fff 12%, #b9d8ff 58%, #bc8cff);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+h2 {
+  position: relative;
+  margin: 3.2rem 0 1.1rem;
+  padding: 0.75rem 0 0.65rem;
+  border-bottom: 1px solid var(--border);
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 3.8rem;
+  height: 2px;
+  content: "";
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(88, 166, 255, 0.7);
+}
+h3 {
+  margin: 2.25rem 0 0.7rem;
+  color: var(--accent-strong);
+  font-size: 1.2rem;
+}
+h4, h5, h6 {
+  margin-top: 1.75rem;
+}
+p {
+  margin: 0.9rem 0;
+}
+ul, ol {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.3rem 0;
+}
+li::marker {
+  color: var(--accent);
+}
+strong {
+  color: #fff;
+}
+blockquote {
+  margin: 1.4rem 0;
+  padding: 0.85rem 1.15rem;
+  color: #c9d1d9;
+  background: linear-gradient(100deg, rgba(88, 166, 255, 0.1), rgba(26, 35, 50, 0.55));
+  border: 1px solid rgba(88, 166, 255, 0.18);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 2.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+}
+pre {
+  position: relative;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  padding: 1rem 1.15rem;
+  color: #dbeafe;
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+pre code {
+  color: inherit;
+  background: transparent;
+}
+code {
+  font-family: "SF Mono", "Fira Code", ui-monospace, monospace;
+  font-size: 0.86em;
+}
+:not(pre) > code {
+  padding: 0.12em 0.38em;
+  color: #ffabbc;
+  background: rgba(248, 81, 73, 0.11);
+  border-radius: 4px;
+}
+.copy-button {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  padding: 0.25rem 0.55rem;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.72rem;
+  background: rgba(32, 44, 63, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.copy-button:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  border-spacing: 0;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.6rem 0.75rem;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+th {
+  color: var(--accent);
+  background: var(--surface);
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: rgba(26, 35, 50, 0.42);
+}
+tr:last-child td {
+  border-bottom: 0;
+}
+th:last-child, td:last-child {
+  border-right: 0;
+}
+.toc {
+  margin: 1.75rem 0 2.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.toc-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--border);
+}
+.toc-title {
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.toc-count {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.toc ol {
+  margin: 0.7rem 0 0;
+  padding-left: 1.25rem;
+}
+.toc ol ol {
+  margin: 0.2rem 0;
+}
+.toc li {
+  margin: 0.18rem 0;
+  font-size: 0.86rem;
+}
+.toc li::marker {
+  color: var(--muted);
+}
+.toc a {
+  display: inline-block;
+  max-width: 100%;
+  color: var(--muted);
+  transition: color 160ms ease, transform 160ms ease;
+}
+.toc a:hover, .toc a.is-active {
+  color: var(--accent-strong);
+  text-decoration: none;
+  transform: translateX(2px);
+}
+.article-body {
+  max-width: 78ch;
+  margin: 0 auto;
+}
+.article-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 1rem;
+  color: var(--muted);
+  font-size: 0.74rem;
+  border-top: 1px solid var(--border);
+}
+.article-footer a {
+  color: var(--muted);
+}
+@media (max-width: 720px) {
+  body {
+    padding: 0 0 3rem;
+  }
+  .article {
+    min-height: 100vh;
+    padding: 1.5rem 1rem 3rem;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+  .article::before {
+    border-radius: 0;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(1.9rem, 9vw, 2.6rem);
+  }
+  .article-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+@media print {
+  :root {
+    color-scheme: light;
+  }
+  body {
+    padding: 0;
+    color: #111;
+    background: #fff;
+  }
+  .reading-progress, .toc, .copy-button {
+    display: none;
+  }
+  .article {
+    max-width: none;
+    padding: 0;
+    background: #fff;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  h1, h2, h3, h4, h5, h6, strong {
+    color: #111;
+    -webkit-text-fill-color: initial;
+  }
+  a {
+    color: inherit;
+    text-decoration: underline;
+  }
+  pre {
+    color: #111;
+    background: #f4f4f4;
+    box-shadow: none;
   }
 }
 </style>
 </head>
 <body>
-<main class="article">
-<p class="metadata"><span>著者: kaize (@0x_kaize)</span> · <span>公開日: 2026-06-07</span> · <a href="https://x.com/0x_kaize/status/2073438517775003671">原文</a></p>
-<h1>ループエンジニアリング - プロンプティングからループへ</h1>
+<div class="reading-progress" aria-hidden="true"><span></span></div>
+<main id="article-top" class="article">
+  <header class="article-header">
+    <div class="eyebrow">
+      <span class="eyebrow-dot"></span>
+      <span>ARTICLE</span>
+      <span class="eyebrow-separator">/</span>
+      <span>x.com</span>
+    </div>
+    <div class="metadata" aria-label="記事メタデータ"><span class="metadata-item"><span class="metadata-label">著者</span>kaize (@0x_kaize)</span><span class="metadata-item"><span class="metadata-label">公開日</span>2026-06-07</span><a class="metadata-item source-link" href="https://x.com/0x_kaize/status/2073438517775003671"><span class="metadata-label">原文</span>読む</a><span class="metadata-item"><span class="metadata-label">サイト</span>x.com</span><span class="metadata-item"><span class="metadata-label">形式</span>ARTICLE</span></div>
+    <h1 id="-">ループエンジニアリング - プロンプティングからループへ</h1>
+  </header>
+<nav class="toc" aria-label="目次">
+  <div class="toc-heading">
+    <span class="toc-title">目次</span>
+    <span class="toc-count">8 セクション</span>
+  </div>
+  <ol><li><a href="#_1">序文</a></li><li><a href="#3">3人が導火線に火をつけた週</a></li><li><a href="#lesson-1-discoverymorning-triage-skillmd">Lesson 1 Discovery：morning-triage SKILL.md を書く</a></li><li><a href="#lesson-2-handoff">Lesson 2 Handoff：仕事を配り、分離する</a></li><li><a href="#lesson-3-verificationno">Lesson 3 Verification：「no」と言うドアを設置する（最も重いレッスン）</a></li><li><a href="#lesson-4-persistence">Lesson 4 Persistence：今日の仕事を明日まで生き残らせる</a></li><li><a href="#lesson-5-scheduling1">Lesson 5 Scheduling：現実にし、安全にし、1つのドアを開けたままにする</a></li><li><a href="#4">4つの負債と、エンジニアであり続けること</a></li></ol>
+</nav>
+  <div class="article-body">
+
 <p>毎朝コンピュータを起動して、何度も同じコマンドを与える必要がなくなるよう、自分で仕事をしてくれるプログラム可能なエージェントの作り方を、この記事に捧げることにした。</p>
 <p>それは自分で起き、自分でタスクを見つけ、自分で問題を特定し、結果を保存してあなたの机に並べ、レビューできるようにしてくれる。</p>
-<h2>序文</h2>
+<h2 id="_1">序文</h2>
 <p>Loop のアイデアは突然降ってきたものではない。2026年6月の1週間のうちに、業界の3人の専門家がほぼ同時に同じ考えを口にした：このレベルの開発を始める時が来た、と。</p>
 <p>1週間後、Andrew Ng がこの会話を「0から1でプロダクトを作る」というより広い文脈に位置づけ、より包括的な絵を提供してくれた。</p>
 <p>この記事はその話から始まり、ゼロから最小限かつ完全なループを構築する手順を案内する：5つのムーブ、6つのパーツ、「no」と言う1つのドア、そして1つの人間用ドア——すべて自分のマシン上で動き、どんなソフトウェアプロジェクトでも再利用できる。</p>
@@ -90,7 +737,7 @@ th, td {
 <p><strong>[図]</strong> DELIVER（5つのレッスンの成果物として6つのパーツを接続した朝のトリアージループ）、CHANGE（ループが壊れたときは「モデルが弱い」と言う前にどのステップが欠けたかを問う）、UNLOCK（ループは理解力や怠惰を忠実に増幅する）の3つの目標を示すインフォグラフィック。下部にはClaude Code、Cursor、Codexを使いながら自分自身をループから抜け出す姿勢を教える本レッスンの角度が記載されている。</p>
 </blockquote>
 <p>出典: HuaShu Orange Book, Loop Engineering: Stop Asking Me What It Is (v260615, June 2026)</p>
-<h2>3人が導火線に火をつけた週</h2>
+<h2 id="3">3人が導火線に火をつけた週</h2>
 <p>2026年6月：3人が、互いに調整することなく、数日のうちにほぼ同じことを言った。</p>
 <p>OpenClaw の創設者 Peter Steinberger が、890万ビューを記録した2文を X に投稿した：</p>
 <blockquote>
@@ -232,7 +879,7 @@ th, td {
 <p>以下の5つのレッスンは、それぞれ正確に1つのムーブを育てる。</p>
 <p>5つのレッスン = 完全な Loop。</p>
 <p>そして最初の Discovery から始める。なぜなら、Loop が今日何に価値があるかを決められなければ、その後の何も意味がないからだ。</p>
-<h2>Lesson 1 Discovery：morning-triage SKILL.md を書く</h2>
+<h2 id="lesson-1-discoverymorning-triage-skillmd">Lesson 1 Discovery：morning-triage SKILL.md を書く</h2>
 <p>スキルであり、プロンプトの壁ではない。</p>
 <p>想像してみてほしい。月曜の朝6時、ラップトップは閉じている。GitHub Action が起きて <code>claude --skill morning-triage</code> を発火する：何を読むか、何を actionable と判断するか、結果をどこに書くか——すべて、これから書く SKILL.md の中にある。</p>
 <p>Osmani の重要な一文：自動化はスキルをトリガーすべきだ——書き留められた、更新可能なプロジェクト知識であり、cron ジョブに貼り付けたプロンプトの壁ではない。貼り付けたプロンプトはただ腐る。だれもスケジュールの中に埋もれたものを更新しに戻らないからだ。</p>
@@ -283,7 +930,7 @@ NOT a PR.
 <p>1/ Stop セクションは何行あるか？「never merge」だけなら——もう1つ足す：このループに他に何をしてほしくないか？（never close issues / never push to main / never take more than 3 findings at once など）</p>
 <p>2/ Read の最初の行を、あなたのプロジェクトで実際に動くコマンドに書き換える</p>
 <p>3/ このスキルが1年変わらなかったら何が起きるか？比較してみてほしい：cron ジョブに貼ったプロンプトの壁が1年そのままだったら何が起きるか？</p>
-<h2>Lesson 2 Handoff：仕事を配り、分離する</h2>
+<h2 id="lesson-2-handoff">Lesson 2 Handoff：仕事を配り、分離する</h2>
 <p>Lesson 1 のスキルが終わった。<code>./state/triage.md</code> に actionable な finding が5つある。最も自然な次の考え——5つのエージェントを一斉に発火、速く行こう。そのまさにそのステップが Tangled Loop を育てる方法だ：複数のエージェントが同じディレクトリの同じファイルを編集し、マージの日が考古学になる。</p>
 <p>解毒剤は1行：すべての finding に専用の worktree。</p>
 <p><code>git worktree</code> は組み込みの git メカニズム：1つのリポジトリ、複数の独立した作業ディレクトリ、それぞれ独自のブランチにチェックアウト。<code>git worktree add ../fix-auth fix/auth</code> は <code>../fix-auth</code> に完全に分離されたワークスペースを開く。ビルド、編集、テスト——誰にも触れない。finding ごとに1 worktree = エージェントは物理的に分離される。</p>
@@ -327,7 +974,7 @@ git worktree list
 <p>1/ <code>MAX_PARALLEL</code> を何に設定したか——そしてなぜか？（お金？マシン？それとも「正直にレビューできる PR の数」？）</p>
 <p>2/ worktree がクラッシュしたら——エージェントは何も触らずに終了する——明日の状態ファイルには何を記録すべきか？</p>
 <p>3/ Stripe は最大モデルの代わりに小さなモデル + 厳格な決定論的ゲートを使った——あなたのループにとってその選択は何を意味するか？</p>
-<h2>Lesson 3 Verification：「no」と言うドアを設置する（最も重いレッスン）</h2>
+<h2 id="lesson-3-verificationno">Lesson 3 Verification：「no」と言うドアを設置する（最も重いレッスン）</h2>
 <p>これはループエンジニアリングで最も難しいムーブで、他のどのレッスンよりも多くの努力に値する。</p>
 <p>Anthropic のエンジニア Prithvi Rajasekaran は、長時間動くエージェンティックアプリに取り組む中で気づいた：エージェントに自分が書いたコードを採点させると、人間が一目で平凡だと分かる場合でも、ほぼ常に自分を褒める。</p>
 <p>これはモデルが愚かだからではない：自分の宿題を採点することは構造的に壊れている。コードが完成した時点で、エージェントのコンテキストはなぜそう書いたかの自己正当化チェーンで詰まっている。自分の出力を見ても、結果は見えない——結果への論拠が見える。</p>
@@ -379,7 +1026,7 @@ VERDICT: PASS only if every check holds.
 <p>1/ evaluator は異なるプロンプトの同じモデルか、異なるモデルか？なぜか？</p>
 <p>2/ 「意図ではなく振る舞いを判断」をあなたのプロジェクトの具体的な文に翻訳：「私の evaluator はコードを読まない——<strong><em>_</em> を実行し、</strong>___ を見たときだけ PASS する」</p>
 <p>3/ 「十分近い」フレッシュモデルが <code>/goal</code> 条件を誤って PASS する可能性はどれくらいか？最も怖い失敗モードが X なら——今すぐ停止条件に X のチェックを追加する</p>
-<h2>Lesson 4 Persistence：今日の仕事を明日まで生き残らせる</h2>
+<h2 id="lesson-4-persistence">Lesson 4 Persistence：今日の仕事を明日まで生き残らせる</h2>
 <p>Lesson 3 が終わった。evaluator は3つの finding を判断した——2つ PASS、1つ REJECT。問い：その3つの判定は今どこにあるか？</p>
 <p>答えが「コンテキストウィンドウの中」なら——明日の朝6時、ループはフラッシュされたコンテキストで目を覚まし、何も覚えていない。ゼロから再トリアージし、昨日の未修正 REJECT につまずき、また別のエージェントを割り当てるかもしれない、見落とすかもしれない、同じ穴に落ちるかもしれない。</p>
 <p>それが Amnesiac Loop——毎日が同じマスから始まる。</p>
@@ -434,7 +1081,7 @@ VERDICT: PASS only if every check holds.
 <p>1/ 「メモリ ≠ コンテキスト」をあなた自身のプロジェクトから1つの具体的な文に翻訳：「私の <strong><em>_</em> はメモリ、私の </strong>___ はコンテキスト」</p>
 <p>2/ 明日のループが目を覚ます——state.md のどの列を最初に読んで最初のムーブを決めるか？その列名は正しいか、それとも地雷を埋めただけか？</p>
 <p>3/ 規律：1日のどの時間にサンプル PR を読むか？今すぐカレンダーリマインダーを設定——これは自分との契約だ。</p>
-<h2>Lesson 5 Scheduling：現実にし、安全にし、1つのドアを開けたままにする</h2>
+<h2 id="lesson-5-scheduling1">Lesson 5 Scheduling：現実にし、安全にし、1つのドアを開けたままにする</h2>
 <p>Lesson 1-4 はインストールされたが、ループはボタンを押すのをやめた瞬間に止まる。最後のムーブは1つの動詞：トリガーに吊るす。</p>
 <p>しかしこのレッスンで最も危険な部分は cron を間違えることではない。cron を正しくすることだ——そうすればループは本当に単独で動き、1つのバグが一晩中くるくる回し、ヘルパーがヘルパーを生成し、見覚えのない請求書で目を覚ますことになるから。</p>
 <p>だからこのレッスンは実際に3つのことをする：トリガーを吊るす、上限を設定する、人間用ドアを開けたままにする。</p>
@@ -522,7 +1169,7 @@ runs machine-off    Cloud Routines       cloud (planned)
 <p>1/ 3つの上限の正確な数値は？バグが一晩中回ったら——どの上限が最初に落下を止める？どれも止めないなら……それは何を語るか？</p>
 <p>2/ あなたの人間用ドアはどんな形か？（PR レビュー / inbox / 日次サンプル / 週次照合？）書き留める = 自分との契約に署名する</p>
 <p>3/ 締めの問い：6ヶ月後、このループはあなたを強くしたか（理解、判断、システムへの感覚）——それとも読めないマシンの世話人になったか？2つ目を避ける計画は何か？</p>
-<h2>4つの負債と、エンジニアであり続けること</h2>
+<h2 id="4">4つの負債と、エンジニアであり続けること</h2>
 <p>ループは構築された：目を覚まし、仕事を見つけ、自分を批判し、記憶し、明日を自分でスケジュールする。</p>
 <p>ループが動いている間、4つのものが静かに積み上がる——共通の特徴は、どれもアラームを鳴らさないことだ。</p>
 <pre><code class="language-json">VERIFICATION DEBT     reject されない出力の積み上がり
@@ -548,6 +1195,70 @@ TOKEN BLOWOUT         バグが一晩中回る → 請求書として気づく
 <p>構築する前に、何を増幅したいかを決めよ。</p>
 <p>お楽しみに！</p>
 <p>Good luck :)</p>
+  </div>
+  <footer class="article-footer">
+    <span>取得: 2026-07-09T11:16:56+09:00</span>
+    <a href="#article-top">↑ 先頭へ戻る</a>
+  </footer>
 </main>
+<script>
+(() => {
+  const progress = document.querySelector(".reading-progress > span");
+  const updateProgress = () => {
+    const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+    const ratio = scrollable > 0 ? window.scrollY / scrollable : 0;
+    if (progress) progress.style.width = `${Math.min(1, ratio) * 100}%`;
+  };
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  document.querySelectorAll("pre").forEach((block) => {
+    const button = document.createElement("button");
+    button.className = "copy-button";
+    button.type = "button";
+    button.textContent = "コピー";
+    button.addEventListener("click", async () => {
+      const text = block.querySelector("code")?.innerText || block.innerText;
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const textarea = document.createElement("textarea");
+          textarea.value = text;
+          textarea.style.position = "fixed";
+          textarea.style.opacity = "0";
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand("copy");
+          textarea.remove();
+        }
+        button.textContent = "コピー済み";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      } catch (error) {
+        button.textContent = "失敗";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      }
+    });
+    block.appendChild(button);
+  });
+
+  const links = new Map(
+    [...document.querySelectorAll(".toc a")].map((link) => [link.hash, link])
+  );
+  const headings = [...document.querySelectorAll(
+    ".article-body h2[id], .article-body h3[id], .article-body h4[id]"
+  )];
+  if ("IntersectionObserver" in window && headings.length) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        links.forEach((link) => link.classList.remove("is-active"));
+        links.get(`#${entry.target.id}`)?.classList.add("is-active");
+      });
+    }, { rootMargin: "-12% 0px -72% 0px" });
+    headings.forEach((heading) => observer.observe(heading));
+  }
+})();
+</script>
 </body>
 </html>

@@ -15,98 +15,745 @@
 <style>
 :root {
   color-scheme: light;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  line-height: 1.8;
+  --ink: #172033;
+  --muted: #64748b;
+  --line: #dbe4ef;
+  --accent: #2563eb;
+  --accent-dark: #1d4ed8;
+  --accent-soft: #eff6ff;
+  font-family: -apple-system, BlinkMacSystemFont, "Avenir Next",
+    "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
 }
 body {
   margin: 0;
-  background: #f6f7f9;
-  color: #202124;
+  background:
+    radial-gradient(circle at 8% 0%, #dbeafe 0, transparent 32rem),
+    radial-gradient(circle at 100% 12%, #e0e7ff 0, transparent 28rem),
+    #f4f7fb;
+  color: var(--ink);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(120deg, transparent 0 48%, rgba(255, 255, 255, 0.4));
 }
 .article {
+  position: relative;
+  isolation: isolate;
   box-sizing: border-box;
-  max-width: 860px;
-  margin: 0 auto;
-  padding: 3rem 1.5rem 5rem;
-  background: #fff;
+  max-width: 920px;
+  margin: clamp(1rem, 5vw, 4rem) auto;
+  padding: clamp(2rem, 6vw, 5rem) clamp(1.25rem, 7vw, 5.5rem);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  border-radius: 24px;
   min-height: 100vh;
+  box-shadow:
+    0 24px 70px rgba(30, 64, 175, 0.1),
+    0 4px 16px rgba(15, 23, 42, 0.04);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 5px;
+  content: "";
+  background: linear-gradient(90deg, #2563eb, #7c3aed, #db2777);
 }
 .metadata {
-  margin: -0.5rem 0 2rem;
-  color: #5f6368;
-  font-size: 0.9rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin: 0 0 2.5rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.72rem;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-dark);
+  font-weight: 700;
 }
 a {
-  color: #1967d2;
+  color: var(--accent-dark);
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: #7c3aed;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--ink);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 18ch;
+  margin: 0 0 2.5rem;
+  font-size: clamp(2.15rem, 5vw, 3.65rem);
+  letter-spacing: -0.045em;
+}
+h2 {
+  position: relative;
+  margin: 3.8rem 0 1.25rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--line);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 4.2rem;
+  height: 3px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), #7c3aed);
+  border-radius: 999px;
+}
+h3 {
+  margin: 2.6rem 0 0.8rem;
+  color: var(--accent-dark);
+  font-size: 1.3rem;
+}
+h4, h5, h6 {
+  margin-top: 2rem;
+}
+p {
+  margin: 1.15rem 0;
+}
+ul, ol {
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.35rem 0;
+}
+li::marker {
+  color: var(--accent);
+  font-weight: 700;
+}
+strong {
+  color: #111827;
+}
+blockquote {
+  margin: 1.6rem 0;
+  padding: 0.8rem 1.25rem;
+  color: #475569;
+  background: linear-gradient(90deg, var(--accent-soft), #fff);
+  border-left: 4px solid var(--accent);
+  border-radius: 0 12px 12px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 3rem 0;
+  border: 0;
+  border-top: 1px solid var(--line);
 }
 img {
+  display: block;
   max-width: 100%;
+  margin: 1.75rem auto;
   height: auto;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
 }
 pre {
   overflow-x: auto;
-  padding: 1rem;
-  border-radius: 6px;
-  background: #f1f3f4;
+  margin: 1.6rem 0;
+  padding: 1.15rem 1.25rem;
+  color: #e2e8f0;
+  background: #111827;
+  border: 1px solid #253047;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
 }
 code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
 }
-blockquote {
-  margin: 1rem 0;
-  padding: 0.25rem 1rem;
-  border-left: 4px solid #dadce0;
-  color: #5f6368;
+:not(pre) > code {
+  padding: 0.15rem 0.4rem;
+  color: #9f1239;
+  background: #fff1f2;
+  border-radius: 5px;
 }
 table {
   display: block;
   max-width: 100%;
   overflow-x: auto;
+  margin: 1.6rem 0;
   border-collapse: collapse;
+  border: 1px solid var(--line);
+  border-radius: 12px;
 }
 th, td {
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #dadce0;
+  min-width: 7rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
   text-align: left;
+}
+th {
+  color: #1e3a8a;
+  background: #eff6ff;
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: #f8fafc;
 }
 @media (max-width: 600px) {
   .article {
+    margin: 0;
     padding: 2rem 1rem 4rem;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(2rem, 10vw, 2.75rem);
+  }
+  .metadata {
+    margin-bottom: 2rem;
+  }
+}
+@media print {
+  body {
+    background: #fff;
+  }
+  .article {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  a {
+    color: inherit;
+  }
+}
+</style>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0f1419;
+  --surface: #1a2332;
+  --surface-raised: #202c3f;
+  --surface-soft: rgba(26, 35, 50, 0.72);
+  --border: #2d3a4f;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #58a6ff;
+  --accent-strong: #79c0ff;
+  --green: #3fb950;
+  --purple: #bc8cff;
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+    "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  line-height: 1.75;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+  background: var(--bg);
+}
+body {
+  min-width: 320px;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 2rem 1.5rem 5rem;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(31, 111, 235, 0.18), transparent 32rem),
+    radial-gradient(circle at 100% 12%, rgba(137, 87, 229, 0.14), transparent 28rem),
+    var(--bg);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black, transparent 75%);
+}
+.reading-progress {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 20;
+  height: 3px;
+  background: rgba(45, 58, 79, 0.7);
+}
+.reading-progress > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  box-shadow: 0 0 14px rgba(88, 166, 255, 0.8);
+  transition: width 80ms linear;
+}
+.article {
+  position: relative;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  background: rgba(15, 20, 25, 0.76);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(88, 166, 255, 0.035) inset;
+  backdrop-filter: blur(16px);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  border-radius: 16px 16px 0 0;
+}
+.article-header {
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.eyebrow-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--green);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(63, 185, 80, 0.75);
+}
+.eyebrow-separator {
+  color: var(--border);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  background: rgba(32, 44, 63, 0.68);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+.source-link {
+  color: var(--text);
+  text-decoration: none;
+}
+.source-link:hover {
+  border-color: var(--accent);
+  background: rgba(88, 166, 255, 0.12);
+}
+a {
+  color: var(--accent);
+  overflow-wrap: anywhere;
+  text-decoration: none;
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 24ch;
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  background: linear-gradient(120deg, #fff 12%, #b9d8ff 58%, #bc8cff);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+h2 {
+  position: relative;
+  margin: 3.2rem 0 1.1rem;
+  padding: 0.75rem 0 0.65rem;
+  border-bottom: 1px solid var(--border);
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 3.8rem;
+  height: 2px;
+  content: "";
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(88, 166, 255, 0.7);
+}
+h3 {
+  margin: 2.25rem 0 0.7rem;
+  color: var(--accent-strong);
+  font-size: 1.2rem;
+}
+h4, h5, h6 {
+  margin-top: 1.75rem;
+}
+p {
+  margin: 0.9rem 0;
+}
+ul, ol {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.3rem 0;
+}
+li::marker {
+  color: var(--accent);
+}
+strong {
+  color: #fff;
+}
+blockquote {
+  margin: 1.4rem 0;
+  padding: 0.85rem 1.15rem;
+  color: #c9d1d9;
+  background: linear-gradient(100deg, rgba(88, 166, 255, 0.1), rgba(26, 35, 50, 0.55));
+  border: 1px solid rgba(88, 166, 255, 0.18);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 2.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+}
+pre {
+  position: relative;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  padding: 1rem 1.15rem;
+  color: #dbeafe;
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+pre code {
+  color: inherit;
+  background: transparent;
+}
+code {
+  font-family: "SF Mono", "Fira Code", ui-monospace, monospace;
+  font-size: 0.86em;
+}
+:not(pre) > code {
+  padding: 0.12em 0.38em;
+  color: #ffabbc;
+  background: rgba(248, 81, 73, 0.11);
+  border-radius: 4px;
+}
+.copy-button {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  padding: 0.25rem 0.55rem;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.72rem;
+  background: rgba(32, 44, 63, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.copy-button:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  border-spacing: 0;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.6rem 0.75rem;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+th {
+  color: var(--accent);
+  background: var(--surface);
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: rgba(26, 35, 50, 0.42);
+}
+tr:last-child td {
+  border-bottom: 0;
+}
+th:last-child, td:last-child {
+  border-right: 0;
+}
+.toc {
+  margin: 1.75rem 0 2.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.toc-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--border);
+}
+.toc-title {
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.toc-count {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.toc ol {
+  margin: 0.7rem 0 0;
+  padding-left: 1.25rem;
+}
+.toc ol ol {
+  margin: 0.2rem 0;
+}
+.toc li {
+  margin: 0.18rem 0;
+  font-size: 0.86rem;
+}
+.toc li::marker {
+  color: var(--muted);
+}
+.toc a {
+  display: inline-block;
+  max-width: 100%;
+  color: var(--muted);
+  transition: color 160ms ease, transform 160ms ease;
+}
+.toc a:hover, .toc a.is-active {
+  color: var(--accent-strong);
+  text-decoration: none;
+  transform: translateX(2px);
+}
+.article-body {
+  max-width: 78ch;
+  margin: 0 auto;
+}
+.article-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 1rem;
+  color: var(--muted);
+  font-size: 0.74rem;
+  border-top: 1px solid var(--border);
+}
+.article-footer a {
+  color: var(--muted);
+}
+@media (max-width: 720px) {
+  body {
+    padding: 0 0 3rem;
+  }
+  .article {
+    min-height: 100vh;
+    padding: 1.5rem 1rem 3rem;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+  .article::before {
+    border-radius: 0;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(1.9rem, 9vw, 2.6rem);
+  }
+  .article-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+@media print {
+  :root {
+    color-scheme: light;
+  }
+  body {
+    padding: 0;
+    color: #111;
+    background: #fff;
+  }
+  .reading-progress, .toc, .copy-button {
+    display: none;
+  }
+  .article {
+    max-width: none;
+    padding: 0;
+    background: #fff;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  h1, h2, h3, h4, h5, h6, strong {
+    color: #111;
+    -webkit-text-fill-color: initial;
+  }
+  a {
+    color: inherit;
+    text-decoration: underline;
+  }
+  pre {
+    color: #111;
+    background: #f4f4f4;
+    box-shadow: none;
   }
 }
 </style>
 </head>
 <body>
-<main class="article">
-<p class="metadata"><span>著者: Aparna Dhinakaran (@aparnadhinak)</span> · <span>公開日: 2026-07-04</span> · <a href="https://x.com/aparnadhinak/status/2073492320159510869">原文</a></p>
-<h1>そもそもループって何だろう？</h1>
+<div class="reading-progress" aria-hidden="true"><span></span></div>
+<main id="article-top" class="article">
+  <header class="article-header">
+    <div class="eyebrow">
+      <span class="eyebrow-dot"></span>
+      <span>ARTICLE</span>
+      <span class="eyebrow-separator">/</span>
+      <span>x.com</span>
+    </div>
+    <div class="metadata" aria-label="記事メタデータ"><span class="metadata-item"><span class="metadata-label">著者</span>Aparna Dhinakaran (@aparnadhinak)</span><span class="metadata-item"><span class="metadata-label">公開日</span>2026-07-04</span><a class="metadata-item source-link" href="https://x.com/aparnadhinak/status/2073492320159510869"><span class="metadata-label">原文</span>読む</a><span class="metadata-item"><span class="metadata-label">サイト</span>x.com</span><span class="metadata-item"><span class="metadata-label">形式</span>ARTICLE</span></div>
+    <h1 id="_1">そもそもループって何だろう？</h1>
+  </header>
+<nav class="toc" aria-label="目次">
+  <div class="toc-heading">
+    <span class="toc-title">目次</span>
+    <span class="toc-count">8 セクション</span>
+  </div>
+  <ol><li><a href="#1-execution-loop">1. 実行ループ（execution loop）：エージェント自身の行動・観察サイクル</a></li><li><a href="#2-task-loop">2. タスクループ（task loop）：仕様が満たされるまでエージェントを再起動する</a></li><li><a href="#3-product-loop">3. プロダクトループ（product loop）：ソフトウェアファクトリー</a></li><li><a href="#4-system-loop">4. システムループ（system loop）：オートリサーチ</a></li><li><a href="#4">4つのループを並べて比較する</a></li><li><a href="#agentic-mapreduce">Agentic MapReduceはどうか？</a></li><li><a href="#oversight-loop">最上位の名なきループは監督ループ（oversight loop）だ</a></li><li><a href="#_2">あなたはどれを作っているのか？</a></li></ol>
+</nav>
+  <div class="article-body">
+
 <p>AIエンジニアリングの世界は今月、新しいお気に入りの言葉を採用した。それは「ループ（loop）」だ。しかし、この言葉は少なくとも4つの異なる意味を持っている。</p>
 <p>私たちは今、ハイプサイクルのピークにいる。6月7日、Peter Steinbergerはコーディングエージェントにプロンプトを打つべきではなく、エージェントにプロンプトを打つループを設計すべきだと投稿した。同じ週、AnthropicのBoris Chernyはステージで、もはやClaudeにプロンプトを打たないと語った。「私はループを書く。ループが仕事をする」と。Addy Osmaniは6月7日に<a href="https://addyosmani.com/blog/loop-engineering/">Loop Engineering</a>というエッセイを公開し、swyxは6月12日に<a href="https://www.latent.space/p/ainews-loopcraft-the-art-of-stacking">Loopcraft: The Art of Stacking Loops</a>を、LangChainは6月16日に<a href="https://www.langchain.com/blog/the-art-of-loop-engineering">The Art of Loop Engineering</a>を公開した。そしてAI Engineer World's Fairが開催され、この言葉が<a href="https://www.latent.space/p/aiewf-daily-dispatch-loops">メインステージを支配した</a>。swyxのキーノートはLoopcraftについて、ソフトウェアファクトリーに特化したトラックが設けられ、登壇者の次々とが同じ言葉に手を伸ばし、7月2日のカンファレンスは、ループのハイプが実践で機能するものを追い越したかどうかについて1時間の議論で幕を閉じた。</p>
 <p>問題は、ループについて語る人々が同じものを議論していないことだ。私はその一語の背後に少なくとも4つの異なるアーキテクチャが隠れていると数えた。そこでこの投稿は、みんなが何を意味しているのかを整理する試みである。</p>
-<h2>1. 実行ループ（execution loop）：エージェント自身の行動・観察サイクル</h2>
+<h2 id="1-execution-loop">1. 実行ループ（execution loop）：エージェント自身の行動・観察サイクル</h2>
 <p>「エージェント」と言ったときに多くの人が思い浮かべるのがこのループだ。ツールを呼び出し、結果を読み、次のアクションを決定し、呼び出すツールがなくなるまで繰り返す。Addyが内側の実行ループと呼ぶ部分であり、エージェントが今やほぼ自律的に実行できる部分であり、設計できる最も内側のループでもある（swyxのスタックにはトークンループがあるが、誰もトークンループを設計しない。それはモデルの一部に過ぎない）。</p>
 <blockquote>
 <p><strong>[図]</strong> 「Loopcraft: The Art of Stacking Loops」と題された概念図。Tokens→Turns→Tasks→Teamsの4段階のフローと、内側から外側へ5層のネストしたループ（トークンループ、エージェントターン、/goalループ、MetaLoop、????ループ）が示され、各層に終了条件と時間スケール（秒〜無限）が記載されている。</p>
 </blockquote>
 <p>swyxのLoopcraft図</p>
 <p>実行ループは1つのタスク内のステップを反復する。終了は環境からのフィードバックで起こる：テスト出力、APIレスポンス、ファイル内容など。人間は通常ループの途中では不在で、境界に現れる。計画の承認や結果のレビューだ。エージェントが完了したと判断したときにも終了するが、実際に完了しているかどうかは別問題だ。分野が見つけた最初の修正策は、このループを別のループで包み、エージェントの言葉をそのまま受け入れないようにすることだった。</p>
-<h2>2. タスクループ（task loop）：仕様が満たされるまでエージェントを再起動する</h2>
+<h2 id="2-task-loop">2. タスクループ（task loop）：仕様が満たされるまでエージェントを再起動する</h2>
 <p>これが最初に名前を得たループで、Geoffrey HuntleyのRalph Loopだ。AI Engineer World's Fairのメインステージで、KeycardのAllie Howeがソフトウェアファクトリートラックを紹介する際に、彼の記事<a href="https://ghuntley.com/loop/">everything is a ralph loop</a>を引用して名前が挙がった。Ralphループは同じ仕様に対してコーディングエージェントを何度も再起動し、反復ごとに完全に新しいコンテキストウィンドウを割り当て、ループあたりちょうど1つのタスクを行う。一見の無駄こそがポイントだ。毎回フルの仕様を再投入することで、長時間セッションを静かに劣化させるコンテキスト腐敗やコンパクションイベントを防ぐ。</p>
 <p>このループが反復するのは単一のアーティファクトだ。ループを終わらせるのは仕様への適合とテストの合格だ。人間は仕様を書き、完了を判断する。Geoffreyの語りでは、人間にはもう一つの仕事がある。後で戻るが、それはループを監視し、失敗パターンを見つけ、再発しないよう修正することだ。カンファレンス最終日のクロージングディベートで、彼はその役割を機関車の運転士に例えた。列車をレール上に保つことが仕事全体の人物だ。単一の仕様からズームアウトすると、はるかに大きなループが見えてくる。コードベース全体を回すものだ。</p>
-<h2>3. プロダクトループ（product loop）：ソフトウェアファクトリー</h2>
+<h2 id="3-product-loop">3. プロダクトループ（product loop）：ソフトウェアファクトリー</h2>
 <p>これがAI Engineer World's Fairで最も大きな声だったバージョンだ。FactoryのTereza Tížkováはソフトウェアファクトリーを「ループ全体、自律性を持ってソフトウェアを開発するライフサイクル全体」と定義した。WarpのZach Lloydは<a href="https://www.latent.space/p/aiewf-daily-dispatch-loops">Latent Spaceとのインタビュー</a>で、そのライフサイクルが何かを具体的に語った。トリアージ、仕様策定、実装、レビュー、検証、リリース、モニタリングだ。Zachの主張は、ソフトウェアエンジニアリングがファクトリーエンジニアリングになり、プロダクトを作るものを作ることになるということだ。Warpはこれを自社で実践している。同社は自社のオープンソースリポジトリをファクトリープラットフォームOzの管理下に置き、Zachは導入パスを低リスクのリポジトリから始め、自動PRマージ率を20%から60%へと段階的に上げていくと説明する。Anthropicも社内で同じ実験を走らせているようだ。同社は<a href="https://www.anthropic.com/news/introducing-claude-tag">プロダクトチームのコードの65%</a>が社内版Claude Tagによって作られるようになったと述べ、Mike KriegerはWorld's Fairで自チームの利用を委任型かつ能動的と描写した。「このバグを直して」ではなく、コードベースのこの部分の責任を引き受け、このフィードバックチャネルを監視し、自らタスクを拾い上げる、という形だ。</p>
 <p>タスクループと実行ループには明確な終了条件がある。プロダクトループはコードベースとそのバックログを継続的に反復し、終了シグナルはコードベースの外から来る。新しいイシュー、本番ログ、ユーザーフィードバック、レビュー結果だ。人間の役割は設定可能になる。Zachの枠組みでは、ライフサイクルのどの部分を自動化し、どこで人間を呼び込むかを選ぶ。組織によっては高リスク変更のコードレビューを人間が残すかどうかなど、判断が異なる。ファクトリーはプロダクトを改善する。次のループはファクトリー自体を改善する。</p>
-<h2>4. システムループ（system loop）：オートリサーチ</h2>
+<h2 id="4-system-loop">4. システムループ（system loop）：オートリサーチ</h2>
 <p>IntrospectionのRoland Gavrilescuはこれをオートリサーチと呼び、<a href="https://www.latent.space/p/autoresearch-introspection">Latent Spaceのインタビュー</a>での彼の枠組みが最も明快だ。内側のループはユーザー向けの主要システムが仕事をするループであり、外側のループは主要システムを研究し保守する。反復するのはプロンプト、ハーネス、モデル選択、そして評価（eval）自体だ。彼の一言で言えば、ループがプロダクトである。</p>
 <p>このパターンには今、規模の両端で実在の証明がある。最小のケースはAndrej Karpathyの2026年3月のautoresearchで、約630行のPythonが1つのGPUで一晩に50回の仮説・編集・評価実験を走らせた。出荷済みのケースはMetaのBrain2Qwerty v2で、<a href="https://ai.meta.com/blog/brain2qwerty-brain-ai-human-communication/">6月下旬に発表された</a>。研究者はエージェントがコードベースを反復的に修正してより良いデコーディングアーキテクチャを発明し、単語誤り率が大幅に改善したと報告している。Metaの注意書きは示唆に富む。最終的な学習設定は依然として手で選ばれた。フラッグシップのシステムループでさえ、最後のチェックポイントに人間がいる。</p>
 <p>このループを終わらせるシグナルは4つの中で最も要求が厳しい。eval、ジャッジ、フィルタ済みのプロダクトフィードバック、そしてRolandの設計では、新入社員がそうするように暗黙知を蓄積するための明示的なask-a-humanツールだ。そしてそれがスタックの頂上だ。4つをまとめると、システム全体の形が見えてくる。</p>
-<h2>4つのループを並べて比較する</h2>
+<h2 id="4">4つのループを並べて比較する</h2>
 <blockquote>
 <p><strong>[図]</strong> AIエージェントの4種類のループ（Execution loop、Task loop、Product loop、System loop）を、反復対象・終了シグナル・人間の役割・時間スケール・代表的な例の6項目で比較した表。実行ループは分単位のタスク内ステップ、タスクループは時間単位の仕様対応、プロダクトループは継続的なコードベース運用、システムループは日〜週単位のシステム改善を示している。</p>
 </blockquote>
-<h2>Agentic MapReduceはどうか？</h2>
+<h2 id="agentic-mapreduce">Agentic MapReduceはどうか？</h2>
 <p>同じ週の有名なパターンの一つが、この地図から意図的に欠けている。Cognitionの<a href="https://cognition.com/blog/introducing-devin-security-swarm">Devin Security Swarm</a>は、リポジトリ全体に並列の境界付きエージェントを展開し、発見を集約する。彼らがAgentic MapReduceと呼ぶ形状で、ループと呼ばれる。私はそれはループだとは思わない。ディスパッチ、収集、検証はパイプラインだ。次のサイクルにフィードバックするものがなく、フィードバックのないループは単なるfor文に過ぎない。ファンアウトは4つのループのいずれかの中に展開できるトポロジーであり、それ自体がループではない。</p>
-<h2>最上位の名なきループは監督ループ（oversight loop）だ</h2>
+<h2 id="oversight-loop">最上位の名なきループは監督ループ（oversight loop）だ</h2>
 <p>swyxのループ図では、最も外側のリング、ループを作るループの上にあるものは文字通り「???? loop」とラベル付けされている。その動詞は目標設定、割り当て、淘汰（cull）だ。終了条件は「なし」と記されている。</p>
 <p>私はそのループには名前があると思う。監督ループと呼ぶ。目標が設定され、予算が割り当てられ、仕事が淘汰される場所であり、人間が住むべき唯一のリングだ。AddyはAIEWFのステージで言った。「内側のループは能力（capability）。外側のループはエージェンシー（agency）」だ。エージェンシーこそが監督ループが保持するものだ。</p>
 <blockquote>
@@ -117,9 +764,73 @@ th, td {
 <p>クロージングディベートはLatent Spaceのカンファレンスレポートで取り上げられ、両方の立場が一つのステージに並んだ。HumanLayerのDex Horthyは反ループではないと強調し、Kubernetesが制御ループ上に構築されているが、それは決定論的なものだと指摘した。彼の懸念は、熱意がエンジニアリングを追い越していることだ。彼のアドバイスは抽象度を上げるのではなく下げることだった。Geoffreyは反対側を取り、ループは避けられないと呼んだ。Mikeは最も正直なデータポイントを提供した。Anthropic社内でも、Tagを運用するチームはレビューと、システムが何をしているかを概念化する人間の能力にボトルネックがあると報告している。人間が自分のために残したチェックポイントが、今や制約になっている。</p>
 <p>自律性は4つのループそれぞれに独立して存在するダイアルだ。厳しく監督されたプロダクトループの中で完全自律の実行ループを走らせることもできる。目標設定を完全に人間に残しながらシステムループをエージェントに任せることもできる。興味深いエンジニアリングの問いはどちらの陣営が勝つかではなく、各ダイアルを正しく設定するためにどんな情報が必要かだ。</p>
 <p>上の表は、その空白を埋める私の試みだ。最上位のループを含め、すべてのループには名付けられる終了条件があり、最上位のそれはあなただ。しかしシグナルに名前を付けることと、それを配線することは同じではない。シグナルのないループは収束しない。外部の何かが止めるまでただ走り続けるだけだ。ループが実際に閉じているかどうかを本番規模で知るには、トランスクリプトをスポットチェックするのではなく、トレースをスイープし失敗を継続的にクラスタリングする必要がある。それがまさに<a href="https://arize.com/?utm_source=lvoss&amp;utm_medium=linkedin&amp;utm_campaign=devrel&amp;utm_content=The%20Loop%20Is%20the%20New%20Unit%20of%20Engineering%3A%20A%20Field%20Guide">Arize AX</a>が作られた仕事だ。</p>
-<h2>あなたはどれを作っているのか？</h2>
+<h2 id="_2">あなたはどれを作っているのか？</h2>
 <p>ループに名前が付いた今、それが問うべき質問だ。今月「ループ」という言葉は多くの仕事をしている。この分野は次のホットなものに飛びつくことを何より愛するからだ。しかし4つのループすべての背後には実践があり、それは各々で同じ実践だ。人々は抽象度のレベルを上げ、人間の判断をスタックのさらに上へ押し上げている。それがループの実際の教訓だ。スタックを登ることでより多くを成し遂げ、今や地図があるので、どこを登るべきか分かる。</p>
 <p>共著：<a href="https://x.com/@seldo">@seldo</a></p>
+  </div>
+  <footer class="article-footer">
+    <span>取得: 2026-07-08T17:44:47+09:00</span>
+    <a href="#article-top">↑ 先頭へ戻る</a>
+  </footer>
 </main>
+<script>
+(() => {
+  const progress = document.querySelector(".reading-progress > span");
+  const updateProgress = () => {
+    const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+    const ratio = scrollable > 0 ? window.scrollY / scrollable : 0;
+    if (progress) progress.style.width = `${Math.min(1, ratio) * 100}%`;
+  };
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  document.querySelectorAll("pre").forEach((block) => {
+    const button = document.createElement("button");
+    button.className = "copy-button";
+    button.type = "button";
+    button.textContent = "コピー";
+    button.addEventListener("click", async () => {
+      const text = block.querySelector("code")?.innerText || block.innerText;
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const textarea = document.createElement("textarea");
+          textarea.value = text;
+          textarea.style.position = "fixed";
+          textarea.style.opacity = "0";
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand("copy");
+          textarea.remove();
+        }
+        button.textContent = "コピー済み";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      } catch (error) {
+        button.textContent = "失敗";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      }
+    });
+    block.appendChild(button);
+  });
+
+  const links = new Map(
+    [...document.querySelectorAll(".toc a")].map((link) => [link.hash, link])
+  );
+  const headings = [...document.querySelectorAll(
+    ".article-body h2[id], .article-body h3[id], .article-body h4[id]"
+  )];
+  if ("IntersectionObserver" in window && headings.length) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        links.forEach((link) => link.classList.remove("is-active"));
+        links.get(`#${entry.target.id}`)?.classList.add("is-active");
+      });
+    }, { rootMargin: "-12% 0px -72% 0px" });
+    headings.forEach((heading) => observer.observe(heading));
+  }
+})();
+</script>
 </body>
 </html>

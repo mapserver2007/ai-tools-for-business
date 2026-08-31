@@ -74,6 +74,7 @@ Speaker Deck はスライド画像を主資料、Transcript を OCR 補助資料
 
 - Markdown と同じ内容を `agent-articles/html/{sanitized_title}.html` に出力する
 - HTML は単独で開ける HTML5 文書とし、frontmatter は `<meta>` 要素、本文は HTML 要素へ変換する
+- インライン CSS と JavaScript でダークテーマのカード型レイアウト、目次、読了進捗、見出し・引用・コード・表、コードコピー、レスポンシブ表示、印刷表示を整える
 - Markdown の画像リンクは出力せず、Markdown 側で生成した画像説明を本文に反映する
 - Markdown の画像説明・翻訳・Speaker Deck の意味変換が完了した後、`render_html.py` で HTML を再生成する
 
