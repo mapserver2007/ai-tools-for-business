@@ -1,0 +1,860 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="title" content="プロンプトエンジニアリング全体を置き換えたループの作り方">
+<meta name="source_url" content="https://x.com/hanakoxbt/status/2077387678241141070">
+<meta name="author" content="Hanako (@hanakoxbt)">
+<meta name="published_at" content="2026-07-15">
+<meta name="retrieved_at" content="2026-09-13T17:48:45+09:00">
+<meta name="site" content="x.com">
+<meta name="content_type" content="article">
+<meta name="original_language" content="en">
+<title>プロンプトエンジニアリング全体を置き換えたループの作り方</title>
+<style>
+:root {
+  color-scheme: light;
+  --ink: #172033;
+  --muted: #64748b;
+  --line: #dbe4ef;
+  --accent: #2563eb;
+  --accent-dark: #1d4ed8;
+  --accent-soft: #eff6ff;
+  font-family: -apple-system, BlinkMacSystemFont, "Avenir Next",
+    "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 8% 0%, #dbeafe 0, transparent 32rem),
+    radial-gradient(circle at 100% 12%, #e0e7ff 0, transparent 28rem),
+    #f4f7fb;
+  color: var(--ink);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(120deg, transparent 0 48%, rgba(255, 255, 255, 0.4));
+}
+.article {
+  position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
+  max-width: 920px;
+  margin: clamp(1rem, 5vw, 4rem) auto;
+  padding: clamp(2rem, 6vw, 5rem) clamp(1.25rem, 7vw, 5.5rem);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  border-radius: 24px;
+  min-height: 100vh;
+  box-shadow:
+    0 24px 70px rgba(30, 64, 175, 0.1),
+    0 4px 16px rgba(15, 23, 42, 0.04);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 5px;
+  content: "";
+  background: linear-gradient(90deg, #2563eb, #7c3aed, #db2777);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin: 0 0 2.5rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.72rem;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+a {
+  color: var(--accent-dark);
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: #7c3aed;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--ink);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 18ch;
+  margin: 0 0 2.5rem;
+  font-size: clamp(2.15rem, 5vw, 3.65rem);
+  letter-spacing: -0.045em;
+}
+h2 {
+  position: relative;
+  margin: 3.8rem 0 1.25rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--line);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 4.2rem;
+  height: 3px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), #7c3aed);
+  border-radius: 999px;
+}
+h3 {
+  margin: 2.6rem 0 0.8rem;
+  color: var(--accent-dark);
+  font-size: 1.3rem;
+}
+h4, h5, h6 {
+  margin-top: 2rem;
+}
+p {
+  margin: 1.15rem 0;
+}
+ul, ol {
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.35rem 0;
+}
+li::marker {
+  color: var(--accent);
+  font-weight: 700;
+}
+strong {
+  color: #111827;
+}
+blockquote {
+  margin: 1.6rem 0;
+  padding: 0.8rem 1.25rem;
+  color: #475569;
+  background: linear-gradient(90deg, var(--accent-soft), #fff);
+  border-left: 4px solid var(--accent);
+  border-radius: 0 12px 12px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 3rem 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+img {
+  display: block;
+  max-width: 100%;
+  margin: 1.75rem auto;
+  height: auto;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+}
+pre {
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  padding: 1.15rem 1.25rem;
+  color: #e2e8f0;
+  background: #111827;
+  border: 1px solid #253047;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+}
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+:not(pre) > code {
+  padding: 0.15rem 0.4rem;
+  color: #9f1239;
+  background: #fff1f2;
+  border-radius: 5px;
+}
+table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  border-collapse: collapse;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
+  text-align: left;
+}
+th {
+  color: #1e3a8a;
+  background: #eff6ff;
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: #f8fafc;
+}
+@media (max-width: 600px) {
+  .article {
+    margin: 0;
+    padding: 2rem 1rem 4rem;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(2rem, 10vw, 2.75rem);
+  }
+  .metadata {
+    margin-bottom: 2rem;
+  }
+}
+@media print {
+  body {
+    background: #fff;
+  }
+  .article {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  a {
+    color: inherit;
+  }
+}
+</style>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0f1419;
+  --surface: #1a2332;
+  --surface-raised: #202c3f;
+  --surface-soft: rgba(26, 35, 50, 0.72);
+  --border: #2d3a4f;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #58a6ff;
+  --accent-strong: #79c0ff;
+  --green: #3fb950;
+  --purple: #bc8cff;
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+    "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  line-height: 1.75;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+  background: var(--bg);
+}
+body {
+  min-width: 320px;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 2rem 1.5rem 5rem;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(31, 111, 235, 0.18), transparent 32rem),
+    radial-gradient(circle at 100% 12%, rgba(137, 87, 229, 0.14), transparent 28rem),
+    var(--bg);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black, transparent 75%);
+}
+.reading-progress {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 20;
+  height: 3px;
+  background: rgba(45, 58, 79, 0.7);
+}
+.reading-progress > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  box-shadow: 0 0 14px rgba(88, 166, 255, 0.8);
+  transition: width 80ms linear;
+}
+.article {
+  position: relative;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  background: rgba(15, 20, 25, 0.76);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(88, 166, 255, 0.035) inset;
+  backdrop-filter: blur(16px);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  border-radius: 16px 16px 0 0;
+}
+.article-header {
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.eyebrow-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--green);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(63, 185, 80, 0.75);
+}
+.eyebrow-separator {
+  color: var(--border);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  background: rgba(32, 44, 63, 0.68);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+.source-link {
+  color: var(--text);
+  text-decoration: none;
+}
+.source-link:hover {
+  border-color: var(--accent);
+  background: rgba(88, 166, 255, 0.12);
+}
+a {
+  color: var(--accent);
+  overflow-wrap: anywhere;
+  text-decoration: none;
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 24ch;
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  background: linear-gradient(120deg, #fff 12%, #b9d8ff 58%, #bc8cff);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+h2 {
+  position: relative;
+  margin: 3.2rem 0 1.1rem;
+  padding: 0.75rem 0 0.65rem;
+  border-bottom: 1px solid var(--border);
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 3.8rem;
+  height: 2px;
+  content: "";
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(88, 166, 255, 0.7);
+}
+h3 {
+  margin: 2.25rem 0 0.7rem;
+  color: var(--accent-strong);
+  font-size: 1.2rem;
+}
+h4, h5, h6 {
+  margin-top: 1.75rem;
+}
+p {
+  margin: 0.9rem 0;
+}
+ul, ol {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.3rem 0;
+}
+li::marker {
+  color: var(--accent);
+}
+strong {
+  color: #fff;
+}
+blockquote {
+  margin: 1.4rem 0;
+  padding: 0.85rem 1.15rem;
+  color: #c9d1d9;
+  background: linear-gradient(100deg, rgba(88, 166, 255, 0.1), rgba(26, 35, 50, 0.55));
+  border: 1px solid rgba(88, 166, 255, 0.18);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 2.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+}
+pre {
+  position: relative;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  padding: 1rem 1.15rem;
+  color: #dbeafe;
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+pre code {
+  color: inherit;
+  background: transparent;
+}
+code {
+  font-family: "SF Mono", "Fira Code", ui-monospace, monospace;
+  font-size: 0.86em;
+}
+:not(pre) > code {
+  padding: 0.12em 0.38em;
+  color: #ffabbc;
+  background: rgba(248, 81, 73, 0.11);
+  border-radius: 4px;
+}
+.copy-button {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  padding: 0.25rem 0.55rem;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.72rem;
+  background: rgba(32, 44, 63, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.copy-button:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  border-spacing: 0;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.6rem 0.75rem;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+th {
+  color: var(--accent);
+  background: var(--surface);
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: rgba(26, 35, 50, 0.42);
+}
+tr:last-child td {
+  border-bottom: 0;
+}
+th:last-child, td:last-child {
+  border-right: 0;
+}
+.toc {
+  margin: 1.75rem 0 2.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.toc-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--border);
+}
+.toc-title {
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.toc-count {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.toc ol {
+  margin: 0.7rem 0 0;
+  padding-left: 1.25rem;
+}
+.toc ol ol {
+  margin: 0.2rem 0;
+}
+.toc li {
+  margin: 0.18rem 0;
+  font-size: 0.86rem;
+}
+.toc li::marker {
+  color: var(--muted);
+}
+.toc a {
+  display: inline-block;
+  max-width: 100%;
+  color: var(--muted);
+  transition: color 160ms ease, transform 160ms ease;
+}
+.toc a:hover, .toc a.is-active {
+  color: var(--accent-strong);
+  text-decoration: none;
+  transform: translateX(2px);
+}
+.article-body {
+  max-width: 78ch;
+  margin: 0 auto;
+}
+.article-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 1rem;
+  color: var(--muted);
+  font-size: 0.74rem;
+  border-top: 1px solid var(--border);
+}
+.article-footer a {
+  color: var(--muted);
+}
+@media (max-width: 720px) {
+  body {
+    padding: 0 0 3rem;
+  }
+  .article {
+    min-height: 100vh;
+    padding: 1.5rem 1rem 3rem;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+  .article::before {
+    border-radius: 0;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(1.9rem, 9vw, 2.6rem);
+  }
+  .article-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+@media print {
+  :root {
+    color-scheme: light;
+  }
+  body {
+    padding: 0;
+    color: #111;
+    background: #fff;
+  }
+  .reading-progress, .toc, .copy-button {
+    display: none;
+  }
+  .article {
+    max-width: none;
+    padding: 0;
+    background: #fff;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  h1, h2, h3, h4, h5, h6, strong {
+    color: #111;
+    -webkit-text-fill-color: initial;
+  }
+  a {
+    color: inherit;
+    text-decoration: underline;
+  }
+  pre {
+    color: #111;
+    background: #f4f4f4;
+    box-shadow: none;
+  }
+}
+</style>
+</head>
+<body>
+<div class="reading-progress" aria-hidden="true"><span></span></div>
+<main id="article-top" class="article">
+  <header class="article-header">
+    <div class="eyebrow">
+      <span class="eyebrow-dot"></span>
+      <span>ARTICLE</span>
+      <span class="eyebrow-separator">/</span>
+      <span>x.com</span>
+    </div>
+    <div class="metadata" aria-label="記事メタデータ"><span class="metadata-item"><span class="metadata-label">著者</span>Hanako (@hanakoxbt)</span><span class="metadata-item"><span class="metadata-label">公開日</span>2026-07-15</span><a class="metadata-item source-link" href="https://x.com/hanakoxbt/status/2077387678241141070"><span class="metadata-label">原文</span>読む</a><span class="metadata-item"><span class="metadata-label">サイト</span>x.com</span><span class="metadata-item"><span class="metadata-label">形式</span>ARTICLE</span></div>
+    <h1 id="_1">プロンプトエンジニアリング全体を置き換えたループの作り方</h1>
+  </header>
+<nav class="toc" aria-label="目次">
+  <div class="toc-heading">
+    <span class="toc-title">目次</span>
+    <span class="toc-count">6 セクション</span>
+  </div>
+  <ol><li><a href="#700">人間が眠っているあいだに700回の実験</a></li><li><a href="#_2">ループはスケジュールされたプロンプトではない</a></li><li><a href="#4">作る前に揃えるべき4条件</a></li><li><a href="#5">ループを本物にする5つのブロック</a></li><li><a href="#_3">ループが静かに失敗する場所</a></li><li><a href="#101">10本ではなく、1本のループから始める</a></li></ol>
+</nav>
+  <div class="article-body">
+
+<p>この2年間、AIエージェントからより多くの成果を引き出すとは、より良いプロンプトを書くことだった。</p>
+<p>その時代は静かに終わりつつある。世界最高水準のエンジニアたちは、しばらく前からプロンプトを書くのをやめ、ループを書くようになった。エージェントに指示を出し、結果を検証し、仕事が終わるまで動かし続けるシステムだ。</p>
+<p>Karpathy の一晩スクリプトは、彼が20年かけて手でチューニングしても見逃していた最適化を20件見つけた。Claude Code を作った Boris Cherny は、今年1行もコードを書いていない。Anthropic のエンジニアは、2024年当時と比べて1日あたり約8倍のコードをマージしている。</p>
+<p>誰も、より賢い文章を打ったわけではない。打つこと自体をやめたのだ。</p>
+<p>ループとは何か、いつ必要で、いつ不要で、最初の1本をどう作るか。</p>
+<h2 id="700">人間が眠っているあいだに700回の実験</h2>
+<p>2026年3月。Andrej Karpathy が3つのファイルを GitHub に推す。コードはおよそ630行。</p>
+<p>1つはモデル本体。1つはスコアを付ける。1つはエージェントに「何を探索し、何に手を出さないか」を伝える。エージェントが触ってよいのは学習用ファイルだけ。それ以外は不可。</p>
+<p>サイクルは意図的につまらない。コードを読む、変更を提案する、5分学習する、スコアが上がったか見る、上がれば残し、上がらなければ戻す、また繰り返す。</p>
+<p>彼は、すでに20年手でチューニングしてきたモデルにこれを向け、2日間走らせた。</p>
+<p>700回の実験が走り、20件の改善が見つかった。その1つは attention 機構に欠けていたスカラー乗数だった。微妙で、リンターが捕まえる類のバグではない。しかし注意深いエンジニアなら見つけられたはずで、実際には見つけなかった種類のものだ。</p>
+<p>Shopify の CEO も社内モデルに同じ手を一晩かけた。起きたら、以前の半分のサイズのモデルで品質が19%上がっていた。</p>
+<p>洞察は「AIが賢くなった」ではない。人間は12回目の実験で疲れる。ループは疲れない。</p>
+<blockquote>
+<p><strong>[図]</strong> 「STEP 01 · THE KARPATHY LOOP」の図。見出しは「700 experiments overnight, while the human slept」。約630行のスクリプトが、20年の専門家が見逃した改善を20件見つけたとある。ターミナルには <code>python autoresearch --config program.md --budget 2d</code> が走り、エージェントは <code>train.py</code> のみ編集可、<code>prepare.py</code> は読み取り専用。baseline の val_bpb は 2.5643。attention scaling factor や attention の missing scalar などが keep され、700実験・改善20件・net -0.0421 でゴール条件を満たして停止している。脚注は「autoresearch · 630 lines · 66k stars on github」と「humans get tired at experiment 12」。</p>
+</blockquote>
+<h2 id="_2">ループはスケジュールされたプロンプトではない</h2>
+<p>多くの人は「ループ」と聞いて cron を思い浮かべる。それでは本質を外す。</p>
+<p>プロンプトは1つの指示だ。ループは、誰も席にいなくても、AIが到達するまで追い続ける目標である。計画し、実行し、自分の結果を検証し、その結果をフィードバックし、繰り返す。</p>
+<p>5つの段階がある。発見、計画、実行、検証、反復。実際の仕事をするのはそのうち3つだ。</p>
+<p>検証器（verifier）がループの心臓部だ。出力に本物のゲートがなければ、ループではなく、エージェントが永遠に自分の宿題を採点しているだけになる。ゲートとは、通る/落ちるテスト、通る/落ちるビルド、ゼロ/非ゼロを返すリンターだ。意見を持つ第二のエージェントではない。</p>
+<p>状態こそが、ループを学習させる。会話の外にあるファイル、Linear のボード、プロジェクトログ。試したことと失敗したことが残る場所。翌日の実行はゼロから始めず、再開する。</p>
+<p>停止条件が正気を保つ。本物のループには出口が2つある。目標を満たしたか、ハードキャップが発火したか。これを省略すると、何のためにもならない一晩中の機械になる。</p>
+<p>3つのどれかが欠ければ、ループではない。高いスクリプトを作っただけだ。</p>
+<h2 id="4">作る前に揃えるべき4条件</h2>
+<p>ループは、次の4つが同時に成り立つときだけコストに見合う。1つ欠けると、準備のほうが回収を上回る。</p>
+<ul>
+<li>その仕事は少なくとも週1回は繰り返される。それ未満だとセットアップ費用が償却されない。</li>
+<li>成果を自動で不合格にできるものがある。テスト、型チェック、リンター、ビルド。</li>
+<li>トークン予算が無駄を吸収できる。ループはコンテキストを再読し、再試行し、探索する。</li>
+<li>エージェントにシニアエンジニア並みの道具がある。ログ、再現環境、書いたコードを実行して壊れた箇所を見る能力。</li>
+</ul>
+<p>正直な話、ループを売る側が言わない部分がある。ほとんどの人は、まだ重い版を必要としていない。コンシューマプランで本格作業の一晩検証ループを回そうとすると、生産性の前にトークン請求が来る。</p>
+<p>最初のループとして良いのは退屈なものだ。CI の仕分け。依存関係のバンプ。リントして直すパス。フレークなテストの再現。すでに強いテストがあるコードベースでの Issue から PR 下書き。</p>
+<p>最初のループとして悪いのは面白いものだ。アーキテクチャの書き換え。認証コード。決済。完了が判断であり、人間がまだ口を出す必要があるもの。</p>
+<h2 id="5">ループを本物にする5つのブロック</h2>
+<p>本物のループは、どれも同じ5つの部品から組み立てられる。Claude Code と Codex は、いまその全部を載せている。</p>
+<p>1つ目は自動化。心拍だ。スケジュールかイベントでループを発火させるもの。<code>/loop</code> は周期で走る。<code>/goal</code> はあなたが定義した条件が本当に成り立つまで続く。心拍がなければ、一度走らせて忘れたスクリプトだ。</p>
+<p>2つ目はスキル。毎回の実行でエージェントが読む claude-md として保存されたプロジェクト知識。なければ、ループは毎回ゼロから文脈を再導出する。あれば、意図が積み上がる。規約、ビルド手順、3ヶ月前のあの一件のせいで絶対にやらないことが、ループに分かる。</p>
+<p>3つ目はサブエージェント。作る側と検査する側を同じモデルにしてはいけない。コードを書いた側は、自分の仕事を採点しすぎるほど甘い。記事を書いた側は、弱い箇所を見落とす。ライターは速く安く。レビューアは遅く厳しく。その分離が品質の大半だ。</p>
+<p>4つ目はコネクタ。ループがプルリクエストを開き、チケットを閉じ、CI が緑になったらチャンネルに ping する。これが、「修正案はこちら」と言うエージェントと、朝起きたら PR はもうマージ済みだと報告が待っている状態の差だ。</p>
+<p>5つ目は検証器。悪い成果を自動で落とすテスト、型チェック、ビルド。ほかは配管だ。ループが助けになるか、金を使うだけかを決めるブロックがこれだ。</p>
+<p>これを積み上げると、本格チームがいま大規模に回しているものになる。狭い仕事を1つずつ持つループが何十本も並び、全員が眠っているあいだに並行して走る。あるエンジニアは、このようなフリートのループでコードベース全体を別言語へ約6日で書き換えた。手作業ならほぼ1年かかる仕事だった。</p>
+<blockquote>
+<p><strong>[図]</strong> 「STEP 04 · ANATOMY OF A LOOP」の図。見出しは「Five pieces. Miss one and you are burning tokens.」。左から5つの部品。(1) automation（心拍。スケジュールやイベントで発火。<code>/loop 30m</code>、<code>/goal condition</code>）(2) skill（持続メモリ。claude-md、SKILL.md）(3) sub-agents（maker vs checker。writer: fast / reviewer: strict）(4) connectors（実ツール。GitHub、Linear、Slack、Sentry）(5) verifier（悪い成果を自動で落とすテスト、型、リント、ビルド）。下部の流れは fire → recall → write → check → act → gate。脚注は「the verifier is not optional」。</p>
+</blockquote>
+<h2 id="_3">ループが静かに失敗する場所</h2>
+<p>ループはクラッシュしない。静かに請求する。名前を付けておくべき失敗モードが2つあり、どちらもループが上手くなるほど、楽になるのではなく悪化する。</p>
+<p>1つ目は Ralph Wiggum ループ。エンジニアの Geoffrey Huntley が文書化した。エージェントが早すぎる段階で完了と判断し、未完了の仕事に完了シグナルを出し、ループは満足して抜ける。硬い客観的ゲートがなければ、翌日も走り、課金し続け、誰も受け入れない成果を出し続ける。</p>
+<p>直し方は、より賢いエージェントではない。より愚かなゲートだ。通る/落ちるテスト。通る/落ちないビルド。意見を持たない何か。</p>
+<p>2つ目はより微妙だ。理解負債（comprehension debt）。自分が書いていないコードをループが速く出すほど、リポジトリの中身と自分が実際に理解していることの差は広がる。滑らかに回るループは、その差に複利を課す。チームの誰も読んでいないシステムをデバッグする日のコストは、トークン代より高い。</p>
+<p>認知の降伏も一緒に来る。ループが自分で回ると、意見を持つのをやめ、戻ってきたものを受け入れる誘惑がある。判断を持ってループを設計するなら治療になる。考えるのを避けるためにやるなら加速剤になる。同じ行為、反対の結果。</p>
+<p>まったく同じループを2人が作っても、着地点は逆になりうる。一方は深く理解している仕事を速く進めるために使う。もう一方は仕事を理解しないために使う。ループはその違いを知らない。知るのはあなただ。</p>
+<blockquote>
+<p><strong>[図]</strong> 「STEP 05 · WHERE LOOPS FAIL SILENTLY // DO NOT SKIP」の図。見出しは「Loops do not crash. They bill you in silence.」。左は Ralph Wiggum loop「The false finish」。テスト失敗が残っているのに iter 05 で「good enough」と出てゲートなしにループが満足して終了し、現実はテスト2件がまだ赤、翌日も同じ再試行、トークン代は空回り。直し方は客観的ゲート。右は comprehension debt「The trap that grows」。週を追うごとにループが出す PR が増え、人間の通読は減り、ゲートが捕まえるのは4%、残る96%はデバッグが必要になり、その日のコストはトークンより大きい。直し方は差分を読む、ゲートを抜き打ち確認する、判断仕事からループを遠ざける。脚注は「the loop does not know. you do.」。</p>
+</blockquote>
+<h2 id="101">10本ではなく、1本のループから始める</h2>
+<p>誰もがやる間違いは、初日にシステム全体を作ろうとすることだ。10本のループ、ダッシュボード、フリート。週末までに崩れる。どのループが何をしたか分からなくなるからだ。</p>
+<p>1本から始めろ。毎朝習慣で確認している、いちばん面倒な繰り返し仕事を選び、その1件だけをループにする。数日走らせる。行き過ぎる場所を見る。取りこぼす場所を見る。締める。それから2本目を足す。</p>
+<p>順番はツールより大事だ。まず手での1回を、速くではなく、信頼できるものにする。その実行を claude-md のスキルにする。スキルを、客観的ゲートと硬い停止条件つきのループで包む。そして、そのとき初めてスケジュールに載せる。先に飛ばして、手で信頼できるようにしていないものをスケジュールするのが、寝ているあいだにループが爆発するやり方そのものだ。</p>
+<p>ループが効いているかを決める指標は、使ったトークンでも、試したタスクでも、開いた PR でもない。受け入れられた変更あたりのコストだ。受け入れ率が50%を下回るなら、ループが取り除くはずだったレビュー作業をあなたがしており、ループは負けている。</p>
+<p>Karpathy は学習コードを書くのをやめた。Cherny はプロンプトをやめた。どちらも、考えるのをやめたわけではない。1つだけ持っていくならそれだ。ループは退屈な95%をこなすシステムであり、本当にリスクを持つ5%には、あなたが全注意を残す。</p>
+<p>あなたはエージェントのフリートに金を払い、チャット窓を1つ使っている。</p>
+<p>フォローして、Telegram チャンネルも購読してほしい: <a href="https://t.me/+75nMf005jRpjMDU1">https://t.me/+75nMf005jRpjMDU1</a></p>
+  </div>
+  <footer class="article-footer">
+    <span>取得: 2026-09-13T17:48:45+09:00</span>
+    <a href="#article-top">↑ 先頭へ戻る</a>
+  </footer>
+</main>
+<script>
+(() => {
+  const progress = document.querySelector(".reading-progress > span");
+  const updateProgress = () => {
+    const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+    const ratio = scrollable > 0 ? window.scrollY / scrollable : 0;
+    if (progress) progress.style.width = `${Math.min(1, ratio) * 100}%`;
+  };
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  document.querySelectorAll("pre").forEach((block) => {
+    const button = document.createElement("button");
+    button.className = "copy-button";
+    button.type = "button";
+    button.textContent = "コピー";
+    button.addEventListener("click", async () => {
+      const text = block.querySelector("code")?.innerText || block.innerText;
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const textarea = document.createElement("textarea");
+          textarea.value = text;
+          textarea.style.position = "fixed";
+          textarea.style.opacity = "0";
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand("copy");
+          textarea.remove();
+        }
+        button.textContent = "コピー済み";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      } catch (error) {
+        button.textContent = "失敗";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      }
+    });
+    block.appendChild(button);
+  });
+
+  const links = new Map(
+    [...document.querySelectorAll(".toc a")].map((link) => [link.hash, link])
+  );
+  const headings = [...document.querySelectorAll(
+    ".article-body h2[id], .article-body h3[id], .article-body h4[id]"
+  )];
+  if ("IntersectionObserver" in window && headings.length) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        links.forEach((link) => link.classList.remove("is-active"));
+        links.get(`#${entry.target.id}`)?.classList.add("is-active");
+      });
+    }, { rootMargin: "-12% 0px -72% 0px" });
+    headings.forEach((heading) => observer.observe(heading));
+  }
+})();
+</script>
+</body>
+</html>
