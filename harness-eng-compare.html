@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ハーネス設計 vs agentic-workflow-foundation-kit 比較</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --surface: #1a2332;
+      --border: #2d3a4f;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+      --green: #3fb950;
+      --amber: #d29922;
+      --red: #f85149;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      margin: 0;
+      padding: 2rem 1.5rem 4rem;
+      max-width: 960px;
+      margin-inline: auto;
+    }
+    header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin: 0 0 0.5rem;
+      letter-spacing: -0.02em;
+    }
+    .meta {
+      color: var(--muted);
+      font-size: 0.875rem;
+    }
+    h2 {
+      font-size: 1.25rem;
+      margin: 2.5rem 0 1rem;
+      padding-bottom: 0.35rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--accent);
+    }
+    h3 {
+      font-size: 1.05rem;
+      margin: 1.5rem 0 0.75rem;
+      color: var(--text);
+    }
+    p { margin: 0.75rem 0; }
+    ul, ol { margin: 0.5rem 0; padding-left: 1.5rem; }
+    li { margin: 0.35rem 0; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+      margin: 1rem 0;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.6rem 0.75rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: var(--surface);
+      font-weight: 600;
+      color: var(--accent);
+    }
+    tr:nth-child(even) td { background: rgba(26, 35, 50, 0.5); }
+    .summary-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin: 1.5rem 0;
+    }
+    .summary-box strong { color: var(--green); }
+    .tag {
+      display: inline-block;
+      font-size: 0.75rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      margin-right: 0.35rem;
+    }
+    .tag-match { background: rgba(63, 185, 80, 0.2); color: var(--green); }
+    .tag-beyond { background: rgba(88, 166, 255, 0.2); color: var(--accent); }
+    .tag-gap { background: rgba(210, 153, 34, 0.2); color: var(--amber); }
+    .tag-primary { background: rgba(63, 185, 80, 0.35); color: var(--green); font-weight: 600; }
+    .tag-drift { background: rgba(248, 81, 73, 0.2); color: var(--red); }
+    .tag-tradeoff { background: rgba(210, 153, 34, 0.25); color: var(--amber); }
+    .tag-valid { background: rgba(63, 185, 80, 0.25); color: var(--green); }
+    .score { font-weight: 600; color: var(--accent); white-space: nowrap; }
+    .beginner-box {
+      background: linear-gradient(135deg, rgba(26, 35, 50, 0.9), rgba(26, 35, 50, 0.6));
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin: 1.25rem 0;
+    }
+    .beginner-box h4 {
+      margin: 0 0 0.75rem;
+      color: var(--green);
+      font-size: 1rem;
+    }
+    .compare-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    @media (max-width: 720px) {
+      .compare-cols { grid-template-columns: 1fr; }
+    }
+    .compare-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1rem 1.15rem;
+      font-size: 0.9rem;
+    }
+    .compare-card h5 {
+      margin: 0 0 0.5rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .affinity-high { color: var(--green); font-weight: 600; }
+    .affinity-mid { color: var(--accent); }
+    .affinity-low { color: var(--muted); }
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin: 1.5rem 0;
+      font-size: 0.875rem;
+    }
+    .toc ol { margin: 0.5rem 0 0; }
+    .toc a { color: var(--muted); }
+    .toc a:hover { color: var(--accent); }
+    pre {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1rem 1.25rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+    .mermaid-note {
+      background: var(--surface);
+      border-left: 3px solid var(--accent);
+      padding: 1rem 1.25rem;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+    }
+    code {
+      font-family: "SF Mono", "Fira Code", monospace;
+      font-size: 0.85em;
+      background: rgba(88, 166, 255, 0.1);
+      padding: 0.15em 0.4em;
+      border-radius: 3px;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    footer {
+      margin-top: 3rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>ハーネス設計 vs agentic-workflow-foundation-kit 比較</h1>
+  <p class="meta">
+    比較元: <a href="harness-eng.md">tmp/harness-eng.md</a>（Kinopee「ハーネス設計入門」スライド要約）<br>
+    比較先: agentic-workflow-foundation-kit（AGENTS.md / QUALITY_GATE.md / manifest.yaml 等）<br>
+    生成日: 2026-08-31（§13 ジュニア向け説明 追記）
+  </p>
+  <nav class="toc" aria-label="目次">
+    <strong>目次</strong>
+    <ol>
+      <li><a href="#overview">全体像</a></li>
+      <li><a href="#schools">5流派と kit の位置づけ</a></li>
+      <li><a href="#four-tools">ハーネスの4道具</a></li>
+      <li><a href="#guardrails">ガードレール</a></li>
+      <li><a href="#hashimoto">失敗から育てる</a></li>
+      <li><a href="#context">コンテキスト設計</a></li>
+      <li><a href="#security">セキュリティ</a></li>
+      <li><a href="#order">実施順序</a></li>
+      <li><a href="#standardization">標準化</a></li>
+      <li><a href="#evaluation">総合評価</a></li>
+      <li><a href="#de-facto">2026デファクトとの乖離</a></li>
+      <li><a href="#rebuttal">§12 反論・精緻化</a></li>
+      <li><a href="#beginner">§13 ジュニア向け説明</a></li>
+      <li><a href="#conclusion">まとめ</a></li>
+    </ol>
+  </nav>
+</header>
+
+<section id="overview">
+  <h2>1. 全体像：同じ骨格、kit は「基盤ジェネレータ」として厚い</h2>
+  <p>資料の実践編は次の3層を核にしている。</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>資料の概念</th>
+        <th>役割</th>
+        <th>kit での対応</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>ハーネス（馬具）</strong></td>
+        <td>実行前に進路を伝える</td>
+        <td><code>AGENTS.md</code> / <code>.cursor/rules/*.mdc</code> / 14 Skills / 6段階 workflow</td>
+      </tr>
+      <tr>
+        <td><strong>ガードレール（柵）</strong></td>
+        <td>実行後に逸脱を機械判定</td>
+        <td><code>bin/quality-gate *</code> / <code>bin/foundation-gate *</code> / 各種 <code>gate-*.py</code></td>
+      </tr>
+      <tr>
+        <td><strong>フィードバックループ</strong></td>
+        <td>失敗出力を修正に戻す</td>
+        <td>Advisory ループ（exit 1 → 修正 → 再実行）</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="mermaid-note">
+    <strong>構造イメージ</strong><br>
+    資料: Rules/AGENTS.md → Skills → Subagents → 品質ゲート → Advisory ループ<br>
+    kit 拡張: 上記に manifest.yaml SoT / tracker・handoff / 6段階 workflow + Step Gate を追加
+  </div>
+
+  <h3>一致点</h3>
+  <p>資料の3原則（進路を示す / 逸脱を検知 / ループを閉じる）は kit の設計思想とほぼ同型。特に Fowler 派の <strong>Guides（事前制御）+ Sensors（事後検証）</strong> は、kit の「Rules + Hooks + 品質ゲート」構成とよく対応する。</p>
+
+  <h3>相違点</h3>
+  <p>資料は「1プロジェクトに最小限のハーネスを育てる」前提。kit は <strong>manifest → 生成物</strong> という Meta 層 SoT を持つ <strong>再利用可能な基盤キット</strong>。同じ3層モデルの上に、セッション管理・キャンペーン追跡・ADR/GOTCHAS 進化機構が載っている。</p>
+</section>
+
+<section id="schools">
+  <h2>2. 5流派と kit の位置づけ</h2>
+  <p>資料第1部（スライド5–11）が整理する5流派に対し、kit は <strong>単一派系のクローンではなく合成設計</strong> である。骨格は <span class="tag tag-primary">Chase 派</span>、実行モデルは <strong>Fowler 派</strong>、進化運用は <strong>Hashimoto 派</strong>、アーキテクチャ比喩は <strong>Chawla 派</strong> が主成分となる。</p>
+
+  <div class="summary-box">
+    <p><strong>結論:</strong> kit ≈ Chase 派（全体像）+ Fowler 派（制御ループ）+ Hashimoto 派（失敗進化）+ Chawla 派（OS 層比喩）。Codex 派の大規模自律開発は workflow / 並列 dispatch で部分的に共鳴するが、kit の主目的（manifest SoT から基盤を生成・監査する Meta 層キット）とは重心が異なる。</p>
+  </div>
+
+  <h3>流派別の近さ（5段階）</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>順位</th>
+        <th>流派</th>
+        <th>代表者</th>
+        <th>近さ</th>
+        <th>kit との対応</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td><strong>Chase 派</strong></td>
+        <td>Harrison Chase</td>
+        <td class="affinity-high">◎◎◎</td>
+        <td>モデル以外（Rules / Skills / Hooks / ゲート / オーケストレーション / handoff・tracker / サブエージェント）をすべてハーネス側に配置。「If you're not the model, you're the harness」に最も素直</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td><strong>Fowler 派</strong></td>
+        <td>Birgitta Böckeler</td>
+        <td class="affinity-high">◎◎</td>
+        <td><strong>Guides</strong> = <code>AGENTS.md</code> / rules / Session Protocol。<strong>Sensors</strong> = <code>bin/quality-gate *</code> / <code>gate-*.py</code> / exit code Advisory ループ。事前制御 + 事後検証の閉ループ</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td><strong>Hashimoto 派</strong></td>
+        <td>Mitchell Hashimoto</td>
+        <td class="affinity-high">◎◎</td>
+        <td>GOTCHAS 即時記録 → <code>maintenance-gotchas-workflow</code> → Hook 昇格（同一違反3回）。失敗のたびに環境を強くする運用哲学を構造化</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td><strong>Chawla 派</strong></td>
+        <td>Avi Chawla</td>
+        <td class="affinity-mid">◎</td>
+        <td><code>docs/AGENT_RUNBOOK.md</code> の5層（Context / Constraints / Capabilities / Automation / Delegation）= OS 比喩。コンテキスト・外部状態・ツールを統合する OS 層</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td><strong>Codex 派</strong></td>
+        <td>Ryan Lopopolo</td>
+        <td class="affinity-low">○</td>
+        <td>6段階 workflow、worker dispatch、並列 subagent、Step Gate Matrix は本番スケールの故障モード対策寄り。ただし kit は基盤ジェネレータであり、100万行 AI 生成アプリの主戦場とはスコープがずれる</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Chase 派ツリーとの対応（スライド6）</h3>
+  <p>Chase 派は「何がハーネスか」の包含関係を定義する流派。kit の全体スコープ定義として最もフィットする。</p>
+  <table>
+    <thead>
+      <tr>
+        <th>Chase 派の要素</th>
+        <th>kit の実装</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>ツール</td><td>Cursor ツール + <code>bin/*-safe</code> wrapper</td></tr>
+      <tr><td>オーケストレーション</td><td><code>workflow-orchestrator</code>（6段階 + Step Gate）</td></tr>
+      <tr><td>メモリ</td><td><code>tracker-{campaign_id}.md</code> / handoff manifest / turns.jsonl</td></tr>
+      <tr><td>コンテキストビルダー</td><td>Context Budget / session-bootstrap / Documentation Navigation</td></tr>
+      <tr><td>ガードレール</td><td>quality-gate + <code>guard-git-write.sh</code></td></tr>
+      <tr><td>サブエージェント</td><td>Task ツール + worker dispatch + deep-thinking A/B/C</td></tr>
+      <tr><td>リトライ／状態管理</td><td>Advisory ループ（exit 1 → 修正 → 再実行）+ handoff 再開</td></tr>
+    </tbody>
+  </table>
+
+  <h3>実行モデルは Fowler 派</h3>
+  <p>Chase 派は分類が主で「どう回すか」までは述べない。kit の <strong>実行モデル</strong> として最も近いのは Fowler 派である。</p>
+  <pre>ユーザー要求 → GUIDES（rules/AGENTS.md）→ AGENT → SENSORS（lint/test/gate）→ 成果物
+                                    ↑___________自己修正フィードバック___________|</pre>
+  <p>Session Protocol + QUALITY_GATE の Advisory ループは、この閉ループ制御系そのもの。</p>
+
+  <h3>包含関係の論点（スライド11）：Chase / Chawla 側</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>観点</th>
+        <th>包含関係</th>
+        <th>kit の立ち位置</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Chase / Chawla</td>
+        <td><strong>ハーネス ⊃ コンテキスト</strong></td>
+        <td>Context Budget / handoff / tracker をハーネス基盤の一部として設計 → <strong>こちら側</strong></td>
+      </tr>
+      <tr>
+        <td>Fowler</td>
+        <td>コンテキスト設計 ⊃ ハーネス</td>
+        <td>guides + sensors は採用するが、コンテキスト管理もハーネス内に含める合成</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>各流派の kit への寄与（合成式）</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>流派</th>
+        <th>kit への寄与</th>
+        <th>主な根拠ファイル</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Chase 派</td>
+        <td>ハーネスの <strong>全体スコープ定義</strong>（モデル外のすべて）</td>
+        <td><code>AGENTS.md</code> / <code>manifest.yaml</code> / Skills 群</td>
+      </tr>
+      <tr>
+        <td>Fowler 派</td>
+        <td><strong>Guides + Sensors</strong> による閉ループ制御</td>
+        <td><code>docs/QUALITY_GATE.md</code> / rules / workflow-gate</td>
+      </tr>
+      <tr>
+        <td>Hashimoto 派</td>
+        <td><strong>失敗駆動の環境進化</strong></td>
+        <td><code>docs/GOTCHAS.md</code> / <code>framework.accd_axes[E]</code></td>
+      </tr>
+      <tr>
+        <td>Chawla 派</td>
+        <td><strong>OS 層比喩</strong>によるレイヤー責務分離</td>
+        <td><code>docs/AGENT_RUNBOOK.md</code> §1 5層モデル</td>
+      </tr>
+      <tr>
+        <td>Codex 派</td>
+        <td><strong>並列・本番運用</strong>の故障モード対策（部分）</td>
+        <td><code>workflow-orchestrator</code> / worker dispatch</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="four-tools">
+  <h2>3. ハーネスの4道具：すべて実装、配分が異なる</h2>
+  <p>資料スライド22の4道具と kit の対応。</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>道具</th>
+        <th>資料の位置づけ</th>
+        <th>kit</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>ルール（常時）</strong></td>
+        <td><code>AGENTS.md</code> 約50行から開始</td>
+        <td><code>AGENTS.md</code>（170行）+ rules 3本 + <code>CLAUDE.md</code>。常時コンテキストは資料推奨より重い</td>
+      </tr>
+      <tr>
+        <td><strong>プラン（タスク単位）</strong></td>
+        <td>着手前に人間合意</td>
+        <td><code>.cursor/.tracking/tracker-{campaign_id}.md</code> + session-planning + plan-gate.sh（必須7節を機械検査）</td>
+      </tr>
+      <tr>
+        <td><strong>Skills（必要時）</strong></td>
+        <td>特定手順をオンデマンド読込</td>
+        <td>14 Skills（workflow-orchestrator, agent-code-review, deep-thinking 等）。Progressive Disclosure で深さを分離</td>
+      </tr>
+      <tr>
+        <td><strong>サブエージェント（役割単位）</strong></td>
+        <td>文脈分離・並列化</td>
+        <td>Task ツール + workflow の worker dispatch + deep-thinking の A/B/C 並列分析</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><span class="tag tag-match">一致</span> 資料の「左（常時）→ 右（深い）」の使い分けは kit でも採用。<code>Documentation Navigation</code> や step 別ドキュメント（<code>docs/agent-tasks/agent-workflow/</code>）で、全部を <code>AGENTS.md</code> に詰めない設計。</p>
+  <p><span class="tag tag-gap">注意</span> 常時ルールの総量は資料の「約50行」より明らかに多い。ただし kit は Meta 層ジェネレータなので、骨格を最初から揃える意図的な厚みがある。</p>
+</section>
+
+<section id="guardrails">
+  <h2>4. ガードレール：「1コマンドの門」は同等、階層は kit の方が深い</h2>
+
+  <h3>資料のモデル</h3>
+  <ul>
+    <li>フォーマッタ → lint → 型 → ビルド → テストを <strong><code>check</code> 1本</strong>に束ねる</li>
+    <li>人間・AI・CI が同じ合格基準を使う</li>
+  </ul>
+
+  <h3>kit のモデル</h3>
+  <ul>
+    <li>入口: <code>bin/quality-gate verify</code> または profile 別 <code>bin/foundation-gate self</code></li>
+    <li>内訳: G-GEN / G-BUILD / G-LINT / G-TEST（<code>docs/QUALITY_GATE.md</code>）</li>
+    <li>さらに <strong>ドキュメントゲート</strong>（G-DOC-ADR, G-DOC-NAMING）、<strong>セッションゲート</strong>（session-start-gate）、<strong>ワークフローゲート</strong>（step1〜archive）、<strong>完了チェック機械検査</strong>（G-TEST-COMP-001/002/003）</li>
+  </ul>
+
+  <table>
+    <thead>
+      <tr>
+        <th>観点</th>
+        <th>資料</th>
+        <th>kit</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>成果物への柵</td>
+        <td>lint / 型 / テスト</td>
+        <td>同等 + 生成物 drift 検査（G-GEN）</td>
+      </tr>
+      <tr>
+        <td>行動への柵</td>
+        <td>Hooks / 許可リスト</td>
+        <td><code>guard-git-write.sh</code>（force push deny, <code>gh</code> deny, credential 保護）</td>
+      </tr>
+      <tr>
+        <td>合格条件</td>
+        <td>すべての門が緑</td>
+        <td>exit code 0（0/1/2 の3段階セマンティクス）</td>
+      </tr>
+      <tr>
+        <td>CI 整合</td>
+        <td>同じ <code>check</code></td>
+        <td>backend contract 経由で統一</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><span class="tag tag-match">一致</span> 「IDE の赤線は見えない → エージェントが実行できるコマンドで判定」という資料の指摘は、kit の exit code ベース設計と一致。</p>
+  <p><span class="tag tag-beyond">拡張</span> 資料はアプリ開発向けのシンプルな <code>npm run check</code> 想定。kit は基盤自身の冪等性・設計準拠・タスク完了・アーカイブまでゲート化。</p>
+</section>
+
+<section id="hashimoto">
+  <h2>5. 失敗から育てる（Hashimoto 派）：kit は AGENTS.md 1行追加を超えている</h2>
+  <p>資料（スライド7, 23–24）: 逸脱が起きたら <code>AGENTS.md</code> に防止ルールを1行追加。</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>機構</th>
+        <th>役割</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>docs/GOTCHAS.md</code></td>
+        <td>失敗事例の即時記録</td>
+      </tr>
+      <tr>
+        <td>maintenance-gotchas-workflow</td>
+        <td>Evolve-A: メタ層への再発防止修復</td>
+      </tr>
+      <tr>
+        <td>Hook 昇格パス</td>
+        <td>同一違反3回観測 → Hook へ昇格（<code>manifest.yaml &gt; framework.accd_axes[E]</code>）</td>
+      </tr>
+      <tr>
+        <td><code>docs/DECISIONS.md</code></td>
+        <td>設計判断（D-* 次元）の ADR 記録</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>kit は Hashimoto 派の「失敗駆動で環境を強くする」を、<strong>ルール1行追加より構造化</strong>している。資料の精神は踏襲しつつ、再発防止を manifest / templates / hooks へ還流させるパイプラインが追加されている。</p>
+</section>
+
+<section id="context">
+  <h2>6. コンテキスト設計：資料の射程を kit が大幅に拡張</h2>
+  <p>資料は「ルールを増やしすぎるとコンテキスト圧迫」と警告し、Skills で深い手順を分離することを推奨。</p>
+  <p>kit はこれに加えて <strong>Context Budget Auto-Handoff</strong> を実装（<code>docs/CONTEXT_BUDGET.md</code>）:</p>
+  <ul>
+    <li>Yellow / Red 閾値で handoff を促す</li>
+    <li><code>.cursor/.session/handoff-{session_id}.md</code> によるセッション引き継ぎ</li>
+    <li><code>tracker-{campaign_id}.md</code> を campaign SoT として維持</li>
+    <li>compact 連動 handoff（Lost in the Middle 対策）</li>
+  </ul>
+  <p><span class="tag tag-beyond">kit 独自</span> 資料の Fowler/Chawla 派（コンテキストもハーネスの一部）に近く、<strong>単発タスクのハーネス設計を超えた「長時間自律運用」</strong> のレイヤー。資料単体では触れていない kit の差別化ポイント。</p>
+</section>
+
+<section id="security">
+  <h2>7. セキュリティ：資料の lethal trifecta に kit は具体的実装あり</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>リスク</th>
+        <th>資料の対策</th>
+        <th>kit</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>間接プロンプトインジェクション</td>
+        <td>外部コンテンツへの注意</td>
+        <td>docs-first / 推測禁止（Humble 原則）</td>
+      </tr>
+      <tr>
+        <td>秘密情報漏洩</td>
+        <td>deny 設定で読めなくする</td>
+        <td>Boundaries Never: <code>.env</code> / credential ファイル読取禁止</td>
+      </tr>
+      <tr>
+        <td>破壊的操作</td>
+        <td>Hooks / サンドボックス</td>
+        <td><code>guard-git-write.sh</code> で force push / 保護ブランチ push / <code>gh pr merge</code> を deny</td>
+      </tr>
+      <tr>
+        <td>サプライチェーン</td>
+        <td>人間承認</td>
+        <td>Ask First（commit/push/framework 変更）</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>資料が概念として述べる「行動への柵」は、kit では Hook + Boundaries + <code>bin/*-safe</code> wrapper として具体化されている。</p>
+</section>
+
+<section id="order">
+  <h2>8. 実施順序：思想は逆方向、運用では収束</h2>
+
+  <h3>資料の推奨順序（スライド33）</h3>
+  <ol>
+    <li>素の状態を観察</li>
+    <li>ルールを約50行から</li>
+    <li>柵 + 1コマンドの門</li>
+    <li>ループを閉じる</li>
+    <li>反復が見えてから Skills / サブエージェント</li>
+    <li>運用で育て、棚卸し</li>
+  </ol>
+
+  <h3>kit の生成モデル</h3>
+  <ul>
+    <li><strong>最初から</strong> manifest 経由で Rules / Hooks / Skills / Gates を一括生成</li>
+    <li>個別プロジェクトでは PO が <code>[要確認]</code> を埋め、運用で GOTCHAS / ADR を育てる</li>
+  </ul>
+
+  <table>
+    <thead>
+      <tr>
+        <th></th>
+        <th>資料</th>
+        <th>kit</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>初期投資</td>
+        <td>最小 → 観察 → 追加</td>
+        <td>骨格フルセット → 下流で調整</td>
+      </tr>
+      <tr>
+        <td>棚卸し</td>
+        <td>数か月ごとに全体見直し</td>
+        <td><code>agent-kaizen</code>（18観点の整合性検査）、<code>bin/foundation-gate audit</code></td>
+      </tr>
+      <tr>
+        <td>技術的負債</td>
+        <td>モデル世代で作り込みが吸収される</td>
+        <td><code>accd_axes.not_adopted</code> で重い機構を意図的に不採用。ただし kit 自体は厚い</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>資料の Han Lee 批判（「ハーネスは次世代モデルに溶ける」）に対して、kit は <strong>中核（Boundaries / 品質ゲート / Session Protocol）は残し、作り込み（Finding Code 79 等）は不採用</strong> という明示的な線引きをしている（<code>docs/AGENT_RUNBOOK.md</code> の ACCD 5軸表）。</p>
+</section>
+
+<section id="standardization">
+  <h2>9. 標準化（Agent Plugins 1.0）との位置</h2>
+  <p>資料スライド13:</p>
+  <ul>
+    <li>Skills + MCP は可搬標準化が進む</li>
+    <li><strong>Hooks / Rules / コマンドはクライアント依存</strong> のまま</li>
+  </ul>
+  <p>kit の構成:</p>
+  <ul>
+    <li><code>.cursor/skills/</code> — Skills 標準と整合</li>
+    <li><code>.cursor/hooks/</code> + <code>hooks.json</code> — Cursor 固有</li>
+    <li><code>AGENTS.md</code> / rules — クライアント横断の de facto 標準だが完全可搬ではない</li>
+  </ul>
+  <p>kit は資料が指摘する「床は標準化、守りは各リポの責任」という現状認識と一致。manifest SoT による再生成は、クライアント差分を吸収する kit 側の回答。</p>
+</section>
+
+<section id="evaluation">
+  <h2>10. 総合評価</h2>
+
+  <h3>強い一致（kit が資料を体現している点）</h3>
+  <ol>
+    <li><strong>3層モデル</strong>（ハーネス / ガードレール / ループ）が中核設計</li>
+    <li><strong>Guides + Sensors</strong>（Rules + exit code ゲート）の閉ループ</li>
+    <li><strong>Skills による Progressive Disclosure</strong>（常時ルールを薄く保つ工夫）</li>
+    <li><strong>失敗駆動の進化</strong>（GOTCHAS / Hook 昇格）</li>
+    <li><strong>行動への柵</strong>（<code>guard-git-write.sh</code>）</li>
+    <li><strong>人間と AI の同一合格基準</strong>（quality-gate 統一入口）</li>
+  </ol>
+
+  <h3>kit が資料を超える点</h3>
+  <ol>
+    <li><strong>manifest SoT</strong> — 生成物の直接編集禁止、冪等再生成</li>
+    <li><strong>Context Budget / handoff</strong> — 長時間セッションの劣化対策</li>
+    <li><strong>6段階 workflow + Step Gate Matrix</strong> — タスク完走のオーケストレーション</li>
+    <li><strong>Meta / Domain 2層ドキュメント命名</strong> — ハーネス情報の構造化</li>
+    <li><strong>ACCD 5軸</strong> — コンテキスト制約の設計フレームワーク</li>
+    <li><strong>5流派の合成</strong> — Chase（スコープ）+ Fowler（制御）+ Hashimoto（進化）+ Chawla（OS 比喩）を1キットに統合（<a href="#schools">§2 参照</a>）</li>
+  </ol>
+
+  <h3>資料とのギャップ・注意点</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>ギャップ</th>
+        <th>内容</th>
+        <th>示唆</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>初期の軽さ</strong></td>
+        <td>資料は50行 AGENTS.md から。kit は170行+</td>
+        <td>下流プロジェクトでは Domain 層を充実させ、Meta 層は必要最小に保つ運用が有効</td>
+      </tr>
+      <tr>
+        <td><strong>1コマンドの単純さ</strong></td>
+        <td>資料は <code>check</code> 1本。kit は G-* 分割 + workflow ゲート多数</td>
+        <td>PO 向けには「日常は <code>bin/foundation-gate self</code> だけ」と説明可能</td>
+      </tr>
+      <tr>
+        <td><strong>観察ファースト</strong></td>
+        <td>資料はハーネスなし観察を推奨。kit は骨格先行</td>
+        <td>新規 adopt 時は kaizen / 素実行で gap を見てから manifest を調整するのが資料流</td>
+      </tr>
+      <tr>
+        <td><strong>厚みと負債</strong></td>
+        <td>kit は Meta 層が厚い</td>
+        <td>資料の「定期棚卸し」を <code>agent-kaizen</code> + GOTCHAS Evolve-B で運用化</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="de-facto">
+  <h2>12. 2026 デファクトとの乖離（設計思想）</h2>
+  <p>資料スライド12–14が示す 2026 年の収束方向（3層モデル・Skills/MCP 可搬化・lean harness）と kit を比較した結果。<strong>中核思想は整合</strong>するが、<strong>ミニマル実践デファクト</strong>からは意図的に厚い方向へ逸脱している。</p>
+
+  <div class="summary-box">
+    <p><strong>結論:</strong> kit に「古くて間違った」思想は少ない。ただし 2026 資料の <strong>「薄く・観察から・1コマンド・可搬 Plugin」</strong> からは、基盤ジェネレータとして <strong>厚い・早い・Cursor 固有</strong> な設計へ逸脱している。</p>
+  </div>
+
+  <h3>整合（2026 標準と一致）</h3>
+  <ul>
+    <li>3原則（馬具・柵・ループ）、exit code ゲート、Skills 分離、Hooks 行動制限</li>
+    <li>人間と AI の同一合格基準（<code>foundation-gate self</code> / <code>quality-gate verify</code>）</li>
+  </ul>
+
+  <h3>逸脱・ギャップ（優先度順）</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>2026 デファクト</th>
+        <th>kit</th>
+        <th>性質</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>観察ファースト → 最小ハーネスから育てる</td>
+        <td>manifest から骨格フルセット一括生成</td>
+        <td><span class="tag tag-drift">逸脱</span> シナリオ差（基盤 seed vs 1チーム育成）</td>
+      </tr>
+      <tr>
+        <td>ハーネスは薄く保ち定期棚卸し（Han Lee）</td>
+        <td>Meta 層が厚い（170行 AGENTS.md + 14 Skills + 多層 gate）</td>
+        <td><span class="tag tag-drift">逸脱</span> 技術的負債リスクに構造的露出</td>
+      </tr>
+      <tr>
+        <td><code>check</code> 1本（format + lint + types + test）</td>
+        <td>G-* 分割 + workflow step/archive/review ゲート</td>
+        <td><span class="tag tag-tradeoff">トレードオフ</span> 思想は一致、API は複雑</td>
+      </tr>
+      <tr>
+        <td>Agent Plugins 1.0（<code>plugin.json</code> + <code>mcp.json</code>）</td>
+        <td><code>.cursor/skills/</code> 個別配置、可搬パッケージ未採用</td>
+        <td><span class="tag tag-drift">遅れ</span> Skills/MCP packaging のみ</td>
+      </tr>
+      <tr>
+        <td>失敗時 <code>AGENTS.md</code> へ1行追加</td>
+        <td>GOTCHAS → manifest 再生成 → Hook 昇格</td>
+        <td><span class="tag tag-tradeoff">トレードオフ</span> enterprise 向け構造化</td>
+      </tr>
+      <tr>
+        <td>ループを Hooks 等で自動化</td>
+        <td>Advisory ループは AI 規範（exit 0 まで再実行）</td>
+        <td><span class="tag tag-drift">弱い</span> ランタイム自動閉ループなし</td>
+      </tr>
+      <tr>
+        <td>審査済み Plugin / クラウド隔離</td>
+        <td>第一方 Skills のみ、Hook 依存</td>
+        <td><span class="tag tag-drift">ギャップ</span> 配布・lethal trifecta 対策で不足</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>先行（標準を上回る）</h3>
+  <ul>
+    <li>Context Budget / handoff — 長時間セッション劣化対策</li>
+    <li>manifest SoT + 冪等再生成 + drift 検査（G-GEN）</li>
+    <li>Step Gate Matrix — 本番運用向け故障モード対策</li>
+  </ul>
+
+  <h3>下流展開時の示唆</h3>
+  <p>Meta 層を薄く投影、Domain 層充実、<code>check</code> 1本化、Agent Plugins 形式への移行検討。新規 adopt 時は <code>agent-kaizen</code> / 素実行で gap を観察してから manifest を調整するのが資料流に沿う。</p>
+
+  <h3 id="rebuttal">反論・精緻化（2026 デファクトへの批判的再評価）</h3>
+  <p>§12 の乖離は「kit が古い」ではなく、<strong>ドメイン密度の高い基盤キットに 2026 ミニマル派をそのまま当てはめると不適切</strong> という側面がある。以下は PO 視点の反論に対する客観的・批判的評価。</p>
+
+  <div class="summary-box">
+    <p><strong>評価結論:</strong> 反論は <span class="tag tag-valid">概ね妥当</span>。特に可搬 Plugin の限界（script/gate の repo 密着）は資料注記とも整合。ただし「薄く＝ドメインを捨てる」「可搬＝無意味」とまで読むと、資料の Progressive Disclosure / packaging 標準の意図を見落とす。</p>
+  </div>
+
+  <h4>反論 A：「薄くするとドメイン知識・ガードレールも薄くなり、逸脱リスクが上がる」</h4>
+  <table>
+    <thead>
+      <tr><th>観点</th><th>評価</th><th>内容</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>論旨の正しさ</td>
+        <td class="score">4/5</td>
+        <td>ドメイン規約・業務 gate はプロジェクト固有で薄くできない。LLM の確率論（資料スライド17）上、一般論だけでは逸脱しやすい</td>
+      </tr>
+      <tr>
+        <td>kit との整合</td>
+        <td class="score">5/5</td>
+        <td>Meta/Domain 2層、多段 workflow gate は「薄くしすぎると危ない」設計判断の表れ</td>
+      </tr>
+      <tr>
+        <td>限界・補足</td>
+        <td class="score">—</td>
+        <td>資料の「薄く」は <strong>常時ロード（AGENTS.md）</strong> の話。Han Lee 論は <strong>作り込み・回避策</strong> の話で、Domain SoT を薄くしろという意味ではない。Skills + Domain docs なら総ハーネスは厚く保てる</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4>反論 B：「可搬 Plugin は汎用化すると業務に弱い。SKILL.md は可搬しやすいが script は repo 密着」</h4>
+  <table>
+    <thead>
+      <tr><th>観点</th><th>評価</th><th>内容</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>論旨の正しさ</td>
+        <td class="score">5/5</td>
+        <td><code>bin/quality-gate</code> / <code>gate-*.py</code> / path 規約 / tech_contract は下流ごとに異なる。Agent Plugins 1.0 も <strong>入れ物だけ</strong> 標準化（資料スライド13）</td>
+      </tr>
+      <tr>
+        <td>kit との整合</td>
+        <td class="score">5/5</td>
+        <td>manifest SoT + 生成物は意図的に repo 固有。cross-repo-knowledge-link は参照可搬であって gate 可搬ではない</td>
+      </tr>
+      <tr>
+        <td>限界・補足</td>
+        <td class="score">—</td>
+        <td>可搬の対象は <strong>配布・発見・インストール</strong>。手順の型（PR レビュー、要求分析）は複数 repo で再利用可能。中身まで universal 化できると期待する方が誤解</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4>3層分離による精緻化（資料・kit・反論の両立）</h4>
+  <pre>層1: 常時ロード（AGENTS.md / rules）     → 薄く（資料の「薄く」）
+層2: オンデマンド（Skills / Domain docs） → プロジェクト固有で厚く（反論の核心）
+層3: 機械検証（gate / script）            → repo 密着・非可搬（反論どおり）</pre>
+  <table>
+    <thead>
+      <tr><th>2026 原則</th><th>資料の意図</th><th>反論</th><th>統合解釈</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>薄く</td>
+        <td>常時コンテキスト圧迫を避ける</td>
+        <td>ドメインも薄くなる危険</td>
+        <td><strong>層1だけ薄く。層2–3は厚く</strong></td>
+      </tr>
+      <tr>
+        <td>観察から</td>
+        <td>実在しないルールを増やさない</td>
+        <td>既存ドメイン規約は最初から存在</td>
+        <td><strong>新規失敗は観察、既存 SoT は最初から載せる</strong>（docs-first）</td>
+      </tr>
+      <tr>
+        <td>1コマンド</td>
+        <td>人間・AI・CI の合格基準統一</td>
+        <td>backend は repo 依存</td>
+        <td><strong>入口1本（verify/self）、中身は contract 依存</strong></td>
+      </tr>
+      <tr>
+        <td>可搬 Plugin</td>
+        <td>Skills/MCP の packaging</td>
+        <td>script は不可搬</td>
+        <td><strong>SKILL の型は共有可能、gate script は各 repo</strong></td>
+      </tr>
+      <tr>
+        <td>ループ自動化</td>
+        <td>Hook 等で閉じる</td>
+        <td>業務 gate は repo 固有</td>
+        <td><strong>汎用 lint/test は自動化、業務 gate は repo script</strong></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4>批判的総評</h4>
+  <ul>
+    <li><span class="tag tag-valid">強い</span> エンタープライズ / 基盤キット文脈では反論の方が実務に即する。可搬 Plugin の限界指摘は過剰期待への有効な antidote</li>
+    <li><span class="tag tag-tradeoff">注意</span> 「薄く＝ドメイン放棄」と読むと反論が強くなりすぎる。資料の Skills 分離を無視しないこと</li>
+    <li><span class="tag tag-tradeoff">注意</span> 可搬 Plugin を全面否定すると packaging 標準の配布・発見上の利益を見落とす</li>
+  </ul>
+  <p><strong>一行:</strong> 2026 ミニマル・可搬ハーネスをドメイン密度の高い kit にそのまま適用するのは不適切——という反論は客観的に妥当。資料の「薄さ・可搬性」は <strong>常時ロードと packaging</strong> に読み替えれば、反論と対立せず両立できる。</p>
+</section>
+
+<section id="conclusion">
+  <h2>13. まとめ</h2>
+
+  <h3 id="beginner">ジュニア・ミドル向け：kit 設計思想をスライドと比べて理解する</h3>
+  <p>ハーネスエンジニアリングに詳しくないエンジニア向けの入口説明。Kinopee 資料（<a href="harness-eng.md">harness-eng.md</a>）の比喩をそのまま使い、kit が何をしているかを対応づける。</p>
+
+  <div class="beginner-box">
+    <h4>30秒で言うと</h4>
+    <p><strong>AI（LLM）だけに任せると、同じ指示でもたまに道を外れる。</strong> だから「事前に進路を教える」「事後に機械でチェックする」「失敗したら直して再実行する」の3つを、コードレビュー文化と同じ感覚で整えたのがハーネスエンジニアリング。kit はその3つを <strong>複数プロジェクトで使い回せる基盤</strong> として最初から一式そろえたもの。</p>
+  </div>
+
+  <h4>前提：なぜ「指示して祈る」だけでは足りないか（資料スライド17）</h4>
+  <p>通常のプログラムは同じ入力→同じ出力。LLM は確率的で、「テストを実行する」より「テストをスキップする」選択もゼロではない。だから <strong>人間の善意や長いプロンプト1本</strong> だけでは、ミスを完全には防げない。環境（ルール・検査・ループ）で受け止める——これが資料も kit も共有する出発点。</p>
+
+  <h4>資料の3要素と kit の対応（スライド15–21）</h4>
+  <table>
+    <thead>
+      <tr>
+        <th>資料の比喩</th>
+        <th>意味（いつ・何をする）</th>
+        <th>資料の例</th>
+        <th>kit での実体</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>馬具（ハーネス）</strong></td>
+        <td>走る<strong>前</strong>に進路を伝える</td>
+        <td><code>AGENTS.md</code>、Skills、プラン</td>
+        <td><code>AGENTS.md</code> + <code>.cursor/rules/</code> + 14 Skills + 追跡ドキュメント（tracker）</td>
+      </tr>
+      <tr>
+        <td><strong>柵（ガードレール）</strong></td>
+        <td>走った<strong>後</strong>に逸脱を機械判定</td>
+        <td>lint、型、テストを1コマンドに</td>
+        <td><code>bin/foundation-gate self</code> / <code>bin/quality-gate verify</code> + 各種 <code>gate-*.py</code></td>
+      </tr>
+      <tr>
+        <td><strong>ループ</strong></td>
+        <td>失敗出力を修正に戻す</td>
+        <td>テストが赤→直す→再実行</td>
+        <td>exit code 1 なら修正して再実行（Advisory ループ）。完了宣言前にゲート必須</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>身近な例：<strong>GPS（ハーネス）＋スピードカメラ（ガードレール）＋違反通知を見て曲がり直す（ループ）</strong>。AI エージェント版が kit。</p>
+
+  <h4>資料の4道具と kit（スライド22–27）</h4>
+  <div class="compare-cols">
+    <div class="compare-card">
+      <h5>資料が教える使い分け</h5>
+      <ul>
+        <li><strong>ルール</strong> — 毎回必要（短く）</li>
+        <li><strong>プラン</strong> — タスク開始前</li>
+        <li><strong>Skills</strong> — 特定作業のときだけ</li>
+        <li><strong>サブエージェント</strong> — 調査・レビューを分離</li>
+      </ul>
+    </div>
+    <div class="compare-card">
+      <h5>kit の置き場所</h5>
+      <ul>
+        <li><strong>ルール</strong> — <code>AGENTS.md</code>、<code>.cursor/rules/*.mdc</code></li>
+        <li><strong>プラン</strong> — <code>.cursor/.tracking/tracker-{campaign_id}.md</code></li>
+        <li><strong>Skills</strong> — <code>.cursor/skills/*/SKILL.md</code>（14本）</li>
+        <li><strong>サブエージェント</strong> — Task ツール、workflow の worker dispatch</li>
+      </ul>
+    </div>
+  </div>
+  <p>資料は「まずルールを約50行から」（スライド23）。kit は <strong>基盤キット</strong> なので最初から骨格が厚い。ただし <strong>詳しい手順は Skills に逃がす</strong> 点は同じ。全部を <code>AGENTS.md</code> に書かないのが正解。</p>
+
+  <h4>「kit は資料より厚い」——混乱しやすい3点を平易に</h4>
+  <table>
+    <thead>
+      <tr><th>資料のイメージ</th><th>kit の現実</th><th>ジュニアが覚えること</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>小さな <code>AGENTS.md</code> から育てる</td>
+        <td><code>manifest.yaml</code> から一式を生成</td>
+        <td>生成物（<code>AGENTS.md</code> 等）を<strong>直接編集しない</strong>。変えるなら manifest / templates</td>
+      </tr>
+      <tr>
+        <td><code>npm run check</code> 1本</td>
+        <td>ゲートがいくつかに分かれている</td>
+        <td>日常は <strong><code>bin/foundation-gate self</code></strong> を覚えればよい（中で lint/test 等をまとめて実行）</td>
+      </tr>
+      <tr>
+        <td>失敗したら <code>AGENTS.md</code> に1行追加</td>
+        <td><code>GOTCHAS.md</code> 記録 → 必要なら基盤修復</td>
+        <td>同じミスをしたら <strong>GOTCHAS に書く</strong>。ルール追加は PO / 基盤担当と相談</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4>kit だけにあるもの（資料スライドにないが、現場で効く）</h4>
+  <ul>
+    <li><strong>Context Budget / handoff</strong> — 長時間チャットで AI が序盤の約束を忘れる問題への対策。Yellow/Red が出たら新チャットへ（<code>docs/CONTEXT_BUDGET.md</code>）</li>
+    <li><strong>6段階 workflow</strong> — 調査→レポート→実装→テスト→PR→完了を Step Gate で区切る。いきなり実装しない</li>
+    <li><strong>Meta / Domain 2層 docs</strong> — 大文字（<code>AGENTS.md</code>）= どのプロジェクトでも同じ役割、小文字（<code>docs/spec.md</code>）= このプロジェクト固有の仕様</li>
+  </ul>
+
+  <h4>初めて kit プロジェクトに入ったときの読む順（5ステップ）</h4>
+  <ol>
+    <li><code>AGENTS.md</code> — 全体ルールと Boundaries（push 禁止など）</li>
+    <li><code>docs/spec.md</code> など Domain 層 — このプロジェクトの仕様</li>
+    <li>進行中タスクがあれば <code>docs/agent-tasks/reports/</code></li>
+    <li>実装後は <code>bin/foundation-gate self</code>（または profile に従う verify）</li>
+    <li>わからなければ推測で直さず、docs を読むか PO に質問（Humble 原則）</li>
+  </ol>
+
+  <div class="beginner-box">
+    <h4>一言でチームに説明するなら</h4>
+    <p>「kit は、AI に <strong>地図（ルール）</strong> と <strong>検問所（ゲート）</strong> と <strong>直し方（ループ）</strong> を最初から配った開発基盤。資料の『馬具・柵・ループ』を、1チーム用の最小構成ではなく、<strong>複数プロジェクト向けの標準装備</strong> として厚く作った版。」</p>
+  </div>
+
+  <h3 id="conclusion-oneline">一行でまとめると</h3>
+  <div class="summary-box">
+    <p><strong>kit は Kinopee 資料の「馬具・柵・ループ」を、基盤ジェネレータ向けに体系化・機械化した実装</strong> である。</p>
+    <p>コア思想（事前進路 + 事後検証 + 閉ループ + 失敗から育てる）は一致しているが、kit は <strong>SoT 一元化・セッション/handoff・多段ゲート・進化パイプライン</strong> まで含む「エンタープライズ向けハーネス基盤」であり、資料が想定する「1チームが50行から育てるミニマルハーネス」より一段上の抽象度と初期コストを持つ。</p>
+    <p>流派の観点では <strong>Chase 派（骨格）+ Fowler 派（制御）+ Hashimoto 派（進化）+ Chawla 派（OS 比喩）</strong> の合成。2026 ミニマルデファクトからの乖離と反論による精緻化は <a href="#de-facto">§12</a>・<a href="#rebuttal">§12 反論</a> 参照。</p>
+  </div>
+</section>
+
+<footer>
+  <p>参照: <a href="harness-eng.md">tmp/harness-eng.md</a> · <a href="../AGENTS.md">AGENTS.md</a> · <a href="../docs/QUALITY_GATE.md">docs/QUALITY_GATE.md</a> · <a href="../docs/AGENT_RUNBOOK.md">docs/AGENT_RUNBOOK.md</a></p>
+</footer>
+
+</body>
+</html>

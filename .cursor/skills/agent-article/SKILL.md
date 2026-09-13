@@ -1,16 +1,15 @@
 ---
 name: agent-article
 description: >-
-  WebページのURLを受け取り、記事内容をLLM最適化MarkdownとHTMLに変換し、git commitまで自動実行する。
-  日本語以外の記事は自動的に日本語に翻訳する。
-  git push はユーザー確認後のみ実行。
+  WebページのURLを受け取り、記事内容をLLM最適化MarkdownとHTMLに変換し、git commit と git push まで PO/ユーザー承認なしで一括実行する。
+  対象ファイルは Markdown と HTML の両方。日本語以外の記事は自動的に日本語に翻訳する。
   「記事を保存して」「この記事をmarkdownにして」「URLをmarkdown化して」「記事をHTML化して」等で起動する。
   認証なしサイト、speakerdeck.com、x.com（認証あり）に対応。
 ---
 
 # agent-article
 
-URL を受け取り、記事を Markdown と HTML に変換し、git commit まで自動実行する。**日本語以外の記事は自動翻訳する。git push はユーザー確認後のみ。**
+URL を受け取り、記事を Markdown と HTML に変換し、**git commit と git push まで PO/ユーザー承認なしで一括実行する。** 日本語以外の記事は自動翻訳する。対象は常に Markdown と HTML の両方。
 
 ## 実行手順
 
@@ -19,11 +18,10 @@ URL を受け取り、記事を Markdown と HTML に変換し、git commit ま�
 3. **画像処理**: 通常記事・x.com は画像説明を生成し、Speaker Deck はスライドを意味変換する（後述）
 4. **言語判定・翻訳**: 記事が日本語以外の場合、日本語に翻訳する（後述の「翻訳ルール」を参照）
 5. 画像処理・翻訳・意味変換後の Markdown から HTML を再生成する（後述）
-6. Markdown と HTML の出力ファイルを確認（公開してよい内容か確認）
-7. git add → commit（自動）
-8. **ユーザーに push 可否を確認してから push**
+6. Markdown と HTML の出力ファイルを確認（保存禁止条件に該当しないこと。確認はエージェント自身が行い、ユーザー承認は待たない）
+7. git add → commit → **push まで自動実行**（Markdown と HTML の両方を対象にする）
 
-取得〜commit までは自動でよい。push だけは必ずユーザー承認を取ること。
+取得〜commit〜push は一連の処理として途中停止せず完了する。PO 承認、ユーザー確認、push 可否の質問はしない。
 
 ## 保存対象の制限
 
@@ -149,20 +147,18 @@ flowchart LR
 
 ## Git 操作
 
-スクリプト実行 → 画像説明またはスライド意味変換 → HTML 再生成後、以下を**自動**実行する:
+スクリプト実行 → 画像説明またはスライド意味変換 → HTML 再生成後、以下を**承認待ちなしで一括実行**する。Markdown だけを add/commit/push してはならない。HTML は必須対象である。
 
 ```bash
-git add agent-articles/md/{filename}.md agent-articles/html/{filename}.html
+git add -- "agent-articles/md/{filename}.md" "agent-articles/html/{filename}.html"
 git commit -m "docs(articles): add {タイトル要約}"
-```
-
-push は**ユーザー確認後のみ**:
-
-```bash
 git push
 ```
 
-push 前にユーザーへ「公開リポジトリへ push してよいか」を確認すること。明示的な承認なしに push しない。
+- `file_path` と `html_file_path` の両方を必ず `git add` する
+- HTML 再生成後のファイルが存在することを commit 前に確認する。無い場合は `render_html.py` を再実行してから add する
+- このスキル起動時の push はユーザー明示依頼とみなす。PO/ユーザーへの push 可否確認はしない
+- 翻訳や意味変換でファイル名が変わった場合は、旧ファイル名の残骸を残さず、最終の `.md` と `.html` のペアだけを対象にする
 
 ### コミットメッセージ規則
 
@@ -295,15 +291,18 @@ content_type: "article"
 | x.com 用ブラウザ | Brave（固定） |
 | Markdown 出力先 | `agent-articles/md/` |
 | HTML 出力先 | `agent-articles/html/` |
+| Git 対象 | Markdown と HTML の両方 |
+| Git 完了条件 | commit 後に `git push` まで実行（承認不要） |
 | 画像一時保存先 | `/tmp/article-images/` |
 | macOS 依存 | あり（Keychain による Cookie 復号） |
 
 ## 制約
 
 - **Cookie 値の直接操作禁止**: AI は Cookie 値を読み取り・ログ出力しない
-- **push 無承認禁止**: ユーザー確認なしに git push しない
+- **承認待ち禁止**: このスキルでは取得〜commit〜push を一括実行する。PO/ユーザー承認を待たない
+- **HTML 必須**: commit/push 対象は Markdown と HTML の両方。Markdown のみの登録は禁止
 - **内容改変禁止**: 通常記事・x.com は要約・編集せず忠実に変換する（ローカルパスリンクの除去および日本語以外の記事の翻訳を除く）。Speaker Deck は情報を落とさず、図と断片文字を意味の通る Markdown 構造へ再構成する
-- **エラー時のみ停止**: スクリプトが非ゼロ終了した場合のみユーザーに報告する
+- **エラー時のみ停止**: スクリプトが非ゼロ終了した場合、または保存禁止条件に該当した場合のみユーザーに報告する
 
 ## エラーハンドリング
 
