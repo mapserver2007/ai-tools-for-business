@@ -1,0 +1,954 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="title" content="第13章 Skillを作り、評価する">
+<meta name="book_title" content="【Cursor pstack】AIエージェントに開発を任せる環境をつくる ―月2,500件のPRを支えた開発基盤とは？">
+<meta name="source_url" content="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/8263c0">
+<meta name="author" content="kaito">
+<meta name="published_at" content="2026-10-02">
+<meta name="retrieved_at" content="2026-10-06T23:37:28+09:00">
+<meta name="site" content="zenn.dev">
+<meta name="content_type" content="article">
+<meta name="chapter_position" content="17">
+<title>第13章 Skillを作り、評価する</title>
+<style>
+:root {
+  color-scheme: light;
+  --ink: #172033;
+  --muted: #64748b;
+  --line: #dbe4ef;
+  --accent: #2563eb;
+  --accent-dark: #1d4ed8;
+  --accent-soft: #eff6ff;
+  font-family: -apple-system, BlinkMacSystemFont, "Avenir Next",
+    "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 8% 0%, #dbeafe 0, transparent 32rem),
+    radial-gradient(circle at 100% 12%, #e0e7ff 0, transparent 28rem),
+    #f4f7fb;
+  color: var(--ink);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(120deg, transparent 0 48%, rgba(255, 255, 255, 0.4));
+}
+.article {
+  position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
+  max-width: 920px;
+  margin: clamp(1rem, 5vw, 4rem) auto;
+  padding: clamp(2rem, 6vw, 5rem) clamp(1.25rem, 7vw, 5.5rem);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  border-radius: 24px;
+  min-height: 100vh;
+  box-shadow:
+    0 24px 70px rgba(30, 64, 175, 0.1),
+    0 4px 16px rgba(15, 23, 42, 0.04);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 5px;
+  content: "";
+  background: linear-gradient(90deg, #2563eb, #7c3aed, #db2777);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin: 0 0 2.5rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.72rem;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+a {
+  color: var(--accent-dark);
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: #7c3aed;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--ink);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 18ch;
+  margin: 0 0 2.5rem;
+  font-size: clamp(2.15rem, 5vw, 3.65rem);
+  letter-spacing: -0.045em;
+}
+h2 {
+  position: relative;
+  margin: 3.8rem 0 1.25rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--line);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 4.2rem;
+  height: 3px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), #7c3aed);
+  border-radius: 999px;
+}
+h3 {
+  margin: 2.6rem 0 0.8rem;
+  color: var(--accent-dark);
+  font-size: 1.3rem;
+}
+h4, h5, h6 {
+  margin-top: 2rem;
+}
+p {
+  margin: 1.15rem 0;
+}
+ul, ol {
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.35rem 0;
+}
+li::marker {
+  color: var(--accent);
+  font-weight: 700;
+}
+strong {
+  color: #111827;
+}
+blockquote {
+  margin: 1.6rem 0;
+  padding: 0.8rem 1.25rem;
+  color: #475569;
+  background: linear-gradient(90deg, var(--accent-soft), #fff);
+  border-left: 4px solid var(--accent);
+  border-radius: 0 12px 12px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 3rem 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+img {
+  display: block;
+  max-width: 100%;
+  margin: 1.75rem auto;
+  height: auto;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+}
+pre {
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  padding: 1.15rem 1.25rem;
+  color: #e2e8f0;
+  background: #111827;
+  border: 1px solid #253047;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+}
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+:not(pre) > code {
+  padding: 0.15rem 0.4rem;
+  color: #9f1239;
+  background: #fff1f2;
+  border-radius: 5px;
+}
+table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  border-collapse: collapse;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
+  text-align: left;
+}
+th {
+  color: #1e3a8a;
+  background: #eff6ff;
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: #f8fafc;
+}
+@media (max-width: 600px) {
+  .article {
+    margin: 0;
+    padding: 2rem 1rem 4rem;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(2rem, 10vw, 2.75rem);
+  }
+  .metadata {
+    margin-bottom: 2rem;
+  }
+}
+@media print {
+  body {
+    background: #fff;
+  }
+  .article {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  a {
+    color: inherit;
+  }
+}
+</style>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0f1419;
+  --surface: #1a2332;
+  --surface-raised: #202c3f;
+  --surface-soft: rgba(26, 35, 50, 0.72);
+  --border: #2d3a4f;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #58a6ff;
+  --accent-strong: #79c0ff;
+  --green: #3fb950;
+  --purple: #bc8cff;
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+    "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  line-height: 1.75;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+  background: var(--bg);
+}
+body {
+  min-width: 320px;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 2rem 1.5rem 5rem;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(31, 111, 235, 0.18), transparent 32rem),
+    radial-gradient(circle at 100% 12%, rgba(137, 87, 229, 0.14), transparent 28rem),
+    var(--bg);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black, transparent 75%);
+}
+.reading-progress {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 20;
+  height: 3px;
+  background: rgba(45, 58, 79, 0.7);
+}
+.reading-progress > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  box-shadow: 0 0 14px rgba(88, 166, 255, 0.8);
+  transition: width 80ms linear;
+}
+.article {
+  position: relative;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  background: rgba(15, 20, 25, 0.76);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(88, 166, 255, 0.035) inset;
+  backdrop-filter: blur(16px);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  border-radius: 16px 16px 0 0;
+}
+.article-header {
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.eyebrow-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--green);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(63, 185, 80, 0.75);
+}
+.eyebrow-separator {
+  color: var(--border);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  background: rgba(32, 44, 63, 0.68);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+.source-link {
+  color: var(--text);
+  text-decoration: none;
+}
+.source-link:hover {
+  border-color: var(--accent);
+  background: rgba(88, 166, 255, 0.12);
+}
+a {
+  color: var(--accent);
+  overflow-wrap: anywhere;
+  text-decoration: none;
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 24ch;
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  background: linear-gradient(120deg, #fff 12%, #b9d8ff 58%, #bc8cff);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+h2 {
+  position: relative;
+  margin: 3.2rem 0 1.1rem;
+  padding: 0.75rem 0 0.65rem;
+  border-bottom: 1px solid var(--border);
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 3.8rem;
+  height: 2px;
+  content: "";
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(88, 166, 255, 0.7);
+}
+h3 {
+  margin: 2.25rem 0 0.7rem;
+  color: var(--accent-strong);
+  font-size: 1.2rem;
+}
+h4, h5, h6 {
+  margin-top: 1.75rem;
+}
+p {
+  margin: 0.9rem 0;
+}
+ul, ol {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.3rem 0;
+}
+li::marker {
+  color: var(--accent);
+}
+strong {
+  color: #fff;
+}
+blockquote {
+  margin: 1.4rem 0;
+  padding: 0.85rem 1.15rem;
+  color: #c9d1d9;
+  background: linear-gradient(100deg, rgba(88, 166, 255, 0.1), rgba(26, 35, 50, 0.55));
+  border: 1px solid rgba(88, 166, 255, 0.18);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 2.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+}
+pre {
+  position: relative;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  padding: 1rem 1.15rem;
+  color: #dbeafe;
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+pre code {
+  color: inherit;
+  background: transparent;
+}
+code {
+  font-family: "SF Mono", "Fira Code", ui-monospace, monospace;
+  font-size: 0.86em;
+}
+:not(pre) > code {
+  padding: 0.12em 0.38em;
+  color: #ffabbc;
+  background: rgba(248, 81, 73, 0.11);
+  border-radius: 4px;
+}
+.copy-button {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  padding: 0.25rem 0.55rem;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.72rem;
+  background: rgba(32, 44, 63, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.copy-button:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  border-spacing: 0;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.6rem 0.75rem;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+th {
+  color: var(--accent);
+  background: var(--surface);
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: rgba(26, 35, 50, 0.42);
+}
+tr:last-child td {
+  border-bottom: 0;
+}
+th:last-child, td:last-child {
+  border-right: 0;
+}
+.toc {
+  margin: 1.75rem 0 2.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.toc-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--border);
+}
+.toc-title {
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.toc-count {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.toc ol {
+  margin: 0.7rem 0 0;
+  padding-left: 1.25rem;
+}
+.toc ol ol {
+  margin: 0.2rem 0;
+}
+.toc li {
+  margin: 0.18rem 0;
+  font-size: 0.86rem;
+}
+.toc li::marker {
+  color: var(--muted);
+}
+.toc a {
+  display: inline-block;
+  max-width: 100%;
+  color: var(--muted);
+  transition: color 160ms ease, transform 160ms ease;
+}
+.toc a:hover, .toc a.is-active {
+  color: var(--accent-strong);
+  text-decoration: none;
+  transform: translateX(2px);
+}
+.article-body {
+  max-width: 78ch;
+  margin: 0 auto;
+}
+.article-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 1rem;
+  color: var(--muted);
+  font-size: 0.74rem;
+  border-top: 1px solid var(--border);
+}
+.article-footer a {
+  color: var(--muted);
+}
+@media (max-width: 720px) {
+  body {
+    padding: 0 0 3rem;
+  }
+  .article {
+    min-height: 100vh;
+    padding: 1.5rem 1rem 3rem;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+  .article::before {
+    border-radius: 0;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(1.9rem, 9vw, 2.6rem);
+  }
+  .article-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+@media print {
+  :root {
+    color-scheme: light;
+  }
+  body {
+    padding: 0;
+    color: #111;
+    background: #fff;
+  }
+  .reading-progress, .toc, .copy-button {
+    display: none;
+  }
+  .article {
+    max-width: none;
+    padding: 0;
+    background: #fff;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  h1, h2, h3, h4, h5, h6, strong {
+    color: #111;
+    -webkit-text-fill-color: initial;
+  }
+  a {
+    color: inherit;
+    text-decoration: underline;
+  }
+  pre {
+    color: #111;
+    background: #f4f4f4;
+    box-shadow: none;
+  }
+}
+</style>
+</head>
+<body>
+<div class="reading-progress" aria-hidden="true"><span></span></div>
+<main id="article-top" class="article">
+  <header class="article-header">
+    <div class="eyebrow">
+      <span class="eyebrow-dot"></span>
+      <span>ARTICLE</span>
+      <span class="eyebrow-separator">/</span>
+      <span>zenn.dev</span>
+    </div>
+    <div class="metadata" aria-label="記事メタデータ"><span class="metadata-item"><span class="metadata-label">著者</span>kaito</span><span class="metadata-item"><span class="metadata-label">公開日</span>2026-10-02</span><a class="metadata-item source-link" href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/8263c0"><span class="metadata-label">原文</span>読む</a><span class="metadata-item"><span class="metadata-label">サイト</span>zenn.dev</span><span class="metadata-item"><span class="metadata-label">形式</span>ARTICLE</span></div>
+    <h1 id="13-skill">第13章 Skillを作り、評価する</h1>
+  </header>
+<nav class="toc" aria-label="目次">
+  <div class="toc-heading">
+    <span class="toc-title">目次</span>
+    <span class="toc-count">16 セクション</span>
+  </div>
+  <ol><li><a href="#_1">この章の構成</a></li><li><a href="#2playbookskill">2つのPlaybookは、Skillを書く手順と効果を測る手順を分担する</a></li><li><a href="#authoring-or-modifying-a-skillskill">『Authoring or modifying a skill』は、決められた手順でSkillを書き、作業中の判断を変える指示だけ残す</a><ol><li><a href="#4">4つの手順</a><ol><li><a href="#1-create-skill">1. create-skill を使う</a></li><li><a href="#2-skill">2. Skillを検証する</a></li><li><a href="#3-skill">3. Skillの構造を変えるならテストケースを用意する</a></li><li><a href="#4-opening-a-prpr14">4. 『Opening a PR』でPRを作成（第14章）</a></li></ol></li><li><a href="#_2">要点は「迷ったら削る」という文章の規律</a></li><li><a href="#skill">検証スキルや自分用のSkillには、専用の入口がある</a></li><li><a href="#skill_1">依頼の書き方：作りたいSkillを普通の言葉で書く</a></li></ol></li><li><a href="#eval">『Eval』は、評価だと気づかせずに、変更がエージェントの行動に与える効果を測る</a><ol><li><a href="#7">7つの手順</a></li><li><a href="#_3">要点は、手順より先に置かれた盲検化のルール</a></li><li><a href="#_4">依頼の書き方：両方の版に同じタスクを与え、候補を盲検のままにするよう書く</a></li></ol></li><li><a href="#_5">まとめ</a></li></ol>
+</nav>
+  <div class="article-body">
+
+<p>この章では、次の2つのPlaybookを扱います。</p>
+<ol>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/authoring-a-skill.md">Authoring or modifying a skill</a></li>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/eval.md">Eval</a></li>
+</ol>
+<p>2つとも、アプリのコードではなく、<strong>エージェントの働き方を決めるSkillについて扱います</strong>。</p>
+<p>『Authoring or modifying a skill』は、Skill（<code>SKILL.md</code>）を書くときや直すときに、『Eval』は、そのSkillの変更に効果があったかを測定するときに使います。</p>
+<p>この章では、2つの分担と、それぞれの使い方を順に解説します。</p>
+<h2 id="_1">この章の構成</h2>
+<p>この章の構成は次のとおりです。</p>
+<ul>
+<li>2つのPlaybookは、Skillを書く手順と効果を測る手順を分担する</li>
+<li>『Authoring or modifying a skill』は、決められた手順でSkillを書き、作業中の判断を変える指示だけ残す</li>
+<li>『Eval』は、評価だと気づかせずに、変更がエージェントの行動に与える効果を測る</li>
+<li>まとめ</li>
+</ul>
+<h2 id="2playbookskill">2つのPlaybookは、Skillを書く手順と効果を測る手順を分担する</h2>
+<p>同梱ガイドの「Make it yours」のページ（<a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/09-make-it-yours.md"><code>docs/guide/09-make-it-yours.md</code></a>）は、Skillについて2つのことを求めています。</p>
+<ul>
+<li><strong>エージェント向けの文章は、人間向けより基準を高くする</strong>・・・ 役に立たない一文も、将来どこかのエージェントが従う指示になるからです。</li>
+<li><strong>Skillの編集は、実験としてテストする</strong>・・・ Skillの編集は、将来のすべてのセッションに影響するからです。</li>
+</ul>
+<p>書くほうが『<strong>Authoring or modifying a skill</strong>』、効果を測定するほうが『<strong>Eval</strong>』です。</p>
+<p>Authoring or modifying a skillの手順には、複数のエージェントを使う指示はありません。<br />
+一方、Evalでの作業に必要なものは次の3つです。</p>
+<ul>
+<li><strong>候補</strong>・・・ 変更を入れた環境で作業するエージェントです。</li>
+<li><strong>審査員</strong>・・・ 候補の出力を採点する、候補とは別のエージェントです。</li>
+<li><strong>手がかりを取り除いた作業環境</strong>・・・ 評価だと気づかれる手がかり（ディレクトリ名やファイル名など）を取り除いた作業環境です。</li>
+</ul>
+<h2 id="authoring-or-modifying-a-skillskill">『Authoring or modifying a skill』は、決められた手順でSkillを書き、作業中の判断を変える指示だけ残す</h2>
+<p>『<strong>Authoring or modifying a skill</strong>』は、<strong><code>SKILL.md</code> を新しく書く、または直すとき</strong>に通すPlaybookです。</p>
+<p>同梱ガイドは、<code>SKILL.md</code> を自由に書き下ろすことをよくある失敗に挙げ、このPlaybookを通せば検証とレビューが行われる、としています。</p>
+<h3 id="4">4つの手順</h3>
+<p>手順は次のとおりです。</p>
+<ol>
+<li>create-skill を使う</li>
+<li>Skillを検証する</li>
+<li>Skillの構造を変えるならテストケースを用意する</li>
+<li>『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/opening-a-pr.md">Opening a PR</a>』でPRを作成（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/45a56e">第14章</a>）</li>
+</ol>
+<p>ここからは、各手順を1つずつ見ていきます。</p>
+<p>!</p>
+<ul>
+<li><strong>frontmatter</strong>・・・ Markdownファイルの先頭に <code>---</code> で囲んで書く、名前や説明などのメタデータ</li>
+</ul>
+<h4 id="1-create-skill">1. create-skill を使う</h4>
+<p>Cursorに組み込まれている、<code>SKILL.md</code> を書くためのSkill。</p>
+<h4 id="2-skill">2. Skillを検証する</h4>
+<p>frontmatterに <code>name</code> と <code>description</code> があること、参照先のファイルが存在すること、他のSkillへのリンクが解決することを確かめる。</p>
+<p>手順2で確かめるのは、機械的に合否が出るものだけです。<strong>Skillの変更がエージェントの行動を変えるかを確かめるのは、『Eval』の役目</strong>です。</p>
+<h4 id="3-skill">3. Skillの構造を変えるならテストケースを用意する</h4>
+<p>文調のような主観的な変更なら省略。</p>
+<h4 id="4-opening-a-prpr14">4. 『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/opening-a-pr.md">Opening a PR</a>』でPRを作成（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/45a56e">第14章</a>）</h4>
+<h3 id="_2">要点は「迷ったら削る」という文章の規律</h3>
+<p>このPlaybookの要点は、手順の後に置かれた<strong>文章の規律</strong>です。</p>
+<blockquote>
+<p>When in doubt, delete. Keep only prose that changes a decision.</p>
+<p>迷ったら削る。判断を変える文章だけを残す。</p>
+</blockquote>
+<p>Skillを書くエージェントは、一文ごとに「この文でエージェントのどの判断が変わるか」を問い、答えられない文は消します。</p>
+<p>主な規律は次のとおりです。</p>
+<ul>
+<li><strong>理由の説明を省略する</strong>・・・ 指示は「何をするか」を中心に書き、理由がないと指示の意味や適用条件が分からない場合に限定して、理由を説明します。</li>
+<li><strong>中身を写さず、情報源を指し示す</strong>・・・ 型、README、設定ファイルのような、コードベースに実在する情報源を示します（原則『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-encode-lessons-in-structure/SKILL.md"><strong>Encode Lessons in Structure</strong></a>』、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/dd2d9f">第21章</a>）。</li>
+<li><strong>他のSkillに委ねる</strong>・・・ 他のSkillの中身は書き写さず、そのSkillのパスを示して任せます。</li>
+<li><strong>繰り返す作業をSkillにする</strong>・・・ 何度も同じ作業をしているなら、新しいSkillを提案します。</li>
+</ul>
+<p>エージェントが作業の途中で壊れたSkillに気づいたら、作業は止めず、黙認して回避することもせず、<strong>そのSkillだけ修正し、PRを出します</strong>。</p>
+<p>機能開発のPRに混ざったSkillの編集は、レビューで気づかれにくく、『Eval』で効果を測ることもできないためです。</p>
+<h3 id="skill">検証スキルや自分用のSkillには、専用の入口がある</h3>
+<p>目的によっては、このPlaybookではなく専用の入口を使います。</p>
+<table>
+<thead>
+<tr>
+<th>入口</th>
+<th>どんなときに使うか</th>
+<th>詳しい章</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/create-verification-skill</code></td>
+<td>アプリの挙動を確かめるSkillを新しく作りたい</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/03ebca">第26章</a></td>
+</tr>
+<tr>
+<td><code>/maintain-verification-skill</code></td>
+<td>検証スキルに書かれた手順が、アプリの今の挙動と合わなくなった</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/03ebca">第26章</a></td>
+</tr>
+<tr>
+<td><code>/automate-me</code></td>
+<td>自分の作業の進め方を、過去のセッションの記録からSkillにまとめたい</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/46bd1f">第25章</a></td>
+</tr>
+<tr>
+<td><code>/reflect</code></td>
+<td>セッションから学んだことを既存Skillに残したい</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/f70847">第34章</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="skill_1">依頼の書き方：作りたいSkillを普通の言葉で書く</h3>
+<p>依頼は普通の言葉で足ります。</p>
+<pre><code>/poteto-mode write a skill for verifying database migrations in this repo
+// このリポジトリのデータベースマイグレーションを検証するSkillを書いて。
+</code></pre>
+<h2 id="eval">『Eval』は、評価だと気づかせずに、変更がエージェントの行動に与える効果を測る</h2>
+<p>『<strong>Eval</strong>』は、Skill、構造、プロンプトの変更がエージェントの行動にどう影響するかを、<strong>採用する前にテストする</strong>Playbookです。</p>
+<p>『Eval』を実行するエージェントは、実験を設計し、結果をまとめる役を担います。ここでいう実験とは、変更したSkillを別のエージェントに実際の作業で使わせ、その仕事ぶりを採点することです。</p>
+<p>実験では、課題を解くエージェントを複数体起動します。このエージェントを<strong>候補</strong>と呼びます。</p>
+<ul>
+<li><strong>候補ごとに作業用のディレクトリを分ける</strong>・・・ 各ディレクトリには、変更したSkillと、プロジェクトの骨組みを置いておきます。候補どうしが互いの作業に影響しないようにするためです。</li>
+<li><strong>候補ごとに別のモデルを使う</strong>・・・ たとえば、1体目はOpus、2体目はGrokで動かします。モデルにはそれぞれ偏りがあり、1つのモデルだけで試すと、その偏りが結果に混ざるからです。</li>
+<li><strong>全員に同じ依頼を与える</strong>・・・ 依頼が異なると、結果の違いが変更によるものか、依頼によるものか分からなくなるからです。</li>
+</ul>
+<p>候補の作業が終わったら、候補とは別のモデルで動く<strong>審査員</strong>が、どの候補の出力かを知らない状態で採点します。</p>
+<p>変更前と変更後の2つの版を比べることもできます。その場合は、1体の審査員が、どちらの版の出力かを知らないまま、両方を同じ基準で一度に採点します。</p>
+<p>!</p>
+<ul>
+<li><strong>盲検</strong>・・・ 評価の対象に、評価されていることや比べている条件を知らせずに行う試験のやり方</li>
+</ul>
+<h3 id="7">7つの手順</h3>
+<ol>
+<li><strong>実験の枠組みを決める</strong>・・・ テストする変更と、成功とみなす行動を書く。審査員用の採点基準（ルーブリック）を3〜6項目で作り、候補には見せない</li>
+<li><strong>評価の手がかりを取り除いた環境を用意する</strong>・・・ 候補ごとに作業ディレクトリを用意し、テストする変更を入れておく。プロジェクトの骨組みや、候補が自然に読むSkillなど、本物のタスクならあるはずのコンテキストも置く</li>
+<li><strong>自然なプロンプトを一つ書く</strong>・・・ 利用者が与えそうな依頼にし、何を測っているかを漏らさない</li>
+<li><strong>N体の候補を並列に起動する</strong>・・・ <a href="https://github.com/cursor/plugins/blob/main/pstack/skills/arena/SKILL.md"><code>/arena</code></a> の手順に従い、候補ごとに異なるモデルを使う</li>
+<li><strong>盲検の審査員を1体起動する</strong>・・・ 候補とは別のモデルファミリーを使い、モデル名は見せない</li>
+<li><strong>指示をたどったかは、自己申告ではなく記録から確かめる</strong>・・・ 候補がSkillから指し示されたファイルを順にたどって従ったかは、会話の記録で実際に開いたファイルとコードの形から採点する</li>
+<li><strong>実験を設計したエージェントが、すべての出力を自分で読む</strong>・・・ 審査員の判定と比べ、食い違いはモデルの偏りかルーブリックのあいまいさの表れとみて、結論をまとめる</li>
+</ol>
+<p>!</p>
+<ul>
+<li><strong>モデルファミリー</strong>・・・ 同じ開発元が同じ系列として出している、一群のモデル（例：OpenAIのGPT系、xAIのGrok系など）</li>
+</ul>
+<h3 id="_3">要点は、手順より先に置かれた盲検化のルール</h3>
+<p>同梱ガイドによれば、このPlaybookは、「評価されていると知ったエージェントの振る舞いが変わる」という失敗を中心に作られています。この失敗を<strong>観察者効果</strong>と呼びます。</p>
+<p>盲検化のルールは、情報が漏れる経路ごとに3つに分けられます。</p>
+<ul>
+<li><strong>候補が目にする文字列</strong>・・・ <code>eval</code>、<code>test</code>、<code>judge</code> などの語を、ディレクトリ名、ファイル名、プロンプトに入れません。名前は利用者が付けそうなものにし、プロンプトは普通の依頼に見せます。</li>
+<li><strong>候補が答える内容</strong>・・・ どのSkillやファイルを使ったかを列挙させず、他の候補がいることも伝えません。</li>
+<li><strong>審査員が目にする情報</strong>・・・ 出力には、どのモデルのものか分からないラベルを付けて見せ、モデル名は伏せます。2つの版を比べるときは、1体の審査員が両方を1回で、同じ尺度で採点します。</li>
+</ul>
+<h3 id="_4">依頼の書き方：両方の版に同じタスクを与え、候補を盲検のままにするよう書く</h3>
+<p>同梱ガイドの依頼例は、変更前と変更後の2つの版を比べる使い方で、両方の版に同じタスクを与えることと、候補を盲検のままにすることを伝えています。</p>
+<pre><code>/poteto-mode run the eval playbook on this skill change. same task for both variants, candidates stay blind.
+// このSkillの変更に Eval Playbook を実行して。両方の版に同じタスクを与えて。候補は盲検のままにして。
+</code></pre>
+<h2 id="_5">まとめ</h2>
+<ul>
+<li><strong>2つのPlaybookの分担</strong>・・・ Skillを作成・編集する『<strong>Authoring or modifying a skill</strong>』と、効果を測る『<strong>Eval</strong>』です。</li>
+<li><strong>Authoring or modifying a skill</strong>・・・ <code>create-skill</code> で書き、機械的に検証してPRにします。要点は「迷ったら削る。判断を変える文章だけを残す」です。壊れたSkillは、そのSkillの修正だけを含む独立したPRで直します。</li>
+<li><strong>Eval</strong>・・・ 変更を採用する前に、行動への効果を確かめます。候補は評価されていると知らず、審査員はモデル名を知りません。採点は候補の自己申告ではなく、実際に開いたファイルを示す会話の記録から行います。</li>
+</ul>
+<p>次の<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/45a56e">第14章</a>では、PRを作る『<strong>Opening a PR</strong>』、PRをマージできる状態まで運ぶ『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/babysit.md"><strong>Babysit</strong></a>』、検証済みのものだけを本流のブランチ（trunk）へ取り込む『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/shipping.md"><strong>Shipping</strong></a>』を見ていきます。</p>
+  </div>
+  <footer class="article-footer">
+    <span>取得: 2026-10-06T23:37:28+09:00</span>
+    <a href="#article-top">↑ 先頭へ戻る</a>
+  </footer>
+</main>
+<script>
+(() => {
+  const progress = document.querySelector(".reading-progress > span");
+  const updateProgress = () => {
+    const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+    const ratio = scrollable > 0 ? window.scrollY / scrollable : 0;
+    if (progress) progress.style.width = `${Math.min(1, ratio) * 100}%`;
+  };
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  document.querySelectorAll("pre").forEach((block) => {
+    const button = document.createElement("button");
+    button.className = "copy-button";
+    button.type = "button";
+    button.textContent = "コピー";
+    button.addEventListener("click", async () => {
+      const text = block.querySelector("code")?.innerText || block.innerText;
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const textarea = document.createElement("textarea");
+          textarea.value = text;
+          textarea.style.position = "fixed";
+          textarea.style.opacity = "0";
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand("copy");
+          textarea.remove();
+        }
+        button.textContent = "コピー済み";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      } catch (error) {
+        button.textContent = "失敗";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      }
+    });
+    block.appendChild(button);
+  });
+
+  const links = new Map(
+    [...document.querySelectorAll(".toc a")].map((link) => [link.hash, link])
+  );
+  const headings = [...document.querySelectorAll(
+    ".article-body h2[id], .article-body h3[id], .article-body h4[id]"
+  )];
+  if ("IntersectionObserver" in window && headings.length) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        links.forEach((link) => link.classList.remove("is-active"));
+        links.get(`#${entry.target.id}`)?.classList.add("is-active");
+      });
+    }, { rootMargin: "-12% 0px -72% 0px" });
+    headings.forEach((heading) => observer.observe(heading));
+  }
+})();
+</script>
+</body>
+</html>

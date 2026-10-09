@@ -1,0 +1,1036 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="title" content="第21章 Meta ― 仕組み自体を改善する原則">
+<meta name="book_title" content="【Cursor pstack】AIエージェントに開発を任せる環境をつくる ―月2,500件のPRを支えた開発基盤とは？">
+<meta name="source_url" content="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/dd2d9f">
+<meta name="author" content="kaito">
+<meta name="published_at" content="2026-10-02">
+<meta name="retrieved_at" content="2026-10-06T23:37:31+09:00">
+<meta name="site" content="zenn.dev">
+<meta name="content_type" content="article">
+<meta name="chapter_position" content="26">
+<title>第21章 Meta ― 仕組み自体を改善する原則</title>
+<style>
+:root {
+  color-scheme: light;
+  --ink: #172033;
+  --muted: #64748b;
+  --line: #dbe4ef;
+  --accent: #2563eb;
+  --accent-dark: #1d4ed8;
+  --accent-soft: #eff6ff;
+  font-family: -apple-system, BlinkMacSystemFont, "Avenir Next",
+    "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 8% 0%, #dbeafe 0, transparent 32rem),
+    radial-gradient(circle at 100% 12%, #e0e7ff 0, transparent 28rem),
+    #f4f7fb;
+  color: var(--ink);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(120deg, transparent 0 48%, rgba(255, 255, 255, 0.4));
+}
+.article {
+  position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
+  max-width: 920px;
+  margin: clamp(1rem, 5vw, 4rem) auto;
+  padding: clamp(2rem, 6vw, 5rem) clamp(1.25rem, 7vw, 5.5rem);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  border-radius: 24px;
+  min-height: 100vh;
+  box-shadow:
+    0 24px 70px rgba(30, 64, 175, 0.1),
+    0 4px 16px rgba(15, 23, 42, 0.04);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 5px;
+  content: "";
+  background: linear-gradient(90deg, #2563eb, #7c3aed, #db2777);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin: 0 0 2.5rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.72rem;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+a {
+  color: var(--accent-dark);
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: #7c3aed;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--ink);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 18ch;
+  margin: 0 0 2.5rem;
+  font-size: clamp(2.15rem, 5vw, 3.65rem);
+  letter-spacing: -0.045em;
+}
+h2 {
+  position: relative;
+  margin: 3.8rem 0 1.25rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--line);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 4.2rem;
+  height: 3px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), #7c3aed);
+  border-radius: 999px;
+}
+h3 {
+  margin: 2.6rem 0 0.8rem;
+  color: var(--accent-dark);
+  font-size: 1.3rem;
+}
+h4, h5, h6 {
+  margin-top: 2rem;
+}
+p {
+  margin: 1.15rem 0;
+}
+ul, ol {
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.35rem 0;
+}
+li::marker {
+  color: var(--accent);
+  font-weight: 700;
+}
+strong {
+  color: #111827;
+}
+blockquote {
+  margin: 1.6rem 0;
+  padding: 0.8rem 1.25rem;
+  color: #475569;
+  background: linear-gradient(90deg, var(--accent-soft), #fff);
+  border-left: 4px solid var(--accent);
+  border-radius: 0 12px 12px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 3rem 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+img {
+  display: block;
+  max-width: 100%;
+  margin: 1.75rem auto;
+  height: auto;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+}
+pre {
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  padding: 1.15rem 1.25rem;
+  color: #e2e8f0;
+  background: #111827;
+  border: 1px solid #253047;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+}
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+:not(pre) > code {
+  padding: 0.15rem 0.4rem;
+  color: #9f1239;
+  background: #fff1f2;
+  border-radius: 5px;
+}
+table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  border-collapse: collapse;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
+  text-align: left;
+}
+th {
+  color: #1e3a8a;
+  background: #eff6ff;
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: #f8fafc;
+}
+@media (max-width: 600px) {
+  .article {
+    margin: 0;
+    padding: 2rem 1rem 4rem;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(2rem, 10vw, 2.75rem);
+  }
+  .metadata {
+    margin-bottom: 2rem;
+  }
+}
+@media print {
+  body {
+    background: #fff;
+  }
+  .article {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  a {
+    color: inherit;
+  }
+}
+</style>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0f1419;
+  --surface: #1a2332;
+  --surface-raised: #202c3f;
+  --surface-soft: rgba(26, 35, 50, 0.72);
+  --border: #2d3a4f;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #58a6ff;
+  --accent-strong: #79c0ff;
+  --green: #3fb950;
+  --purple: #bc8cff;
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+    "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  line-height: 1.75;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+  background: var(--bg);
+}
+body {
+  min-width: 320px;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 2rem 1.5rem 5rem;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(31, 111, 235, 0.18), transparent 32rem),
+    radial-gradient(circle at 100% 12%, rgba(137, 87, 229, 0.14), transparent 28rem),
+    var(--bg);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black, transparent 75%);
+}
+.reading-progress {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 20;
+  height: 3px;
+  background: rgba(45, 58, 79, 0.7);
+}
+.reading-progress > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  box-shadow: 0 0 14px rgba(88, 166, 255, 0.8);
+  transition: width 80ms linear;
+}
+.article {
+  position: relative;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  background: rgba(15, 20, 25, 0.76);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(88, 166, 255, 0.035) inset;
+  backdrop-filter: blur(16px);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  border-radius: 16px 16px 0 0;
+}
+.article-header {
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.eyebrow-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--green);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(63, 185, 80, 0.75);
+}
+.eyebrow-separator {
+  color: var(--border);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  background: rgba(32, 44, 63, 0.68);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+.source-link {
+  color: var(--text);
+  text-decoration: none;
+}
+.source-link:hover {
+  border-color: var(--accent);
+  background: rgba(88, 166, 255, 0.12);
+}
+a {
+  color: var(--accent);
+  overflow-wrap: anywhere;
+  text-decoration: none;
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 24ch;
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  background: linear-gradient(120deg, #fff 12%, #b9d8ff 58%, #bc8cff);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+h2 {
+  position: relative;
+  margin: 3.2rem 0 1.1rem;
+  padding: 0.75rem 0 0.65rem;
+  border-bottom: 1px solid var(--border);
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 3.8rem;
+  height: 2px;
+  content: "";
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(88, 166, 255, 0.7);
+}
+h3 {
+  margin: 2.25rem 0 0.7rem;
+  color: var(--accent-strong);
+  font-size: 1.2rem;
+}
+h4, h5, h6 {
+  margin-top: 1.75rem;
+}
+p {
+  margin: 0.9rem 0;
+}
+ul, ol {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.3rem 0;
+}
+li::marker {
+  color: var(--accent);
+}
+strong {
+  color: #fff;
+}
+blockquote {
+  margin: 1.4rem 0;
+  padding: 0.85rem 1.15rem;
+  color: #c9d1d9;
+  background: linear-gradient(100deg, rgba(88, 166, 255, 0.1), rgba(26, 35, 50, 0.55));
+  border: 1px solid rgba(88, 166, 255, 0.18);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 2.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+}
+pre {
+  position: relative;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  padding: 1rem 1.15rem;
+  color: #dbeafe;
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+pre code {
+  color: inherit;
+  background: transparent;
+}
+code {
+  font-family: "SF Mono", "Fira Code", ui-monospace, monospace;
+  font-size: 0.86em;
+}
+:not(pre) > code {
+  padding: 0.12em 0.38em;
+  color: #ffabbc;
+  background: rgba(248, 81, 73, 0.11);
+  border-radius: 4px;
+}
+.copy-button {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  padding: 0.25rem 0.55rem;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.72rem;
+  background: rgba(32, 44, 63, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.copy-button:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  border-spacing: 0;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.6rem 0.75rem;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+th {
+  color: var(--accent);
+  background: var(--surface);
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: rgba(26, 35, 50, 0.42);
+}
+tr:last-child td {
+  border-bottom: 0;
+}
+th:last-child, td:last-child {
+  border-right: 0;
+}
+.toc {
+  margin: 1.75rem 0 2.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.toc-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--border);
+}
+.toc-title {
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.toc-count {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.toc ol {
+  margin: 0.7rem 0 0;
+  padding-left: 1.25rem;
+}
+.toc ol ol {
+  margin: 0.2rem 0;
+}
+.toc li {
+  margin: 0.18rem 0;
+  font-size: 0.86rem;
+}
+.toc li::marker {
+  color: var(--muted);
+}
+.toc a {
+  display: inline-block;
+  max-width: 100%;
+  color: var(--muted);
+  transition: color 160ms ease, transform 160ms ease;
+}
+.toc a:hover, .toc a.is-active {
+  color: var(--accent-strong);
+  text-decoration: none;
+  transform: translateX(2px);
+}
+.article-body {
+  max-width: 78ch;
+  margin: 0 auto;
+}
+.article-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 1rem;
+  color: var(--muted);
+  font-size: 0.74rem;
+  border-top: 1px solid var(--border);
+}
+.article-footer a {
+  color: var(--muted);
+}
+@media (max-width: 720px) {
+  body {
+    padding: 0 0 3rem;
+  }
+  .article {
+    min-height: 100vh;
+    padding: 1.5rem 1rem 3rem;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+  .article::before {
+    border-radius: 0;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(1.9rem, 9vw, 2.6rem);
+  }
+  .article-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+@media print {
+  :root {
+    color-scheme: light;
+  }
+  body {
+    padding: 0;
+    color: #111;
+    background: #fff;
+  }
+  .reading-progress, .toc, .copy-button {
+    display: none;
+  }
+  .article {
+    max-width: none;
+    padding: 0;
+    background: #fff;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  h1, h2, h3, h4, h5, h6, strong {
+    color: #111;
+    -webkit-text-fill-color: initial;
+  }
+  a {
+    color: inherit;
+    text-decoration: underline;
+  }
+  pre {
+    color: #111;
+    background: #f4f4f4;
+    box-shadow: none;
+  }
+}
+</style>
+</head>
+<body>
+<div class="reading-progress" aria-hidden="true"><span></span></div>
+<main id="article-top" class="article">
+  <header class="article-header">
+    <div class="eyebrow">
+      <span class="eyebrow-dot"></span>
+      <span>ARTICLE</span>
+      <span class="eyebrow-separator">/</span>
+      <span>zenn.dev</span>
+    </div>
+    <div class="metadata" aria-label="記事メタデータ"><span class="metadata-item"><span class="metadata-label">著者</span>kaito</span><span class="metadata-item"><span class="metadata-label">公開日</span>2026-10-02</span><a class="metadata-item source-link" href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/dd2d9f"><span class="metadata-label">原文</span>読む</a><span class="metadata-item"><span class="metadata-label">サイト</span>zenn.dev</span><span class="metadata-item"><span class="metadata-label">形式</span>ARTICLE</span></div>
+    <h1 id="21-meta">第21章 Meta ― 仕組み自体を改善する原則</h1>
+  </header>
+<nav class="toc" aria-label="目次">
+  <div class="toc-heading">
+    <span class="toc-title">目次</span>
+    <span class="toc-count">13 セクション</span>
+  </div>
+  <ol><li><a href="#_1">この章の構成</a></li><li><a href="#_2">ルール：繰り返す訂正を、最も強い仕組みに変えて指示を消す</a><ol><li><a href="#_3">手順：仕組みにしたら指示の文章を消す</a><ol><li><a href="#lint">機械で判定できる指示は、lintのルールにして文章を消す</a></li><li><a href="#_4">機械で判定できない指示は、目立たせて失敗の例を添える</a></li><li><a href="#_5">仕組みで直せるなら、仕組みだけを使う</a></li><li><a href="#_6">同じ指示を何度も書くのは、仕組みが足りないことの症状である</a></li></ol></li><li><a href="#_7">強さの順位：使える中で最も強い仕組みを選ぶ</a></li><li><a href="#3">フィードバックのループ：訂正を仕組みに変える3段</a></li></ol></li><li><a href="#_8">発火条件</a><ol><li><a href="#2">スクリプトを作る場面で、似た2つの原則と見分ける</a></li></ol></li><li><a href="#pstack">pstack自身が、この原則で作られている</a></li><li><a href="#_9">まとめ</a></li></ol>
+</nav>
+  <div class="article-body">
+
+<p>この章では、次の1つの原則を扱います。</p>
+<ol>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-encode-lessons-in-structure/SKILL.md">Encode Lessons in Structure</a></li>
+</ol>
+<p>この原則は、繰り返し必要になる修正（同じ間違いを何度も直すこと）を、文章の指示ではなく仕組み（道具、コード、メタデータ、自動化）に組み込むよう求めます。</p>
+<p>エージェントは、同じ注意を2回書くことになったら、その注意を文章で書き足すのをやめ、<strong>lintのルールや実行時チェックにして、機械に守らせます</strong>。</p>
+<p>!</p>
+<p><strong>実行時チェック</strong>・・・ プログラムを動かしたときに、ルールが守られているかを確かめるコード</p>
+<p>たとえば、日付を表示する直前に、日付が <code>2026/09/26</code> の形になっているかを確かめるコードは、次のようになります。</p>
+<pre><code>// 画面に表示する日付の文字列
+declare const text: string;
+
+// 実行時チェック：表示する直前に、日付の形を確かめる
+if (!/^\d{4}\/\d{2}\/\d{2}$/.test(text)) {
+  throw new Error(`日付の形が違います: ${text}`);
+}
+</code></pre>
+<p>このコードは、プログラムが実際にこの行を動かしたときに初めて、形の違う日付に気づきます。</p>
+<p>たとえば、エージェントは、「<code>internal/</code> のモジュールを外から import しないでください」という注意を、import を検査するlintのルールにします。</p>
+<p>同梱ガイドのページ <a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/08-principles.md"><code>docs/guide/08-principles.md</code></a> は、この原則だけを、meta（メタ）の原則として分けています。</p>
+<p>この原則の役割は、他の23件の原則と異なります。</p>
+<p>他の原則は、個々の作業の中での判断（例：症状ではなく原因を直す、元に戻せる作業は確認を待たずに進める）を決めます。<br />
+一方、『Encode Lessons in Structure』は、作業で見つかった教訓を、lintのルールなど、次の作業の仕組みに変えます。</p>
+<p>この原則は、<strong>エラー、人間による訂正、予想外の結果のすべてを、学びのきっかけ</strong>（原文では learning signal）と呼びます。</p>
+<p>エージェントは、学びのきっかけを拾ったら、それを適切な場所（例：繰り返す修正ならlintのルール）へ送り、記録だけで終わらせずに、今すぐ直すか具体的なtodoを作ります（詳細は<a href="#%E3%83%95%E3%82%A3%E3%83%BC%E3%83%89%E3%83%90%E3%83%83%E3%82%AF%E3%81%AE%E3%83%AB%E3%83%BC%E3%83%97%EF%BC%9A%E8%A8%82%E6%AD%A3%E3%82%92%E4%BB%95%E7%B5%84%E3%81%BF%E3%81%AB%E5%A4%89%E3%81%88%E3%82%8B3%E6%AE%B5">『フィードバックのループ：訂正を仕組みに変える3段』</a>を参照）。</p>
+<p><a href="https://x.com/poteto/status/2102050467505430555">講演</a>でも、訂正の教訓を会話の中だけに残さず、再利用できる形でリポジトリに残すよう述べられていました（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a88ea5">第3章</a>、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/dc9141">第4章</a>）。</p>
+<p>この章では、この1件を、ルール、発火条件、pstack自身での使われ方の順に解説します。</p>
+<p>!</p>
+<p>本章の原則には、依頼例を載せていません。</p>
+<p>本書では、依頼例を、pstackの同梱ガイド、<a href="https://github.com/cursor/plugins/blob/main/pstack/README.md">README</a>、poteto氏のポストに記載があるものだけにとどめるものとします。原文に依頼例がない原則について本書で依頼例を作ると、pstackが想定していない使い方を示してしまうおそれがあるためです。</p>
+<h2 id="_1">この章の構成</h2>
+<p>この章の構成は次のとおりです。</p>
+<ul>
+<li>ルール：繰り返す訂正を、最も強い仕組みに変えて指示を消す</li>
+<li>発火条件</li>
+<li>pstack自身が、この原則で作られている</li>
+<li>まとめ</li>
+</ul>
+<h2 id="_2">ルール：繰り返す訂正を、最も強い仕組みに変えて指示を消す</h2>
+<p>原則『<strong>Encode Lessons in Structure</strong>』は、繰り返す注意を、文章の指示ではなく仕組みで守らせるよう求めます。</p>
+<p>エージェントは、同じ注意を2回書いたと気づいたら、<strong>その注意を守らせる仕組みを作り、指示の文章のほうは消します</strong>。</p>
+<p>原則がこれを求めるのは、<strong>文章の指示が見落とされやすい</strong>からです。</p>
+<p>文章の指示は、読み手がその文に気づき、内容を覚え、そのとおりに従って、初めて守られます。</p>
+<p>エージェントの場合、セッションが変わると、前のセッションの会話で受けた訂正は引き継がれません。エージェントが「覚えておきます」と答えても、その約束は次のセッションには残らないのです。</p>
+<p>仕組みは、エージェントが覚えていなくても働きます。そのため、文章の指示を仕組みに置き換えれば、次のセッションのエージェントにも同じルールを守らせられます。</p>
+<h3 id="_3">手順：仕組みにしたら指示の文章を消す</h3>
+<p>手順は次の3つです。</p>
+<ol>
+<li>その指示を、lintのルール、メタデータのフラグ、実行時チェック、スクリプトにできるかを問う</li>
+<li>可能なら、仕組みにして、指示を消す</li>
+<li>不可能なら（機械では決められず、判断が必要なら）、指示を目立たせ、その指示を守らなかったときの失敗の例を添える</li>
+</ol>
+<p>!</p>
+<p><strong>メタデータのフラグ</strong>・・・ ファイルの設定欄（frontmatter）に置く値</p>
+<p>たとえば、pstackの各Principleの <code>SKILL.md</code> は、ファイルの冒頭の設定欄に、次の値を置いています。</p>
+<pre><code>---
+name: principle-encode-lessons-in-structure
+disable-model-invocation: true
+---
+</code></pre>
+<p>このうち <code>disable-model-invocation: true</code> が、メタデータのフラグです。</p>
+<p>このフラグは、エージェントが会話の内容から自分でこのSkillを選んで動かすことを止めます。「このSkillを自分から使わないで」と本文に文章で書く代わりに、設定欄の値で決めています。</p>
+<h4 id="lint">機械で判定できる指示は、lintのルールにして文章を消す</h4>
+<p>冒頭の「<code>internal/</code> のモジュールを外から import しないでください」なら、手順2に該当します。</p>
+<p>エージェントは、ルールファイル（<code>AGENTS.md</code> など、エージェント向けのルールを書いたファイル）に次の文が書かれていたら、import を検査するlintのルールを追加し、ルールファイルからその文を消します。</p>
+<p>AGENTS.md</p>
+<pre><code>前：ルールファイルに、文章で書いている
+- internal/ のモジュールを、internal/ の外から import しない
+</code></pre>
+<p>eslint.config.js</p>
+<pre><code>// 後：次の設定を追加し、ルールファイルの文は消す（typescript-eslint を導入済みの前提）
+import tseslint from &quot;typescript-eslint&quot;;
+
+export default [
+  {
+    files: [&quot;src/**/*.ts&quot;],
+    languageOptions: { parser: tseslint.parser },
+    // internal/ の中どうしの import は許す
+    ignores: [&quot;src/internal/**&quot;],
+    rules: {
+      &quot;no-restricted-imports&quot;: [&quot;error&quot;, {
+        patterns: [{
+          group: [&quot;**/internal/**&quot;],
+          message: &quot;internal/ のモジュールは、internal/ の外から import しないでください&quot;,
+        }],
+      }],
+    },
+  },
+];
+</code></pre>
+<p>この設定があれば、<code>internal/</code> の外のファイルが <code>internal/</code> のモジュールを import すると、lintがエラーにします。そのため、ルールファイルに同じ注意を書いておく必要はなくなります。</p>
+<p>このように、<strong>機械で判定できる指示なら、仕組みが守らせるので、指示の文章は必要ありません</strong>。</p>
+<h4 id="_4">機械で判定できない指示は、目立たせて失敗の例を添える</h4>
+<p>反対に、「エラーメッセージは、ユーザーが次に何をすればよいか分かるように書いてください」は、手順3に該当します。</p>
+<p>機械ではメッセージの良し悪しを判定しにくいので、エージェントは、この指示を文章のまま目立つ場所に置き、悪いメッセージの例を添えます。</p>
+<p>AGENTS.md</p>
+<pre><code>## 必ず守ること
+
+- **エラーメッセージは、ユーザーが次に何をすればよいか分かるように書く**
+  - 失敗の例：「エラーが発生しました」。ユーザーは、次に何をすればよいか分からない
+</code></pre>
+<p>このように、機械で判定できない指示なら、文章で残すしかないので、目立たせて失敗の例を添える必要があります。</p>
+<h4 id="_5">仕組みで直せるなら、仕組みだけを使う</h4>
+<p>原則は、<strong>仕組みで直せるなら、仕組みだけを使う</strong>よう求めます。</p>
+<p>仕組みと指示を両方残すと、同じルールを2か所で管理することになり、片方だけが更新されたときに2か所の内容が食い違います。そのため、原則は、仕組みにしたら指示の文章を消すよう求めています。</p>
+<p>たとえば、lintのルールだけを直し、ルールファイルの文を直し忘れると、ルールファイルを読んだエージェントは、古いルールのとおりにコードを書いてしまいます。</p>
+<h4 id="_6">同じ指示を何度も書くのは、仕組みが足りないことの症状である</h4>
+<p>原文は、指示の文章を「症状」（原文では symptom）と呼びます。</p>
+<p>本書では、同じ指示を何度も書くことを、ルールを守らせる仕組みが足りないことの症状と読みます。<br />
+この読み方に従うと、原則が求めているのは、<strong>症状である指示を書き足すことではなく、原因である足りない仕組みを作ること</strong>と読むことができます。</p>
+<h3 id="_7">強さの順位：使える中で最も強い仕組みを選ぶ</h3>
+<p>複数の仕組みが使えるなら、エージェントは<strong>状況が許す最も強いものを選びます</strong>。</p>
+<p>強い順に、次の4つが仕組みとなります。</p>
+<ol>
+<li><strong>型で表現できない状態</strong>（原文では unrepresentable state）・・・ ルールに反する状態を、型を用いて書けないようにします。ルール違反があると、コンパイルエラーが発生します。</li>
+<li><strong>CIを落とすlintや禁止API</strong>・・・ ルールに反する書き方や、使ってはいけないと決めたAPIをlintが検出すると、CIが失敗し、その変更は取り込めなくなります。</li>
+<li><strong>正規のヘルパー</strong>・・・ 決められた書き方をまとめた共通の関数（例：後に出てくる <code>formatDate()</code>）を用意し、コードからはその関数を呼ぶようにします。</li>
+<li><strong>実行時チェック</strong>・・・ 動かしたときに条件を確かめます。ルールに反するコードがあっても、その部分が実際に動くまで気づけません。</li>
+</ol>
+<p>強いものを選ぶのは、<strong>エージェントが、周りのコードがすでにしている書き方をまねてコードを書くから</strong>です（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/dc9141">第4章</a>）。</p>
+<p>弱いガード（原文では guard。ルールを守らせる仕組みのうち、順位の低いもの）を置くと、その弱いガードが、次のエージェントがまねる、ひな形になります。</p>
+<p>たとえば、弱いガードがひな形になる例として、日付の表示形式を実行時チェックだけで守っているケースを見てみましょう。</p>
+<p>注文一覧の画面のコードは、日付を自分で整形し、表示する直前に「<code>2026/09/26</code> の形になっているか」を確かめています。次のエージェントは、発送一覧の画面を作るときにこのコードをまねて、同じように日付を自分で整形し、同じ実行時チェックを書き足します。</p>
+<pre><code>type Order = { id: string; orderedAt: Date };
+type Shipment = { id: string; shippedAt: Date };
+
+// 注文一覧の画面：日付を自分で整形し、表示する直前に形を確かめる
+function orderRow(order: Order): string {
+  const d = order.orderedAt;
+  const mm = String(d.getMonth() + 1).padStart(2, &quot;0&quot;);
+  const dd = String(d.getDate()).padStart(2, &quot;0&quot;);
+  const text = `${d.getFullYear()}/${mm}/${dd}`;
+
+  if (!/^\d{4}\/\d{2}\/\d{2}$/.test(text)) {
+    throw new Error(`日付の形が違います: ${text}`);
+  }
+
+  return `${order.id} ${text}`;
+}
+
+// 発送一覧の画面：次のエージェントが上をまね、同じ整形と同じ実行時チェックを書き足す
+function shipmentRow(shipment: Shipment): string {
+  const d = shipment.shippedAt;
+  const mm = String(d.getMonth() + 1).padStart(2, &quot;0&quot;);
+  const dd = String(d.getDate()).padStart(2, &quot;0&quot;);
+  const text = `${d.getFullYear()}/${mm}/${dd}`;
+
+  if (!/^\d{4}\/\d{2}\/\d{2}$/.test(text)) {
+    throw new Error(`日付の形が違います: ${text}`);
+  }
+
+  return `${shipment.id} ${text}`;
+}
+</code></pre>
+<p>一方、正規のヘルパー <code>formatDate()</code> を用意し、ヘルパーを通さない日付の整形をlintで禁じておけば、次のエージェントがまねるのは <code>formatDate()</code> を呼ぶ書き方になります。</p>
+<pre><code>type Order = { id: string; orderedAt: Date };
+type Shipment = { id: string; shippedAt: Date };
+
+// date.ts：日付の整形は、正規のヘルパー formatDate() の一か所だけで行う
+function formatDate(d: Date): string {
+  const mm = String(d.getMonth() + 1).padStart(2, &quot;0&quot;);
+  const dd = String(d.getDate()).padStart(2, &quot;0&quot;);
+  return `${d.getFullYear()}/${mm}/${dd}`;
+}
+
+// 注文一覧の画面
+function orderRow(order: Order): string {
+  return `${order.id} ${formatDate(order.orderedAt)}`;
+}
+
+// 発送一覧の画面：次のエージェントも、上をまねて formatDate() を呼ぶ
+function shipmentRow(shipment: Shipment): string {
+  return `${shipment.id} ${formatDate(shipment.shippedAt)}`;
+}
+</code></pre>
+<pre><code>// eslint.config.js に次の設定を追加し、date.ts の外で日付を整形するコードを禁じる（typescript-eslint を導入済みの前提）
+import tseslint from &quot;typescript-eslint&quot;;
+
+export default [
+  {
+    files: [&quot;src/**/*.ts&quot;],
+    languageOptions: { parser: tseslint.parser },
+    ignores: [&quot;src/date.ts&quot;],
+    rules: {
+      &quot;no-restricted-properties&quot;: [&quot;error&quot;, {
+        property: &quot;getFullYear&quot;,
+        message: &quot;日付の整形には formatDate() を使ってください&quot;,
+      }],
+    },
+  },
+];
+</code></pre>
+<p>その結果、日付の整形は <code>formatDate()</code> の一か所に集まり、画面を追加するたびに同じ実行時チェックが増えることもなくなります。</p>
+<p>このように、次のエージェントは置かれた仕組みの書き方をまねるので、使える中で最も強い仕組みを選ぶ必要があります。</p>
+<h3 id="3">フィードバックのループ：訂正を仕組みに変える3段</h3>
+<p>エージェントが訂正を仕組みに変えるまでの流れは、次の3段です。</p>
+<ul>
+<li><strong>訂正を見逃さずに拾う</strong>・・・ 人間が作業に割って入って直したときや、テストが落ちたときに、エージェントは、その訂正が一回きりか、繰り返し起きるパターンかを判断します。</li>
+<li><strong>訂正を正しいレイヤーへ送る</strong>（原文では Route to the right layer）・・・ 一回きりのものはメモ（原文では brain note）へ、繰り返す修正はSkillかlintのルールへ、システム全体の問題はPrincipleへ送ります。</li>
+<li><strong>訂正の対応を最後まで済ませる</strong>・・・ 記録するだけで終わらせず、今すぐ適用する（例：lintのルールを今すぐ追加する）か、具体的なtodo（例：「<code>internal/</code> の import を禁じるlintのルールを追加する」）を作ります。</li>
+</ul>
+<p>3段のどこかで止まると、訂正は次の作業に反映されません。</p>
+<p>原文は、避けるべきこと（アンチパターン）として次の3つを挙げています。</p>
+<ul>
+<li><strong>認めるだけで記録しない</strong>・・・ 「覚えておきます」と答えても、その言葉は次のセッションに残りません。</li>
+<li><strong>記録するだけで正しいレイヤーへ送らない</strong>・・・ 作るべきlintのルールをメモに書いても、lintのルールを実装しなければ、次のエージェントが同じ間違いを書いてもCIは落ちず、同じ訂正がまた必要になります。そのため、そのメモは無駄になります。</li>
+<li><strong>一件を直すだけで一般化しない</strong>・・・ <code>internal/</code> を外から import していた1か所だけを直し、lintのルールを足さなければ、次のエージェントが別の場所で同じ import を書きます。一件を直しても、同じ間違いを生むパターンが残るからです。</li>
+</ul>
+<h2 id="_8">発火条件</h2>
+<p><strong>同じ指示を2回目に書いている自分に気づいたとき</strong>、または<strong>同じ訂正が繰り返されている</strong>と気づいたときです。</p>
+<h3 id="2">スクリプトを作る場面で、似た2つの原則と見分ける</h3>
+<p>この原則と、『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-build-the-lever/SKILL.md"><strong>Build the Lever</strong></a>』『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-prove-it-works/SKILL.md"><strong>Prove It Works</strong></a>』の2つの原則は、どれも、エージェントがスクリプトを作るきっかけになります。</p>
+<p>『Build the Lever』の原文は、3つの原則を次のように書き分けています。</p>
+<ul>
+<li>『Build the Lever』は、目の前の仕事を速く、レビューしやすく片付けるための原則</li>
+<li>『Prove It Works』は検証そのものをスクリプトにする</li>
+<li>『Encode Lessons in Structure』は繰り返す指示を長く残るガードレールに変える</li>
+</ul>
+<p>本書では、この書き分けを、作るスクリプトがどの問いに答えるかで整理します。</p>
+<ul>
+<li><strong>「目の前のこの仕事をどう片付けるか」</strong>・・・ <a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a8e80b">第17章</a>の『<strong>Build the Lever</strong>』です（例：名前を一括で変えるcodemod）。</li>
+<li><strong>「この仕事は正しく終わったか」</strong>・・・ <a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/1fb019">第19章</a>の『<strong>Prove It Works</strong>』です（例：書き出したファイルの行を確かめるスクリプト）。</li>
+<li><strong>「同じ間違いを二度と起こさないにはどうするか」</strong>・・・ 『<strong>Encode Lessons in Structure</strong>』です（例：<code>internal/</code> の import を禁じるlintのルール）。</li>
+</ul>
+<h2 id="pstack">pstack自身が、この原則で作られている</h2>
+<p><strong>pstackは、自分の教訓も文章ではなく仕組みに残しています</strong>。代表的な例は次のとおりです。</p>
+<ul>
+<li><strong><code>/reflect</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/f70847">第34章</a>）</strong>・・・ 会話から集めた学びのうち、lintやスクリプトのほうが確実に強制できる項目は、Skillの文章に書き足さず、その仕組みを実装する仕事として、チームのバックログ（課題を管理する場所）に起票します。</li>
+<li><strong><code>/correct</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/fe17ab">第35章</a>）</strong>・・・ エージェントが繰り返している間違いを、リポジトリの仕組みで起こせなくするSkillです。まず、間違いをコミットやレビューの履歴から種類ごとにまとめます。次に、種類ごとに、アーキテクチャ、型と lint、テスト、文書の順に、その間違いを止められる最も確実な手段を選びます。新しく作ったチェック（lint のルールやテスト）は、過去に実際に起きた間違いに当てて、本当に止められるかを確かめます。この原則が求める「繰り返す訂正を仕組みに変える」ことを、間違いを探すところから、仕組みが効くことを確かめるところまで、一通り行うSkillです。</li>
+<li><strong><code>preferences.md</code></strong>・・・ 『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/orchestrate.md"><strong>Orchestrate</strong></a>』Playbook（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/8a8dd5">第16章</a>）は、常設の指示（例：使うモデル、触ってはいけないパス）を1行に1つずつこのファイルに書き、すべてのサブエージェントの起動時と再開時にそのまま貼り付けます。指示は再開のたびに抜け落ちやすく、抜け落ちるたびに人間が指示し直すことになるからです。エージェントは、<strong>同じ指示を言い直していると気づいたら、作業を続ける前に、その指示をこのファイルに1行足します</strong>。</li>
+</ul>
+<h2 id="_9">まとめ</h2>
+<ul>
+<li><strong>ルール</strong>・・・ 同じ指示（例：「<code>internal/</code> のモジュールを外から import しないで」）を2回書いたら、lintのルールや実行時チェックのような仕組みにできないかを問い、できたら指示の文章を消します。仕組みは、使える中で最も強いもの（型、CIを落とすlint、正規のヘルパー、実行時チェックの順）を選びます。仕組みにできない指示は、目立たせて失敗の例を添えます。</li>
+<li><strong>発火条件</strong>・・・ 同じ指示を2回目に書いたとき、または同じ訂正が繰り返されていると気づいたときです。</li>
+<li><strong>pstack自身での使われ方</strong>・・・ <code>/reflect</code> は仕組みにできる学びを起票し、<code>/correct</code> は繰り返す間違いを仕組みで起こせなくし、『Orchestrate』Playbookは <code>preferences.md</code> の常設の指示をサブエージェントに毎回貼り付けます。</li>
+</ul>
+<p>講演では、信頼は会話の量ではなく、リポジトリに残した検証方法、作業手順、制約の量で増える、と述べられていました。『<strong>Encode Lessons in Structure</strong>』は、そのうちの制約（例：lintのルール、型）を、訂正のたびに増やしていく原則です。</p>
+<p>これで<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/4b3166">第4部</a>は終わりです。<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/2a4af5">第5部</a>では、PlaybookとPrincipleが呼び出す具体的な道具であるSkillを扱います。最初の<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/788746">第22章</a>では、変更の前にコードの挙動と理由を確かめ、前回の作業の続きから再開するための4つのSkillを見ていきます。</p>
+  </div>
+  <footer class="article-footer">
+    <span>取得: 2026-10-06T23:37:31+09:00</span>
+    <a href="#article-top">↑ 先頭へ戻る</a>
+  </footer>
+</main>
+<script>
+(() => {
+  const progress = document.querySelector(".reading-progress > span");
+  const updateProgress = () => {
+    const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+    const ratio = scrollable > 0 ? window.scrollY / scrollable : 0;
+    if (progress) progress.style.width = `${Math.min(1, ratio) * 100}%`;
+  };
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  document.querySelectorAll("pre").forEach((block) => {
+    const button = document.createElement("button");
+    button.className = "copy-button";
+    button.type = "button";
+    button.textContent = "コピー";
+    button.addEventListener("click", async () => {
+      const text = block.querySelector("code")?.innerText || block.innerText;
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const textarea = document.createElement("textarea");
+          textarea.value = text;
+          textarea.style.position = "fixed";
+          textarea.style.opacity = "0";
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand("copy");
+          textarea.remove();
+        }
+        button.textContent = "コピー済み";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      } catch (error) {
+        button.textContent = "失敗";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      }
+    });
+    block.appendChild(button);
+  });
+
+  const links = new Map(
+    [...document.querySelectorAll(".toc a")].map((link) => [link.hash, link])
+  );
+  const headings = [...document.querySelectorAll(
+    ".article-body h2[id], .article-body h3[id], .article-body h4[id]"
+  )];
+  if ("IntersectionObserver" in window && headings.length) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        links.forEach((link) => link.classList.remove("is-active"));
+        links.get(`#${entry.target.id}`)?.classList.add("is-active");
+      });
+    }, { rootMargin: "-12% 0px -72% 0px" });
+    headings.forEach((heading) => observer.observe(heading));
+  }
+})();
+</script>
+</body>
+</html>

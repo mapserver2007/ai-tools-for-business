@@ -1,0 +1,1068 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="title" content="第8章 Playbook・Skill・Principleは何を担うのか">
+<meta name="book_title" content="【Cursor pstack】AIエージェントに開発を任せる環境をつくる ―月2,500件のPRを支えた開発基盤とは？">
+<meta name="source_url" content="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/096f3d">
+<meta name="author" content="kaito">
+<meta name="published_at" content="2026-10-02">
+<meta name="retrieved_at" content="2026-10-06T23:37:27+09:00">
+<meta name="site" content="zenn.dev">
+<meta name="content_type" content="article">
+<meta name="chapter_position" content="11">
+<title>第8章 Playbook・Skill・Principleは何を担うのか</title>
+<style>
+:root {
+  color-scheme: light;
+  --ink: #172033;
+  --muted: #64748b;
+  --line: #dbe4ef;
+  --accent: #2563eb;
+  --accent-dark: #1d4ed8;
+  --accent-soft: #eff6ff;
+  font-family: -apple-system, BlinkMacSystemFont, "Avenir Next",
+    "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 8% 0%, #dbeafe 0, transparent 32rem),
+    radial-gradient(circle at 100% 12%, #e0e7ff 0, transparent 28rem),
+    #f4f7fb;
+  color: var(--ink);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(120deg, transparent 0 48%, rgba(255, 255, 255, 0.4));
+}
+.article {
+  position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
+  max-width: 920px;
+  margin: clamp(1rem, 5vw, 4rem) auto;
+  padding: clamp(2rem, 6vw, 5rem) clamp(1.25rem, 7vw, 5.5rem);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  border-radius: 24px;
+  min-height: 100vh;
+  box-shadow:
+    0 24px 70px rgba(30, 64, 175, 0.1),
+    0 4px 16px rgba(15, 23, 42, 0.04);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 5px;
+  content: "";
+  background: linear-gradient(90deg, #2563eb, #7c3aed, #db2777);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin: 0 0 2.5rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.72rem;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+a {
+  color: var(--accent-dark);
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: #7c3aed;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--ink);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 18ch;
+  margin: 0 0 2.5rem;
+  font-size: clamp(2.15rem, 5vw, 3.65rem);
+  letter-spacing: -0.045em;
+}
+h2 {
+  position: relative;
+  margin: 3.8rem 0 1.25rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--line);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 4.2rem;
+  height: 3px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), #7c3aed);
+  border-radius: 999px;
+}
+h3 {
+  margin: 2.6rem 0 0.8rem;
+  color: var(--accent-dark);
+  font-size: 1.3rem;
+}
+h4, h5, h6 {
+  margin-top: 2rem;
+}
+p {
+  margin: 1.15rem 0;
+}
+ul, ol {
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.35rem 0;
+}
+li::marker {
+  color: var(--accent);
+  font-weight: 700;
+}
+strong {
+  color: #111827;
+}
+blockquote {
+  margin: 1.6rem 0;
+  padding: 0.8rem 1.25rem;
+  color: #475569;
+  background: linear-gradient(90deg, var(--accent-soft), #fff);
+  border-left: 4px solid var(--accent);
+  border-radius: 0 12px 12px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 3rem 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+img {
+  display: block;
+  max-width: 100%;
+  margin: 1.75rem auto;
+  height: auto;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+}
+pre {
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  padding: 1.15rem 1.25rem;
+  color: #e2e8f0;
+  background: #111827;
+  border: 1px solid #253047;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+}
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+:not(pre) > code {
+  padding: 0.15rem 0.4rem;
+  color: #9f1239;
+  background: #fff1f2;
+  border-radius: 5px;
+}
+table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  border-collapse: collapse;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
+  text-align: left;
+}
+th {
+  color: #1e3a8a;
+  background: #eff6ff;
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: #f8fafc;
+}
+@media (max-width: 600px) {
+  .article {
+    margin: 0;
+    padding: 2rem 1rem 4rem;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(2rem, 10vw, 2.75rem);
+  }
+  .metadata {
+    margin-bottom: 2rem;
+  }
+}
+@media print {
+  body {
+    background: #fff;
+  }
+  .article {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  a {
+    color: inherit;
+  }
+}
+</style>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0f1419;
+  --surface: #1a2332;
+  --surface-raised: #202c3f;
+  --surface-soft: rgba(26, 35, 50, 0.72);
+  --border: #2d3a4f;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #58a6ff;
+  --accent-strong: #79c0ff;
+  --green: #3fb950;
+  --purple: #bc8cff;
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+    "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  line-height: 1.75;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+  background: var(--bg);
+}
+body {
+  min-width: 320px;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 2rem 1.5rem 5rem;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(31, 111, 235, 0.18), transparent 32rem),
+    radial-gradient(circle at 100% 12%, rgba(137, 87, 229, 0.14), transparent 28rem),
+    var(--bg);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black, transparent 75%);
+}
+.reading-progress {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 20;
+  height: 3px;
+  background: rgba(45, 58, 79, 0.7);
+}
+.reading-progress > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  box-shadow: 0 0 14px rgba(88, 166, 255, 0.8);
+  transition: width 80ms linear;
+}
+.article {
+  position: relative;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  background: rgba(15, 20, 25, 0.76);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(88, 166, 255, 0.035) inset;
+  backdrop-filter: blur(16px);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  border-radius: 16px 16px 0 0;
+}
+.article-header {
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.eyebrow-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--green);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(63, 185, 80, 0.75);
+}
+.eyebrow-separator {
+  color: var(--border);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  background: rgba(32, 44, 63, 0.68);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+.source-link {
+  color: var(--text);
+  text-decoration: none;
+}
+.source-link:hover {
+  border-color: var(--accent);
+  background: rgba(88, 166, 255, 0.12);
+}
+a {
+  color: var(--accent);
+  overflow-wrap: anywhere;
+  text-decoration: none;
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 24ch;
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  background: linear-gradient(120deg, #fff 12%, #b9d8ff 58%, #bc8cff);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+h2 {
+  position: relative;
+  margin: 3.2rem 0 1.1rem;
+  padding: 0.75rem 0 0.65rem;
+  border-bottom: 1px solid var(--border);
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 3.8rem;
+  height: 2px;
+  content: "";
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(88, 166, 255, 0.7);
+}
+h3 {
+  margin: 2.25rem 0 0.7rem;
+  color: var(--accent-strong);
+  font-size: 1.2rem;
+}
+h4, h5, h6 {
+  margin-top: 1.75rem;
+}
+p {
+  margin: 0.9rem 0;
+}
+ul, ol {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.3rem 0;
+}
+li::marker {
+  color: var(--accent);
+}
+strong {
+  color: #fff;
+}
+blockquote {
+  margin: 1.4rem 0;
+  padding: 0.85rem 1.15rem;
+  color: #c9d1d9;
+  background: linear-gradient(100deg, rgba(88, 166, 255, 0.1), rgba(26, 35, 50, 0.55));
+  border: 1px solid rgba(88, 166, 255, 0.18);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 2.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+}
+pre {
+  position: relative;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  padding: 1rem 1.15rem;
+  color: #dbeafe;
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+pre code {
+  color: inherit;
+  background: transparent;
+}
+code {
+  font-family: "SF Mono", "Fira Code", ui-monospace, monospace;
+  font-size: 0.86em;
+}
+:not(pre) > code {
+  padding: 0.12em 0.38em;
+  color: #ffabbc;
+  background: rgba(248, 81, 73, 0.11);
+  border-radius: 4px;
+}
+.copy-button {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  padding: 0.25rem 0.55rem;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.72rem;
+  background: rgba(32, 44, 63, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.copy-button:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  border-spacing: 0;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.6rem 0.75rem;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+th {
+  color: var(--accent);
+  background: var(--surface);
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: rgba(26, 35, 50, 0.42);
+}
+tr:last-child td {
+  border-bottom: 0;
+}
+th:last-child, td:last-child {
+  border-right: 0;
+}
+.toc {
+  margin: 1.75rem 0 2.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.toc-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--border);
+}
+.toc-title {
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.toc-count {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.toc ol {
+  margin: 0.7rem 0 0;
+  padding-left: 1.25rem;
+}
+.toc ol ol {
+  margin: 0.2rem 0;
+}
+.toc li {
+  margin: 0.18rem 0;
+  font-size: 0.86rem;
+}
+.toc li::marker {
+  color: var(--muted);
+}
+.toc a {
+  display: inline-block;
+  max-width: 100%;
+  color: var(--muted);
+  transition: color 160ms ease, transform 160ms ease;
+}
+.toc a:hover, .toc a.is-active {
+  color: var(--accent-strong);
+  text-decoration: none;
+  transform: translateX(2px);
+}
+.article-body {
+  max-width: 78ch;
+  margin: 0 auto;
+}
+.article-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 1rem;
+  color: var(--muted);
+  font-size: 0.74rem;
+  border-top: 1px solid var(--border);
+}
+.article-footer a {
+  color: var(--muted);
+}
+@media (max-width: 720px) {
+  body {
+    padding: 0 0 3rem;
+  }
+  .article {
+    min-height: 100vh;
+    padding: 1.5rem 1rem 3rem;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+  .article::before {
+    border-radius: 0;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(1.9rem, 9vw, 2.6rem);
+  }
+  .article-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+@media print {
+  :root {
+    color-scheme: light;
+  }
+  body {
+    padding: 0;
+    color: #111;
+    background: #fff;
+  }
+  .reading-progress, .toc, .copy-button {
+    display: none;
+  }
+  .article {
+    max-width: none;
+    padding: 0;
+    background: #fff;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  h1, h2, h3, h4, h5, h6, strong {
+    color: #111;
+    -webkit-text-fill-color: initial;
+  }
+  a {
+    color: inherit;
+    text-decoration: underline;
+  }
+  pre {
+    color: #111;
+    background: #f4f4f4;
+    box-shadow: none;
+  }
+}
+</style>
+</head>
+<body>
+<div class="reading-progress" aria-hidden="true"><span></span></div>
+<main id="article-top" class="article">
+  <header class="article-header">
+    <div class="eyebrow">
+      <span class="eyebrow-dot"></span>
+      <span>ARTICLE</span>
+      <span class="eyebrow-separator">/</span>
+      <span>zenn.dev</span>
+    </div>
+    <div class="metadata" aria-label="記事メタデータ"><span class="metadata-item"><span class="metadata-label">著者</span>kaito</span><span class="metadata-item"><span class="metadata-label">公開日</span>2026-10-02</span><a class="metadata-item source-link" href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/096f3d"><span class="metadata-label">原文</span>読む</a><span class="metadata-item"><span class="metadata-label">サイト</span>zenn.dev</span><span class="metadata-item"><span class="metadata-label">形式</span>ARTICLE</span></div>
+    <h1 id="8-playbookskillprinciple">第8章 Playbook・Skill・Principleは何を担うのか</h1>
+  </header>
+<nav class="toc" aria-label="目次">
+  <div class="toc-heading">
+    <span class="toc-title">目次</span>
+    <span class="toc-count">19 セクション</span>
+  </div>
+  <ol><li><a href="#_1">この章の構成</a></li><li><a href="#3">3つの部品は、「順序」「能力」「判断」を分担している</a></li><li><a href="#playbook">Playbookは、作業の種類ごとの手順と順番を決める</a><ol><li><a href="#3_1">担うもの：手順と順番を、前置き・手順・報告の3部で書く</a></li></ol></li><li><a href="#skill">Skillは、手順の中で呼び出す能力</a><ol><li><a href="#1skill1">担うもの：1つのSkillが1種類の仕事を担う</a></li><li><a href="#playbook-poteto-mode">呼ばれ方：大半は、Playbookが必要とするときに /poteto-mode が呼ぶ</a></li><li><a href="#skillplaybook13">利用者の使い方：各Skillは明示して呼び出せるし、Playbookから呼ばれない13件は利用者が呼ぶ</a></li></ol></li><li><a href="#principle">Principleは、手順や能力ではなく、作業途中の判断の基準</a><ol><li><a href="#_2">担うもの：作業途中の判断を下す基準</a></li></ol></li><li><a href="#non-negotiables3">Non-negotiablesが、3つの部品をつなぐ</a></li><li><a href="#2">2つのサブエージェントは、作業を分担する相手</a><ol><li><a href="#poteto-agent-poteto-mode">poteto-agent は、/poteto-mode の流儀で働くサブエージェント</a></li><li><a href="#comment-sicko">Comment Sickoは、コメントを消し、直すべきコードを報告する役</a></li><li><a href="#_3">サブエージェントの仕事は、主エージェントが責任を持つ</a></li></ol></li><li><a href="#skillprinciple">SkillとPrincipleが働く場所をたどる</a><ol><li><a href="#skillprinciple_1">手順ごとに、呼ばれるSkillと効くPrincipleが決まる</a></li><li><a href="#skill_1">条件に該当しないSkillは呼ばれない</a></li></ol></li><li><a href="#_4">まとめ</a></li></ol>
+</nav>
+  <div class="article-body">
+
+<p>pstackの中身は、<strong>Playbook、Skill、Principleの3種類の部品</strong>でできています。</p>
+<p>Playbookは作業の順序を決めます。Skillは手順の中で使う能力を提供します。Principleは、特定の状況で作業中の判断を導くルールです。変更を小さくする、根本原因を直す、完了を報告する前に実物を確かめる、といった判断に使います。</p>
+<p>この章では、3つの部品の違いと、それぞれの担うものを中心に解説し、部品をつなぐ<code>Non-negotiables</code>と2つのサブエージェント、実例の依頼で部品が働く場所を、この順に見ていきます。</p>
+<h2 id="_1">この章の構成</h2>
+<p>この章の構成は次のとおりです。</p>
+<ul>
+<li>3つの部品は、「順序」「能力」「判断」を分担している</li>
+<li>Playbookは、作業の種類ごとの手順と順番を決める</li>
+<li>Skillは、手順の中で呼び出す能力</li>
+<li>Principleは、手順や能力ではなく、作業途中の判断の基準</li>
+<li>Non-negotiablesが、3つの部品をつなぐ</li>
+<li>2つのサブエージェントは、作業を分担する相手</li>
+<li>SkillとPrincipleが働く場所をたどる</li>
+<li>まとめ</li>
+</ul>
+<h2 id="3">3つの部品は、「順序」「能力」「判断」を分担している</h2>
+<p>冒頭で記述したように3つの部品は担当領域が異なります。<strong>Playbookは「何を、どの順でやるか」といった仕事の進め方の型を、Skillは「この手順をどうやるか」といった能力を、Principleは「この一手を採るか。まだ終わりではないか」といった判断を</strong>、それぞれ担当します。</p>
+<p>3つの部品は、<code>/poteto-mode</code> の中で次のようにつながっています。</p>
+<ol>
+<li><code>/poteto-mode</code> が依頼の種類を見て、Playbookを1冊選ぶ（<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/SKILL.md"><code>/poteto-mode</code></a> の節『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/SKILL.md#playbooks">Playbooks</a>』）</li>
+<li>Playbookには、不具合なら「再現→原因→修正→確認」のように、その作業の手順と順番が書かれている</li>
+<li>Playbookの各手順には、どこでどのSkillを使うかが書かれている。<code>/how</code>（現状把握）や <code>/arena</code>（複数案の比較）は、起動時ではなく、その手順に来たときに呼ばれる</li>
+<li>Principleは、手順とは別の判断ルール。<code>/poteto-mode</code> の開始時には一覧（索引）だけを読み、今の作業が条件に該当したときに、そのPrincipleのファイルを全文読む（同ファイルの節『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/SKILL.md#principles">Principles</a>』）</li>
+</ol>
+<p>3つの違いを表にまとめると、次のとおりです。</p>
+<table>
+<thead>
+<tr>
+<th>観点</th>
+<th>Playbook</th>
+<th>Skill</th>
+<th>Principle</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>担うもの</td>
+<td>作業の順序</td>
+<td>手順の中で使う能力</td>
+<td>判断の基準</td>
+</tr>
+<tr>
+<td>答える問い</td>
+<td>何を、どの順でやるか</td>
+<td>この手順をどうやるか</td>
+<td>この一手を採るか。まだ終わりではないか</td>
+</tr>
+<tr>
+<td>件数（0.15.15）</td>
+<td>23</td>
+<td>27</td>
+<td>24</td>
+</tr>
+<tr>
+<td>置き場所</td>
+<td><code>skills/poteto-mode/playbooks/*.md</code></td>
+<td><code>skills/&lt;名前&gt;/SKILL.md</code></td>
+<td><code>skills/principle-&lt;名前&gt;/SKILL.md</code></td>
+</tr>
+<tr>
+<td>形式</td>
+<td><code>/poteto-mode</code> の中の参照ファイル。Skillではない</td>
+<td>独立したSkill</td>
+<td>1原則1ファイルの短いSkill</td>
+</tr>
+<tr>
+<td>呼ばれ方</td>
+<td><code>/poteto-mode</code> が依頼に合う1冊を選んで開く</td>
+<td>Playbookの手順やNon-negotiablesの条件に該当したとき。<code>/how</code> のように直接も呼べる</td>
+<td>開始時に一覧を読み、条件に該当したら本文を読む</td>
+</tr>
+<tr>
+<td>コードに触れるか</td>
+<td>手順として指示する</td>
+<td>調べる、書く、確かめるなどの作業をする</td>
+<td>触れない。判断だけをする</td>
+</tr>
+<tr>
+<td>例</td>
+<td>『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/bug-fix.md"><strong>Bug fix</strong></a>』、『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/feature.md"><strong>Feature</strong></a>』</td>
+<td><code>/how</code>、<code>/architect</code>、<code>/tdd</code></td>
+<td>『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-prove-it-works/SKILL.md"><strong>Prove It Works</strong></a>』、『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-fix-root-causes/SKILL.md"><strong>Fix Root Causes</strong></a>』</td>
+</tr>
+</tbody>
+</table>
+<p>どの部品がいつ読み込まれるかは<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/6b7496">第9章</a>で扱います。</p>
+<h2 id="playbook">Playbookは、作業の種類ごとの手順と順番を決める</h2>
+<p>Playbookは、<strong>作業の種類ごとに「何を、どの順でやるか」を書いた手順書</strong>です。</p>
+<p><code>/poteto-mode</code> が依頼に合う1冊を選んで開くものです。</p>
+<h3 id="3_1">担うもの：手順と順番を、前置き・手順・報告の3部で書く</h3>
+<p>Playbookのファイルは、おおむね同じ形をしています。</p>
+<ol>
+<li><strong>前置き</strong>・・・ Playbook全体で守る基本ルールが書かれています。</li>
+<li><strong>番号付きの手順</strong>・・・ TODOリストに一字一句写される部分です。各手順の中に、どこでどのSkillを使うか、どのPrincipleに該当するかが書かれています。</li>
+<li><strong>Reply行</strong>・・・ 各Playbookの末尾にあり、作業後の返答に何を書くかを指定します。</li>
+</ol>
+<p>!</p>
+<p><strong>TODOリスト</strong>・・・ エージェントが作業の始めに作る、その作業でやることの一覧（計画）です。Cursorでは、チャットの画面に表示されます。利用者は、この一覧を見て、エージェントがどの手順を進め、どの手順を飛ばしたか（<code>skip: &lt;理由&gt;</code>）を確かめられます（同梱ガイド <a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/01-setup.md"><code>01-setup.md</code></a>）。</p>
+<h2 id="skill">Skillは、手順の中で呼び出す能力</h2>
+<p>Skillは、<strong>特定の仕事をするための能力や手順のまとまり</strong>です。</p>
+<p>大半は手順を必要とするときに <code>/poteto-mode</code> が呼び、残りは利用者が直接呼びます。</p>
+<h3 id="1skill1">担うもの：1つのSkillが1種類の仕事を担う</h3>
+<p>調査なら <code>/how</code> と <code>/why</code>、設計なら <code>/architect</code>、複数案の比較なら <code>/arena</code> というように、一つのSkillが一つの種類の仕事を担います。</p>
+<p>例外は <code>/figure-it-out</code> です。どのPlaybookにも合わない作業のために、その作業専用のPlaybookを即興で作ります。<br />
+個々のSkillの詳細は<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/2a4af5">第5部</a>（第22〜38章）で扱います。</p>
+<h3 id="playbook-poteto-mode">呼ばれ方：大半は、Playbookが必要とするときに <code>/poteto-mode</code> が呼ぶ</h3>
+<p><strong>大半のSkillは、Playbookが必要とするときに <code>/poteto-mode</code> が代わりに呼びます</strong>。</p>
+<p>27件は、呼ばれ方で次のように分かれます。</p>
+<table>
+<thead>
+<tr>
+<th>呼ばれ方</th>
+<th>Skill</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>手順や条件に応じて <code>/poteto-mode</code> が呼ぶ</td>
+<td><code>/how</code>、<code>/why</code>、<code>/architect</code>、<code>/arena</code>、<code>/swarm</code>、<code>/interrogate</code>、<code>/unslop</code>、<code>/no-comments</code>、<code>/technical-writing</code>、<code>/tdd</code>、<code>/figure-it-out</code>、<code>/show-me-your-work</code>、<code>/benchmark-checklist</code></td>
+</tr>
+<tr>
+<td>利用者が呼ぶ</td>
+<td><code>/setup-pstack</code>、<code>/poteto-help</code>、<code>/recall</code>、<code>/teach</code>、<code>/bro</code>、<code>/blast-radius</code>、<code>/reflect</code>、<code>/correct</code>、<code>/automate-me</code>、<code>/make-bot-ui</code>、<code>/create-verification-skill</code>、<code>/maintain-verification-skill</code>、<code>/typescript-best-practices</code></td>
+</tr>
+<tr>
+<td>入口</td>
+<td><code>/poteto-mode</code></td>
+</tr>
+</tbody>
+</table>
+<p>利用者が呼ぶSkillは、導入するとき（<code>/setup-pstack</code>）、作業を再開するとき（<code>/recall</code>）、長い作業が終わったあと（<code>/reflect</code>）のように、作業の節目で使うものが中心です。</p>
+<h3 id="skillplaybook13">利用者の使い方：各Skillは明示して呼び出せるし、Playbookから呼ばれない13件は利用者が呼ぶ</h3>
+<p>Skillは、Playbookと異なり単独で呼び出せます。調べものだけしたいときは、直接呼ぶほうが速いこともあります。</p>
+<pre><code>/how do we cancel runs? do we have an n+1 when we look up every run to cancel?
+// 実行のキャンセルはどうやっている？キャンセルする実行を1件ずつ引くとき、n+1になっていない？
+</code></pre>
+<p><strong>利用者が呼ぶ13件は、Playbookの手順には組み込まれていません</strong>。</p>
+<h2 id="principle">Principleは、手順や能力ではなく、作業途中の判断の基準</h2>
+<p>Principleは、手順でも能力でもなく、<strong>作業の途中で下す判断の基準</strong>です。</p>
+<p>開始時には索引だけが読まれ、適用するときに本文が読まれます。</p>
+<h3 id="_2">担うもの：作業途中の判断を下す基準</h3>
+<p>Principleは、<strong>今の一手を採るかと、まだ完了ではないか</strong>といった、<strong>作業途中の判断を下す基準</strong>を提供します。たとえば原則『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-laziness-protocol/SKILL.md"><strong>Laziness Protocol</strong></a>』は、抽象やレイヤーを追加したくなったときに、削除と最小の変更を優先させます。原則『<strong>Prove It Works</strong>』は、完了を宣言する前に、本物の成果物で確かめたかを問いかけます。</p>
+<p>Principleは1件ずつ独立したファイルになっていて、PlaybookやSkillから名前で参照されます。</p>
+<p>Principle24件の詳細は<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/4b3166">第4部</a>（第17〜21章）で扱います。</p>
+<h2 id="non-negotiables3">Non-negotiablesが、3つの部品をつなぐ</h2>
+<p>Non-negotiablesは、<strong>「この状況なら、このSkill」という条件の一覧で、Playbookをまたいで共通の決まりをかけるつなぎ役</strong>です。</p>
+<p>Playbookは作業の種類ごとの流れを決めますが、どの作業にも共通してかかる決まりもあります。それを定めているのが、<code>/poteto-mode</code> の節『Non-negotiables』です。主な条件は次のとおりです。</p>
+<table>
+<thead>
+<tr>
+<th>条件</th>
+<th>呼び出すもの</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>自明でない変更、設計の判断</td>
+<td><code>/how</code></td>
+</tr>
+<tr>
+<td>関数の境界をまたぐコード</td>
+<td><code>/architect</code></td>
+</tr>
+<tr>
+<td>文章を書くすべての場面（返答も含む）</td>
+<td><code>/unslop</code></td>
+</tr>
+<tr>
+<td>ドキュメント、PRの説明、コミットメッセージ</td>
+<td><code>/technical-writing</code></td>
+</tr>
+<tr>
+<td>コミットの前</td>
+<td><code>/deslop</code>（<code>cursor-team-kit</code> プラグイン）</td>
+</tr>
+<tr>
+<td>レビューの前</td>
+<td><code>/no-comments</code></td>
+</tr>
+<tr>
+<td>UI、IDE、CLIの変更</td>
+<td>control系Skill（<code>cursor-team-kit</code> プラグイン）</td>
+</tr>
+<tr>
+<td>長い作業、席を外してあとで見る作業</td>
+<td><code>/show-me-your-work</code></td>
+</tr>
+</tbody>
+</table>
+<p>Non-negotiablesは、「作業の種類」ではなく「<strong>作業の中で起きる状況</strong>」<strong>に反応します</strong>。</p>
+<p>『<strong>Bug fix</strong>』でも『<strong>Feature</strong>』でも、関数の境界をまたぐなら <code>/architect</code> が、コミットの前なら <code>/deslop</code> がかかります。</p>
+<h2 id="2">2つのサブエージェントは、作業を分担する相手</h2>
+<p>pstackのサブエージェントは、<strong><code>/poteto-mode</code> の流儀で作業する <code>poteto-agent</code> と、コメントを審査するComment Sickoの2つ</strong>です。</p>
+<h3 id="poteto-agent-poteto-mode"><code>poteto-agent</code> は、<code>/poteto-mode</code> の流儀で働くサブエージェント</h3>
+<p><code>poteto-agent</code>（<a href="https://github.com/cursor/plugins/blob/main/pstack/agents/poteto-agent.md"><code>agents/poteto-agent.md</code></a>）は、<code>/poteto-mode</code> のルールを読んでから作業を始めるサブエージェントです。Playbookの手順の中でサブエージェントを起動するときは、原則としてこれを使います。新しい仕事を渡すときは、既存の <code>poteto-agent</code> を再開せず、新しい <code>poteto-agent</code> を起動するのが既定です（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/4f8911">第38章</a>）。</p>
+<h3 id="comment-sicko">Comment Sickoは、コメントを消し、直すべきコードを報告する役</h3>
+<p>Comment Sicko（<a href="https://github.com/cursor/plugins/blob/main/pstack/agents/comment-sicko.md"><code>agents/comment-sicko.md</code></a>）は、コードのコメントを審査して、残す理由のないコメントを自分で消すサブエージェントです。アプリのコードそのものは書き換えません。その代わりに、コメントがなくても意味が通るように形を直すべきコード（関数や変数など）を、報告の中で <code>MUST KILL</code> として挙げます。その報告を受けて、コードを直すのは <code>/no-comments</code> です。直接は呼ばず、<code>/no-comments</code> を通して使います。詳しくは<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/8960d3">第32章</a>で扱います。</p>
+<h3 id="_3">サブエージェントの仕事は、主エージェントが責任を持つ</h3>
+<p><strong>サブエージェントに任せても、責任は主エージェントに残ります</strong>。</p>
+<p><code>/poteto-mode</code> は、サブエージェントの「終わりました」をそのまま利用者に渡さず、主エージェントが差分を見てから自分の言葉で報告するよう求めています。</p>
+<p><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/27a183">第2章</a>で見た「信頼するのは、エージェントではなく成果物」という考えを、サブエージェントにも当てはめた規則です。</p>
+<h2 id="skillprinciple">SkillとPrincipleが働く場所をたどる</h2>
+<p><strong>Skillは再現、調査、設計、コミットといった「作業をする」場面に、Principleは再現の仕方、修正の形と大きさ、完了の判定、コミットの並べ方といった判断して何かを「決める」場面に現れます</strong>。</p>
+<p>本書の実例は、次の依頼です。</p>
+<pre><code>/poteto-mode the export writes duplicate rows when a retry lands mid-run. repro first, then fix and verify.
+// 再試行が実行の途中に入ると、エクスポートが重複した行を書き出す。まず再現して、それから直して、確かめて。
+</code></pre>
+<p>この依頼は『<strong>Bug fix</strong>』Playbookに振り分けられ、TODOリストは、その6つの手順で始まります（手順6は『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/opening-a-pr.md"><strong>Opening a PR</strong></a>』を実行してPRを開く手順なので、下の表では省きます）。ここでは、各手順のどこでSkillが呼ばれ、どこでPrincipleが効くかをたどります。</p>
+<p>次の表は、<code>playbooks/bug-fix.md</code> と、<code>/poteto-mode</code> のNon-negotiablesとPrinciple索引に書かれた条件を、この依頼に当てはめたものです。実際の作業でどのPrincipleが選ばれるかは、エージェントがその場で索引の条件を判定して決まります。</p>
+<h3 id="skillprinciple_1">手順ごとに、呼ばれるSkillと効くPrincipleが決まる</h3>
+<table>
+<thead>
+<tr>
+<th>『Bug fix』の手順</th>
+<th>呼ばれるSkill</th>
+<th>条件に該当するPrinciple</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>開始時</td>
+<td>（<code>/poteto-mode</code> がPrinciple索引を読む）</td>
+<td>索引全体。この時点では本文は読まない</td>
+</tr>
+<tr>
+<td>1. 同じ操作面で自分で再現する</td>
+<td>対応するcontrol系Skill、または検証スキル</td>
+<td>『<strong>Fix Root Causes</strong>』（まず再現する）</td>
+</tr>
+<tr>
+<td>2. 原因を二分探索する</td>
+<td><code>/how</code>（対象サブシステム）、<code>/why</code>（退行の履歴）</td>
+<td>『<strong>Fix Root Causes</strong>』、『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-guard-the-context-window/SKILL.md"><strong>Guard the Context Window</strong></a>』</td>
+</tr>
+<tr>
+<td>3. 修正を計画する</td>
+<td>関数の境界をまたぐなら <code>/architect</code>。実装はサブエージェントへ</td>
+<td>『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-model-the-domain/SKILL.md"><strong>Model the Domain</strong></a>』、『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-make-operations-idempotent/SKILL.md"><strong>Make Operations Idempotent</strong></a>』、『<strong>Laziness Protocol</strong>』</td>
+</tr>
+<tr>
+<td>4. 同じ操作面で確かめる</td>
+<td>「不具合を再現する手順（手順1）」と同じcontrol系Skill、または検証スキル</td>
+<td>『<strong>Prove It Works</strong>』</td>
+</tr>
+<tr>
+<td>5. 失敗する再現を修正より先にコミットする</td>
+<td>安いローカルテストがあれば <code>/tdd</code></td>
+<td>『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-sequence-verifiable-units/SKILL.md"><strong>Sequence Work into Verifiable Units</strong></a>』、『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-test-behavior-not-implementation/SKILL.md"><strong>Test Behavior, Not Implementation</strong></a>』</td>
+</tr>
+<tr>
+<td>返答</td>
+<td><code>/unslop</code>（節『Writing the reply』）</td>
+<td>判断を変えたPrincipleを名前で挙げる</td>
+</tr>
+</tbody>
+</table>
+<p>各手順の詳細は<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/6fcb42">第11章</a>で、原則が効く場面は<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a8e80b">第17章</a>から<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/c155cc">第20章</a>で扱います。</p>
+<h3 id="skill_1">条件に該当しないSkillは呼ばれない</h3>
+<p>たとえば <code>/show-me-your-work</code> は、長い作業や席を外す作業で判断の記録を残すSkillです。今回の依頼は席を外すとは書いていないので、条件に該当しません。長い作業や席を外す作業であれば条件に該当しますが、その場合は、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/4fda7d">第7章</a>で見た規則により <code>/figure-it-out</code> へ回る可能性もあります。</p>
+<p>同じ『<strong>Bug fix</strong>』でも、依頼の内容と途中で起きる状況によって、呼ばれるSkillと効くPrincipleは変わります。条件に該当したものだけを読むこの設計が、次の<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/6b7496">第9章</a>の主題です。</p>
+<h2 id="_4">まとめ</h2>
+<ul>
+<li><strong>3つの部品の違い</strong>・・・ Playbookは作業の順序を、Skillは手順の中で使う能力を、Principleは今の一手を採るか、まだ完了ではないかの判断を担います。</li>
+<li><strong>Playbook</strong>・・・ 前置き、手順、Reply行の3部でできています。</li>
+<li><strong>Skill</strong>・・・ 1つのSkillが1種類の仕事を担います。大半は <code>/poteto-mode</code> が手順に応じて呼び、利用者が呼ぶ13件は、Playbookの手順には組み込まれていません。</li>
+<li><strong>Principle</strong>・・・ 手順や能力ではなく、今の一手と完了かどうか、といった判断基準を定義します。詳細は<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/4b3166">第4部</a>で扱います。</li>
+<li><strong>Non-negotiables</strong>・・・ 作業の中で起きる状況に反応して、PlaybookをまたいでSkillを呼ぶつなぎ役です。</li>
+<li><strong>サブエージェント</strong>・・・ <code>poteto-agent</code> は <code>/poteto-mode</code> の流儀で働くサブエージェント、Comment Sickoはコメントを消し、直すべきコードを報告する役です。任せた仕事の責任は主エージェントに残ります。</li>
+<li><strong>実例の依頼</strong>・・・ 『<strong>Bug fix</strong>』の手順ごとに、再現と調査にcontrol系Skillと <code>/how</code>・<code>/why</code>、修正に <code>/architect</code>、コミットに <code>/tdd</code> が呼ばれ、『<strong>Fix Root Causes</strong>』や『<strong>Prove It Works</strong>』などの原則が判断に効きます。</li>
+</ul>
+<p>次の<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/6b7496">第9章</a>では、これらの部品がいつ読み込まれるかを扱います。必要なものを必要なときだけ読む仕組みと、その元にある考え方、利点と弱点を解説します。</p>
+  </div>
+  <footer class="article-footer">
+    <span>取得: 2026-10-06T23:37:27+09:00</span>
+    <a href="#article-top">↑ 先頭へ戻る</a>
+  </footer>
+</main>
+<script>
+(() => {
+  const progress = document.querySelector(".reading-progress > span");
+  const updateProgress = () => {
+    const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+    const ratio = scrollable > 0 ? window.scrollY / scrollable : 0;
+    if (progress) progress.style.width = `${Math.min(1, ratio) * 100}%`;
+  };
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  document.querySelectorAll("pre").forEach((block) => {
+    const button = document.createElement("button");
+    button.className = "copy-button";
+    button.type = "button";
+    button.textContent = "コピー";
+    button.addEventListener("click", async () => {
+      const text = block.querySelector("code")?.innerText || block.innerText;
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const textarea = document.createElement("textarea");
+          textarea.value = text;
+          textarea.style.position = "fixed";
+          textarea.style.opacity = "0";
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand("copy");
+          textarea.remove();
+        }
+        button.textContent = "コピー済み";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      } catch (error) {
+        button.textContent = "失敗";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      }
+    });
+    block.appendChild(button);
+  });
+
+  const links = new Map(
+    [...document.querySelectorAll(".toc a")].map((link) => [link.hash, link])
+  );
+  const headings = [...document.querySelectorAll(
+    ".article-body h2[id], .article-body h3[id], .article-body h4[id]"
+  )];
+  if ("IntersectionObserver" in window && headings.length) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        links.forEach((link) => link.classList.remove("is-active"));
+        links.get(`#${entry.target.id}`)?.classList.add("is-active");
+      });
+    }, { rootMargin: "-12% 0px -72% 0px" });
+    headings.forEach((heading) => observer.observe(heading));
+  }
+})();
+</script>
+</body>
+</html>

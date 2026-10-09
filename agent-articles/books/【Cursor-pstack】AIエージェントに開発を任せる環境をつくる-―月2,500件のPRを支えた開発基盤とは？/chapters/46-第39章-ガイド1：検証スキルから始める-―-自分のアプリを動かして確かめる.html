@@ -1,0 +1,1217 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="title" content="第39章 ガイド1：検証スキルから始める ― 自分のアプリを動かして確かめる">
+<meta name="book_title" content="【Cursor pstack】AIエージェントに開発を任せる環境をつくる ―月2,500件のPRを支えた開発基盤とは？">
+<meta name="source_url" content="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/7d7081">
+<meta name="author" content="kaito">
+<meta name="published_at" content="2026-10-02">
+<meta name="retrieved_at" content="2026-10-06T23:37:36+09:00">
+<meta name="site" content="zenn.dev">
+<meta name="content_type" content="article">
+<meta name="chapter_position" content="46">
+<title>第39章 ガイド1：検証スキルから始める ― 自分のアプリを動かして確かめる</title>
+<style>
+:root {
+  color-scheme: light;
+  --ink: #172033;
+  --muted: #64748b;
+  --line: #dbe4ef;
+  --accent: #2563eb;
+  --accent-dark: #1d4ed8;
+  --accent-soft: #eff6ff;
+  font-family: -apple-system, BlinkMacSystemFont, "Avenir Next",
+    "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 8% 0%, #dbeafe 0, transparent 32rem),
+    radial-gradient(circle at 100% 12%, #e0e7ff 0, transparent 28rem),
+    #f4f7fb;
+  color: var(--ink);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(120deg, transparent 0 48%, rgba(255, 255, 255, 0.4));
+}
+.article {
+  position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
+  max-width: 920px;
+  margin: clamp(1rem, 5vw, 4rem) auto;
+  padding: clamp(2rem, 6vw, 5rem) clamp(1.25rem, 7vw, 5.5rem);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  border-radius: 24px;
+  min-height: 100vh;
+  box-shadow:
+    0 24px 70px rgba(30, 64, 175, 0.1),
+    0 4px 16px rgba(15, 23, 42, 0.04);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 5px;
+  content: "";
+  background: linear-gradient(90deg, #2563eb, #7c3aed, #db2777);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin: 0 0 2.5rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.72rem;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+a {
+  color: var(--accent-dark);
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: #7c3aed;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--ink);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 18ch;
+  margin: 0 0 2.5rem;
+  font-size: clamp(2.15rem, 5vw, 3.65rem);
+  letter-spacing: -0.045em;
+}
+h2 {
+  position: relative;
+  margin: 3.8rem 0 1.25rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--line);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 4.2rem;
+  height: 3px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), #7c3aed);
+  border-radius: 999px;
+}
+h3 {
+  margin: 2.6rem 0 0.8rem;
+  color: var(--accent-dark);
+  font-size: 1.3rem;
+}
+h4, h5, h6 {
+  margin-top: 2rem;
+}
+p {
+  margin: 1.15rem 0;
+}
+ul, ol {
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.35rem 0;
+}
+li::marker {
+  color: var(--accent);
+  font-weight: 700;
+}
+strong {
+  color: #111827;
+}
+blockquote {
+  margin: 1.6rem 0;
+  padding: 0.8rem 1.25rem;
+  color: #475569;
+  background: linear-gradient(90deg, var(--accent-soft), #fff);
+  border-left: 4px solid var(--accent);
+  border-radius: 0 12px 12px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 3rem 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+img {
+  display: block;
+  max-width: 100%;
+  margin: 1.75rem auto;
+  height: auto;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+}
+pre {
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  padding: 1.15rem 1.25rem;
+  color: #e2e8f0;
+  background: #111827;
+  border: 1px solid #253047;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+}
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+:not(pre) > code {
+  padding: 0.15rem 0.4rem;
+  color: #9f1239;
+  background: #fff1f2;
+  border-radius: 5px;
+}
+table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  border-collapse: collapse;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
+  text-align: left;
+}
+th {
+  color: #1e3a8a;
+  background: #eff6ff;
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: #f8fafc;
+}
+@media (max-width: 600px) {
+  .article {
+    margin: 0;
+    padding: 2rem 1rem 4rem;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(2rem, 10vw, 2.75rem);
+  }
+  .metadata {
+    margin-bottom: 2rem;
+  }
+}
+@media print {
+  body {
+    background: #fff;
+  }
+  .article {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  a {
+    color: inherit;
+  }
+}
+</style>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0f1419;
+  --surface: #1a2332;
+  --surface-raised: #202c3f;
+  --surface-soft: rgba(26, 35, 50, 0.72);
+  --border: #2d3a4f;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #58a6ff;
+  --accent-strong: #79c0ff;
+  --green: #3fb950;
+  --purple: #bc8cff;
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+    "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  line-height: 1.75;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+  background: var(--bg);
+}
+body {
+  min-width: 320px;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 2rem 1.5rem 5rem;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(31, 111, 235, 0.18), transparent 32rem),
+    radial-gradient(circle at 100% 12%, rgba(137, 87, 229, 0.14), transparent 28rem),
+    var(--bg);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black, transparent 75%);
+}
+.reading-progress {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 20;
+  height: 3px;
+  background: rgba(45, 58, 79, 0.7);
+}
+.reading-progress > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  box-shadow: 0 0 14px rgba(88, 166, 255, 0.8);
+  transition: width 80ms linear;
+}
+.article {
+  position: relative;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  background: rgba(15, 20, 25, 0.76);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(88, 166, 255, 0.035) inset;
+  backdrop-filter: blur(16px);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  border-radius: 16px 16px 0 0;
+}
+.article-header {
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.eyebrow-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--green);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(63, 185, 80, 0.75);
+}
+.eyebrow-separator {
+  color: var(--border);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  background: rgba(32, 44, 63, 0.68);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+.source-link {
+  color: var(--text);
+  text-decoration: none;
+}
+.source-link:hover {
+  border-color: var(--accent);
+  background: rgba(88, 166, 255, 0.12);
+}
+a {
+  color: var(--accent);
+  overflow-wrap: anywhere;
+  text-decoration: none;
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 24ch;
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  background: linear-gradient(120deg, #fff 12%, #b9d8ff 58%, #bc8cff);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+h2 {
+  position: relative;
+  margin: 3.2rem 0 1.1rem;
+  padding: 0.75rem 0 0.65rem;
+  border-bottom: 1px solid var(--border);
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 3.8rem;
+  height: 2px;
+  content: "";
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(88, 166, 255, 0.7);
+}
+h3 {
+  margin: 2.25rem 0 0.7rem;
+  color: var(--accent-strong);
+  font-size: 1.2rem;
+}
+h4, h5, h6 {
+  margin-top: 1.75rem;
+}
+p {
+  margin: 0.9rem 0;
+}
+ul, ol {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.3rem 0;
+}
+li::marker {
+  color: var(--accent);
+}
+strong {
+  color: #fff;
+}
+blockquote {
+  margin: 1.4rem 0;
+  padding: 0.85rem 1.15rem;
+  color: #c9d1d9;
+  background: linear-gradient(100deg, rgba(88, 166, 255, 0.1), rgba(26, 35, 50, 0.55));
+  border: 1px solid rgba(88, 166, 255, 0.18);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 2.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+}
+pre {
+  position: relative;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  padding: 1rem 1.15rem;
+  color: #dbeafe;
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+pre code {
+  color: inherit;
+  background: transparent;
+}
+code {
+  font-family: "SF Mono", "Fira Code", ui-monospace, monospace;
+  font-size: 0.86em;
+}
+:not(pre) > code {
+  padding: 0.12em 0.38em;
+  color: #ffabbc;
+  background: rgba(248, 81, 73, 0.11);
+  border-radius: 4px;
+}
+.copy-button {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  padding: 0.25rem 0.55rem;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.72rem;
+  background: rgba(32, 44, 63, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.copy-button:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  border-spacing: 0;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.6rem 0.75rem;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+th {
+  color: var(--accent);
+  background: var(--surface);
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: rgba(26, 35, 50, 0.42);
+}
+tr:last-child td {
+  border-bottom: 0;
+}
+th:last-child, td:last-child {
+  border-right: 0;
+}
+.toc {
+  margin: 1.75rem 0 2.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.toc-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--border);
+}
+.toc-title {
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.toc-count {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.toc ol {
+  margin: 0.7rem 0 0;
+  padding-left: 1.25rem;
+}
+.toc ol ol {
+  margin: 0.2rem 0;
+}
+.toc li {
+  margin: 0.18rem 0;
+  font-size: 0.86rem;
+}
+.toc li::marker {
+  color: var(--muted);
+}
+.toc a {
+  display: inline-block;
+  max-width: 100%;
+  color: var(--muted);
+  transition: color 160ms ease, transform 160ms ease;
+}
+.toc a:hover, .toc a.is-active {
+  color: var(--accent-strong);
+  text-decoration: none;
+  transform: translateX(2px);
+}
+.article-body {
+  max-width: 78ch;
+  margin: 0 auto;
+}
+.article-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 1rem;
+  color: var(--muted);
+  font-size: 0.74rem;
+  border-top: 1px solid var(--border);
+}
+.article-footer a {
+  color: var(--muted);
+}
+@media (max-width: 720px) {
+  body {
+    padding: 0 0 3rem;
+  }
+  .article {
+    min-height: 100vh;
+    padding: 1.5rem 1rem 3rem;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+  .article::before {
+    border-radius: 0;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(1.9rem, 9vw, 2.6rem);
+  }
+  .article-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+@media print {
+  :root {
+    color-scheme: light;
+  }
+  body {
+    padding: 0;
+    color: #111;
+    background: #fff;
+  }
+  .reading-progress, .toc, .copy-button {
+    display: none;
+  }
+  .article {
+    max-width: none;
+    padding: 0;
+    background: #fff;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  h1, h2, h3, h4, h5, h6, strong {
+    color: #111;
+    -webkit-text-fill-color: initial;
+  }
+  a {
+    color: inherit;
+    text-decoration: underline;
+  }
+  pre {
+    color: #111;
+    background: #f4f4f4;
+    box-shadow: none;
+  }
+}
+</style>
+</head>
+<body>
+<div class="reading-progress" aria-hidden="true"><span></span></div>
+<main id="article-top" class="article">
+  <header class="article-header">
+    <div class="eyebrow">
+      <span class="eyebrow-dot"></span>
+      <span>ARTICLE</span>
+      <span class="eyebrow-separator">/</span>
+      <span>zenn.dev</span>
+    </div>
+    <div class="metadata" aria-label="記事メタデータ"><span class="metadata-item"><span class="metadata-label">著者</span>kaito</span><span class="metadata-item"><span class="metadata-label">公開日</span>2026-10-02</span><a class="metadata-item source-link" href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/7d7081"><span class="metadata-label">原文</span>読む</a><span class="metadata-item"><span class="metadata-label">サイト</span>zenn.dev</span><span class="metadata-item"><span class="metadata-label">形式</span>ARTICLE</span></div>
+    <h1 id="39-1">第39章 ガイド1：検証スキルから始める ― 自分のアプリを動かして確かめる</h1>
+  </header>
+<nav class="toc" aria-label="目次">
+  <div class="toc-heading">
+    <span class="toc-title">目次</span>
+    <span class="toc-count">32 セクション</span>
+  </div>
+  <ol><li><a href="#_1">この章の構成</a></li><li><a href="#_2">なぜ検証スキルを最初に作るのか</a><ol><li><a href="#_3">記事の位置づけ：重要なインフラ</a></li><li><a href="#playbook">Playbookの前提：アプリを操作する手段</a></li></ol></li><li><a href="#_4">検証スキルは何でできているのか</a><ol><li><a href="#cli">CLI</a><ol><li><a href="#build-the-lever">原則『Build the Lever』の応用</a></li><li><a href="#atlas">例）架空のアプリ Atlas のコマンド</a></li><li><a href="#6">コマンドの6つの分類</a></li><li><a href="#cli_1">エージェントが扱いやすいCLI</a></li></ol></li><li><a href="#feature-map">Feature Map</a><ol><li><a href="#sub-features">Sub-features</a></li><li><a href="#how-to-get-to-it-user-pov">How to get to it (user POV)</a></li><li><a href="#driving-it-with-harness">Driving it with &amp;lt;harness&amp;gt;</a></li><li><a href="#gotchas">Gotchas</a></li><li><a href="#_5">チームで共有する記憶</a></li></ol></li></ol></li><li><a href="#_6">検証スキルをどう作り、どう保つのか</a><ol><li><a href="#_7">作る前に、利用者が整えること</a><ol><li><a href="#_8">技術スタックの選び方</a></li><li><a href="#_9">開発体験の準備</a></li></ol></li><li><a href="#maintain-verification-skill">/maintain-verification-skill で最新に保つ</a><ol><li><a href="#_10">実行の頻度</a></li><li><a href="#dr-eggbot">Dr Eggbot で毎日の実行を仕組みにする</a></li></ol></li></ol></li><li><a href="#_11">作った検証スキルを依頼でどう使い、どう広げるのか</a><ol><li><a href="#_12">検証スキルの使い方</a><ol><li><a href="#1">使い方1：新しい機能を作る</a></li><li><a href="#2">使い方2：性能を改善する</a></li><li><a href="#3">使い方3：ユーザーの報告を自動で再現する</a></li></ol></li><li><a href="#_13">エージェントを並列に動かす</a><ol><li><a href="#worktree-cloud-agents">worktree ではなく Cloud Agents を使う</a></li></ol></li></ol></li><li><a href="#_14">最初の一歩として何から手を付ければよいか</a></li><li><a href="#_15">まとめ</a></li></ol>
+</nav>
+  <div class="article-body">
+
+<p>poteto氏は『The Complete Guide to pstack』<a href="https://x.com/poteto/status/2094457600259842065">Part 1</a>（この章では「記事」と呼びます）で、pstackを使い始めた利用者が<strong>最初に作るものとして、検証スキル</strong>を挙げています。</p>
+<p><strong>検証スキル</strong>（verification skill）は、エージェントが、利用者の開発しているアプリを起動して操作し、変更が動いたことを確かめて証拠を残すための、プロジェクト専用のSkillです（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/03ebca">第26章</a>）。</p>
+<p>たとえば、設定画面を変更したなら、エージェント自身が歯車のボタンを押して設定画面を開き、変更した箇所のスクリーンショットを証拠として残します。</p>
+<p>この章では、記事が勧める検証スキルの作り方と使い方を、<code>/create-verification-skill</code> の <code>SKILL.md</code> などのpstackの原文と突き合わせながら解説します。</p>
+<p>!</p>
+<p><code>/create-verification-skill</code> と <code>/maintain-verification-skill</code> の <code>SKILL.md</code> に書かれた手順は、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/03ebca">第26章</a>で解説しました。</p>
+<p>この章では、次の内容を割愛し、記事が勧めることを中心に解説します。</p>
+<ul>
+<li><strong>作る前の調査</strong>・・・ エージェントは、ユーザーが触るもの、起動の方法、操作の方法、残せる証拠、アプリを2つ並べて動かせるかを、利用者に聞く前にリポジトリから調べます。</li>
+<li><strong><code>SKILL.md</code> に書く中身</strong>・・・ エージェントは、起動、診断、操作、証拠、片付け、補助スクリプトの6つの見出しを、調べた事実で書きます。証拠は、ユーザーが通る実際の経路を操作し、画面だけでなく、書き込まれたファイルのような副作用も確かめて残します。</li>
+<li><strong>手渡す前の実行</strong>・・・ エージェントは、生成した検証スキルを起動から片付けまで一度実行し、動くことを確かめてから利用者に渡します。一度も実行していないものは、下書きとみなします。</li>
+<li><strong>すべての入口の確認</strong>・・・ <strong>Feature Map</strong> が1つの機能に複数の入口（ボタン、キー操作、コマンドなど）を挙げているなら、エージェントは、すべての入口を確かめるまで、その機能の検証を終えません。</li>
+<li><strong>保守の決まり</strong>・・・ <code>/maintain-verification-skill</code> を実行したエージェントは、結果を clean（直すものがない）、changed（修正を1つのPRにまとめた）、blocked（確認を終えられなかった）のどれかで報告します。保守の間は、プロダクトのコードを編集しません。</li>
+</ul>
+<h2 id="_1">この章の構成</h2>
+<p>この章の構成は次のとおりです。</p>
+<ul>
+<li>なぜ検証スキルを最初に作るのか</li>
+<li>検証スキルは何でできているのか</li>
+<li>検証スキルをどう作り、どう保つのか</li>
+<li>作った検証スキルを依頼でどう使い、どう広げるのか</li>
+<li>最初の一歩として何から手を付ければよいか</li>
+<li>まとめ</li>
+</ul>
+<h2 id="_2">なぜ検証スキルを最初に作るのか</h2>
+<p>検証スキルを最初に作る理由は2つあります。</p>
+<p>1つ目は、検証スキルが、<strong>チーム全体の成果を増やす重要なインフラ</strong>であるためです。<br />
+2つ目は、pstackのPlaybookの多くの手順が、<strong>アプリを実際に操作する手段</strong>がなければ実行できないためです。</p>
+<h3 id="_3">記事の位置づけ：重要なインフラ</h3>
+<p>記事の節『Verification is all you need』は、次の一文から始まります。</p>
+<blockquote>
+<p>The most critical skill to have in your toolbox is a high quality verification skill.</p>
+<p>道具箱の中で最も重要なのは、質の高い検証スキルだ。</p>
+</blockquote>
+<p>記事の言う検証（verification）とは、<strong>エージェントが自分の仕事を自分で確かめられること</strong>です。</p>
+<p>つまり、<strong>検証は、「コードを書いた」「ビルドが通った」ということではなく、実際のユーザーのように本物のアプリを操作し、結果を証拠として残すこと</strong>を意味します。</p>
+<p>自分の仕事を確かめられるエージェントは、失敗したら直してもう一度試すことを、作業が成功するまで繰り返せます。人間が1つずつ確かめなくて済むので、人間が作業の流れを止める存在（ボトルネック）になりません。</p>
+<p>記事では、質の高い検証スキルを用意し、保守し続けることはとても重要なので、検証スキルを「ただのSkill」ではなく、重要なインフラのように考えている、と述べているので、本書でもそのように扱います。</p>
+<p>さらに、<strong>質の高い検証スキルは、エンジニアでないメンバーも含めた、チーム全体の成果を増やす</strong>と続きます。</p>
+<p><strong>エージェントが、変更が動くかを自分で確かめられれば、エンジニアでないメンバーを含む組織の全員が、アプリに変更を加え、その変更が実際に動くことを確かめられるようになります</strong>。検証スキルを適切に作れば、チーム全体の成果が100〜1000倍になると書かれているため、検証スキルはアプリに1つ必須のものと言えるでしょう。</p>
+<h3 id="playbook">Playbookの前提：アプリを操作する手段</h3>
+<p>多くのPlaybookは、エージェントに、<strong>ユーザーが触る画面、CLI、APIなどを実際に動かす</strong>よう求めています。</p>
+<p>そのときに使うのが control系Skill です。control系Skillとは、<code>cursor-team-kit</code> プラグインにある <code>control-ui</code> や <code>control-cli</code> のような、アプリを操作するSkillです（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/096f3d">第8章</a>）。<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/create-verification-skill/SKILL.md"><code>/create-verification-skill</code></a> で作る検証スキルも、control系Skillの一つに該当します。</p>
+<p>次の表は、主なPlaybookが、エージェントにアプリのどんな操作を求めているかをまとめたものです。</p>
+<table>
+<thead>
+<tr>
+<th>Playbook</th>
+<th>エージェントに求めているアプリの操作</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/bug-fix.md"><strong>Bug fix</strong></a>』（不具合の修正）</td>
+<td>不具合を、エージェント自身が再現する</td>
+</tr>
+<tr>
+<td>『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/perf-issue.md"><strong>Perf issue</strong></a>』（性能問題の修正）</td>
+<td>直す前の基準となるトレースを取る</td>
+</tr>
+<tr>
+<td>『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/runtime-forensics.md"><strong>Runtime forensics</strong></a>』（動いているプロセスの診断）</td>
+<td>推測ではなく、動いているプロセスからプロファイルやトレースを実際に取る</td>
+</tr>
+<tr>
+<td>『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/prototype.md"><strong>Prototype</strong></a>』（使い捨ての試作で設計を決める）</td>
+<td>見た目を決めるときは、各案のスクリーンショットを撮り、操作して比べる</td>
+</tr>
+<tr>
+<td>『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/visual-parity.md"><strong>Visual parity</strong></a>』（2つの実装の見た目や、移行の前後の見た目を、ピクセル単位でそろえる）</td>
+<td>コンポーネントごとに、移行前の画面を撮った基準（ベースライン）との画像差分を取る。差分が0でなければ失敗とする</td>
+</tr>
+<tr>
+<td>『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/shipping.md"><strong>Shipping</strong></a>』（PRを検証してマージする）</td>
+<td>PRごとに、コードを書いていない別のエージェントが、変更前と変更後で画面やCLIを実際に動かし、<code>PASS</code>、<code>PASS+NOTES</code>、<code>FAIL</code> の3段階で判定する</td>
+</tr>
+</tbody>
+</table>
+<p>!</p>
+<ul>
+<li><strong>トレース</strong>・・・ 処理ごとの実行時間などを、時間の流れに沿って記録したもの</li>
+<li><strong>プロファイル</strong>・・・ CPUの使用時間やメモリの使用量などを、関数ごとなどに集計した記録</li>
+</ul>
+<p>検証スキルや control系Skillのような、アプリを操作する手段がなければ、エージェントは、表の手順を実行できません。</p>
+<p>エージェントは、作業の初めに、Playbookの手順を写したTODOリストを作ります。飛ばす手順は、その手順の行に <code>skip: &lt;理由&gt;</code> と書いて残します（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/4fda7d">第7章</a>）。</p>
+<p>!</p>
+<p><strong>TODOリスト</strong>・・・ エージェントが作業の始めに作る、その作業でやることの一覧（計画）です。Cursorでは、チャットの画面に表示されます。利用者は、この一覧を見て、エージェントがどの手順を進め、どの手順を飛ばしたか（<code>skip: &lt;理由&gt;</code>）を確かめられます（同梱ガイド <a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/01-setup.md"><code>01-setup.md</code></a>）。</p>
+<p>たとえば『<strong>Bug fix</strong>』で、操作の手段がない場合や、手段が再現したい箇所まで届かない場合、本書では、エージェントに残される選択肢として、次の2つを挙げたいと思います。</p>
+<ul>
+<li>TODOリストに <code>skip: &lt;理由&gt;</code> を残して、その手順を飛ばす</li>
+<li>『<strong>Bug fix</strong>』が認める例外として、利用者に再現を頼む</li>
+</ul>
+<p>利用者に再現を頼めるのは、次の2つを満たしたときだけです。</p>
+<ul>
+<li>操作の手段が、なぜ再現したい箇所まで届かないのかを、具体的に説明したとき（例：その画面は、特定の契約のアカウントでしかログインできない）</li>
+<li>操作の手段で動かせるところまでは、エージェント自身が操作したとき</li>
+</ul>
+<p>手順を飛ばす場合も、利用者に再現を頼む場合も、エージェントが自分で確かめられない部分が残るため、その残った部分は人間が確かめることになります。</p>
+<h2 id="_4">検証スキルは何でできているのか</h2>
+<p>検証スキルの中心は、<strong>アプリを操作する小さなCLIと、アプリの機能ごとのアクセス方法（その機能が画面やコマンドのどこにあり、ユーザーがどう操作すればたどり着けるか）をまとめた Feature Map</strong> の2つです。</p>
+<p>本書が対象にした pstack version <code>0.15.15</code> では、エージェントは、<code>/create-verification-skill</code> の手順に従って、どちらも <code>.cursor/skills/verify-&lt;app&gt;/</code> の中に作ります。</p>
+<p>記事が例に使う架空のアプリ Atlas なら、できあがる構成は次のとおりです。</p>
+<pre><code>.cursor/skills/verify-atlas/
+├─ SKILL.md（起動から片付けまでの手順）
+├─ control-atlas.mjs（アプリを操作するCLI）
+└─ features/（Feature Map）
+   ├─ README.md（Feature Mapの目次。機能ごとのファイルへのリンク）
+   ├─ &lt;機能A&gt;.md
+   └─ &lt;機能B&gt;.md
+</code></pre>
+<p><code>SKILL.md</code> に書く中身は<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/03ebca">第26章</a>で見ました。ここでは、記事が詳しく説明している、<strong>CLI</strong>と <strong>Feature Map</strong> を見ます。</p>
+<h3 id="cli">CLI</h3>
+<p>検証スキルのCLIは、アプリの操作とデバッグを、エージェントが<strong>再実行できるコマンド</strong>にしたものです。</p>
+<h4 id="build-the-lever">原則『Build the Lever』の応用</h4>
+<p>記事は、<strong>アプリの操作をCLIにすること</strong>を、手作業の代わりに<strong>その作業をする道具を作る原則『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-build-the-lever/SKILL.md"><strong>Build the Lever</strong></a>』（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a8e80b">第17章</a>）の応用</strong>として説明しています。</p>
+<p>Skillを作るときに、この原則を適用すると、Skillを作る人は、エージェントに、Markdownで書いた手順の説明だけを渡すのではなく、実行できる道具も渡すことになります。</p>
+<blockquote>
+<p>What this means in the context of creating a skill, is that we prefer to give agents tools rather than just markdown.</p>
+<p>Skillを作るという文脈では、これは、エージェントにMarkdownだけを渡すより、道具を渡すほうを選ぶ、という意味だ。</p>
+</blockquote>
+<p>たとえば、検証スキルの <code>SKILL.md</code> に「設定ボタンをクリックして、画面を撮る」とMarkdownで書くだけだと、エージェントは、そのたびにクリックするためのスクリプトを自分で書くことになります。</p>
+<p>検証スキルに <code>click</code> や <code>screenshot</code> のようなコマンドを持つCLIを付けておけば、エージェントはそのコマンドを実行するだけで済みます。検証スキルでは、アプリの操作とデバッグをまとめた、こういった小さなCLIが、ここでいう道具に該当します。</p>
+<p>記事では、アプリの操作をCLIにする利点として、次のことを挙げています。</p>
+<ul>
+<li><strong>トークンが減る</strong>・・・ エージェントは、ボタンを1つクリックするためだけの使い捨てのスクリプトを書く代わりに、CLIのコマンドを1つ実行すれば済みます。</li>
+<li><strong>再現しやすく、テストしやすくなる</strong>・・・ 検証スキルが、何度実行しても同じ結果になります。決まったコマンドなので、検証スキル自体が正しく動くかもテストできます。</li>
+</ul>
+<h4 id="atlas">例）架空のアプリ Atlas のコマンド</h4>
+<p>次は、記事に載っている、架空のアプリ Atlas 向けのコマンドの例の一部です。Atlas は、Electron（デスクトップアプリを構築するためのフレームワーク）で作ったアプリという設定です。</p>
+<p>エージェントは、次のコマンドを上から順に実行して、次の3つを行います。</p>
+<ol>
+<li>アプリが操作できる状態かを確かめる（<code>doctor</code>）</li>
+<li>新しい空の会話（スレッド）を開き、「list open tasks in this project」（このプロジェクトの未完了のタスクを一覧にして）を送る（<code>new-session</code>、<code>send</code>）</li>
+<li>その結果の画面を、証拠として <code>/tmp/atlas-proof.png</code> に保存する（<code>screenshot</code>）</li>
+</ol>
+<pre><code># health
+node .cursor/skills/verify-atlas/control-atlas.mjs doctor
+
+# open a blank thread and send
+node .cursor/skills/verify-atlas/control-atlas.mjs new-session
+node .cursor/skills/verify-atlas/control-atlas.mjs send &quot;list open tasks in this project&quot;
+
+# screenshot for evidence
+node .cursor/skills/verify-atlas/control-atlas.mjs screenshot /tmp/atlas-proof.png
+</code></pre>
+<h4 id="6">コマンドの6つの分類</h4>
+<p>どんなコマンドを用意すればよいかの目安としては、次の6つの分類が挙げられます。</p>
+<ul>
+<li><strong>観察（Inspection）</strong>・・・ <code>info</code>、<code>snapshot</code>、<code>screenshot</code> など、画面の状態を見るコマンドです。</li>
+<li><strong>移動（Navigation）</strong>・・・ <code>home</code>、<code>new-session</code>、<code>scroll</code> など、画面を移るコマンドです。</li>
+<li><strong>操作（Interaction）</strong>・・・ <code>send</code>、<code>click</code>、<code>type</code>、<code>press</code> など、入力やクリックをするコマンドです。</li>
+<li><strong>性能（Performance）</strong>・・・ <code>trace</code>、<code>profile</code>、<code>perf-metrics</code> など、性能を測るコマンドです。</li>
+<li><strong>記録の取得（Streaming）</strong>・・・ <code>console</code>、<code>network-log</code> など、コンソールや通信の記録を取るコマンドです。</li>
+<li><strong>診断と片付け（Health &amp; cleanup）</strong>・・・ <code>doctor</code>、<code>cleanup</code> など、アプリが操作できる状態かを確かめたり、片付け（cleanup）をしたりするコマンドです。</li>
+</ul>
+<h4 id="cli_1">エージェントが扱いやすいCLI</h4>
+<p>記事は、より高度な使い方に進む前に、まずCLIを、エラーなく動くよう仕上げることに時間を使うよう勧めています。<strong>CLIができれば、すべてのエージェントが、このCLIでアプリを操作し、デバッグできるようになる</strong>ためです。</p>
+<p>CLIを使うのは、人間ではなくエージェントです。そのため、CLIは、エージェントが扱いやすい作りにする必要があります。</p>
+<p>記事が挙げる、エージェントが扱いやすいCLIの性質は次の6つです。</p>
+<ul>
+<li>コマンド同士を組み合わせて使いやすい作りにする（記事は、John Ousterhout氏の著書『<a href="https://web.stanford.edu/~ouster/cgi-bin/book.php">A Philosophy of Software Design</a>』にある deep modules（シンプルなインターフェースの裏に多くの機能を持たせる設計）の考え方を挙げています）</li>
+<li>破壊的な副作用がありうるコマンドには、<code>--dry-run</code>（実際には実行せず、何が起きるかだけを示すオプション）を付ける</li>
+<li>機能を一度に見せず、サブコマンドで段階的に見せる。たとえば、<code>--help</code> ではサブコマンドの一覧だけを示し、各サブコマンドの詳しい使い方は、そのサブコマンドの <code>--help</code> で示す</li>
+<li>エラーメッセージで、代わりに何をすべきかまで伝える。たとえば、「アプリが起動していません」で終わらせず、「先に起動のコマンドを実行してください」という対処方法まで記述する</li>
+<li><code>--help</code> を充実させる</li>
+<li>JSONなど、機械が読める形で出力する</li>
+</ul>
+<p>こうしたエージェントが扱いやすいCLIの設計を、利用者自身が考えるか、エージェントに頼むことが、推奨されています。</p>
+<h3 id="feature-map">Feature Map</h3>
+<p><strong>Feature Map</strong> は、<strong>アプリの機能ごとに、「その機能が何をするか」と、「ユーザーがどう操作すれば、その機能にたどり着けるか」、検証スキルでどう操作し、どんな結果になれば動いたと分かるか、をまとめたMarkdownのファイル群</strong>です（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/03ebca">第26章</a>）。</p>
+<p><strong>アプリが複雑になるほど、エージェントは、機能を見つけて操作するための案内を必要とします</strong>。poteto氏は、その案内として Feature Map を考え出しました。</p>
+<p><code>features/README.md</code> はFeature Mapの目次で、機能ごとのファイルへのリンクを持ちます。</p>
+<p>エージェントは、アプリを操作する前に目次を読み、作業に関係する機能のファイルだけを開きます。</p>
+<p><strong>必要なファイルだけを読むので、エージェントは、コンテキストウィンドウのトークンを節約できます</strong>。</p>
+<p>!</p>
+<p>記事は、<code>/create-verification-skill</code> が <code>references/features</code> ディレクトリを作ると書いています。pstack version <code>0.15.15</code> の <code>SKILL.md</code> は <code>.cursor/skills/verify-&lt;app&gt;/features/</code> に作るよう指示しており、置き場所が異なります。本書では、pstack version <code>0.15.15</code> の置き場所に従います。形の見本は、同梱の <a href="https://github.com/cursor/plugins/tree/main/pstack/skills/create-verification-skill/references/feature-map-example"><code>references/feature-map-example/</code></a> を見てください。</p>
+<p>エージェントは、<code>/create-verification-skill</code> の手順に従って、機能ごとのファイルを、次の4つの見出しで書きます。</p>
+<table>
+<thead>
+<tr>
+<th>見出し</th>
+<th>答える問い</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Sub-features</code></td>
+<td>その機能の中で、ユーザーがどんな操作ができるか（操作ごとに短いIDを付けて並べる）</td>
+</tr>
+<tr>
+<td><code>How to get to it (user POV)</code></td>
+<td>ユーザーはどう操作して、その機能にたどり着くか</td>
+</tr>
+<tr>
+<td><code>Driving it with &lt;harness&gt;</code></td>
+<td>ハーネス（アプリを外から動かす仕組み。検証スキルのCLIなど）でどう操作するか</td>
+</tr>
+<tr>
+<td><code>Gotchas</code></td>
+<td>検証を無駄にしたり、無効にしたりする落とし穴は何か</td>
+</tr>
+</tbody>
+</table>
+<p>表の各行を、<code>/create-verification-skill</code> に同梱の見本 <a href="https://github.com/cursor/plugins/blob/main/pstack/skills/create-verification-skill/references/feature-map-example/create-note.md"><code>create-note.md</code></a>（メモアプリ Notes の、メモを作る機能）で1つずつ見ていきます。</p>
+<h4 id="sub-features"><code>Sub-features</code></h4>
+<p>見本は、メモを作る機能でユーザーができる操作を次の4つに分類しています。</p>
+<ul>
+<li>編集画面を開く</li>
+<li>保存する</li>
+<li>下書きを破棄する</li>
+<li>CLIから作る</li>
+</ul>
+<pre><code>## Sub-features
+
+- `create-open` opens a blank editor from each browser entry point.
+- `create-save` persists a title and body.
+- `create-cancel` discards an unfinished browser draft.
+- `create-cli` creates the same note shape from the terminal.
+</code></pre>
+<h4 id="how-to-get-to-it-user-pov"><code>How to get to it (user POV)</code></h4>
+<p>入口とは、ボタン、キー操作、コマンドなど、ユーザーがその機能にたどり着く方法のことです。見本は、ツールバーの <code>New note</code> ボタン、<code>n</code> キー、<code>notes create</code> コマンドの3つの入口を挙げています。</p>
+<pre><code>## How to get to it (user POV)
+
+- Choose the `New note` button in the browser toolbar.
+- Press `n` in the browser while focus is outside an editable field.
+- Run `notes create --title &lt;title&gt; --body &lt;body&gt;` in a terminal.
+</code></pre>
+<h4 id="driving-it-with-harness"><code>Driving it with &lt;harness&gt;</code></h4>
+<p>見本の <code>README.md</code> は、機能ごとのファイルの書き方の決まりとして、この見出しを次のように書くよう定めています。</p>
+<blockquote>
+<p><code>Driving it with &lt;harness&gt;</code> starts with <code>Preconditions:</code> and uses labeled bullets that pair each user action with an exact command and observable result.</p>
+<p><code>Driving it with &lt;harness&gt;</code> は <code>Preconditions:</code> から始め、ラベル付きの箇条書きで、ユーザーの操作ごとに、正確なコマンドと観察できる結果を対にして書く。</p>
+</blockquote>
+<p>前提条件（<code>Preconditions:</code>）とは、手順を始める前に満たしておく状態です。見本では、たとえば「Notes が <code>http://127.0.0.1:4173</code> で正常に動いている」「<code>Release checklist</code> という題のメモがまだない」を挙げています。</p>
+<p>前提条件の後には、手順を1項目ずつ並べます。決まりに従い、各項目には次の3つをそろえて書きます。</p>
+<ul>
+<li>ユーザーの操作</li>
+<li>その操作をハーネスで再現するコマンド</li>
+<li>操作が成功したと分かる、観察できる結果</li>
+</ul>
+<pre><code>- **Open editor.**
+  Choose `New note`.
+  Run `control-notes browser click --role button --name &quot;New note&quot;`.
+  A form named `Note editor` appears with focus in the `Title` textbox.
+</code></pre>
+<p>この項目を具体化すると次のようになります。</p>
+<table>
+<thead>
+<tr>
+<th>要素</th>
+<th>見本の記述</th>
+<th>意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ユーザーの操作</td>
+<td>Choose <code>New note</code>.</td>
+<td><code>New note</code> ボタンを選ぶ</td>
+</tr>
+<tr>
+<td>ハーネスで再現するコマンド</td>
+<td><code>control-notes browser click --role button --name "New note"</code></td>
+<td>役割がボタンで、名前が <code>New note</code> の部品をクリックする</td>
+</tr>
+<tr>
+<td>観察できる結果</td>
+<td>A form named <code>Note editor</code> appears with focus in the <code>Title</code> textbox.</td>
+<td><code>Note editor</code> という名前のフォームが開き、<code>Title</code> の入力欄にカーソルが入る</td>
+</tr>
+</tbody>
+</table>
+<p>エージェントは、コマンドを実行した後、表の「観察できる結果」になったかを確かめます。その結果にならなければ、エージェントは、この手順で失敗したと分かります。</p>
+<h4 id="gotchas"><code>Gotchas</code></h4>
+<p>見本は、次の落とし穴を書いています。</p>
+<pre><code>- Pressing `n` while a textbox has focus types the character instead of opening a new editor.
+- A save status alone is insufficient proof. Reopen the note from the list.
+</code></pre>
+<p>1つ目は、「入力欄にフォーカスがあると、<code>n</code> キーは編集画面を開かず、文字の <code>n</code> を入力するだけ」という落とし穴です。</p>
+<p>2つ目は、「保存しました」の表示だけでは値が本当に保存されたかは分からないので、「表示だけでは証拠にならず、一覧からメモを開き直して確かめる必要がある」という注意です。</p>
+<p>また、記事のFeature Mapの例（設定画面の機能）は、<code>Gotchas</code> に次の注意を書いています。ここでいうタブは、設定画面の左側に並ぶ切り替えの項目（General、Appearance、Models、Plan &amp; Usage など）です。</p>
+<blockquote>
+<p>Some tabs are entitlement-gated. Skip with an explicit account reason.</p>
+<p>一部のタブは、契約の状態によっては表示されない。飛ばすときは、アカウントの状態という理由を明記する。</p>
+</blockquote>
+<p>Feature Mapにこう書いておけば、エージェントは、たとえば Plan &amp; Usage のタブが見つからないとき、タブが出ないことを不具合と取り違えずに、「アカウントの契約状態のため表示されない」という理由を書いて、そのタブの確認を飛ばせます。</p>
+<h4 id="_5">チームで共有する記憶</h4>
+<p>記事は、Feature Map を「<strong>具現化された記憶（materialized memory）</strong>」と呼んでいます（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/dc9141">第4章</a>）。</p>
+<p>エージェントの記憶とは、以前の作業で得た知識を、次の作業でも使えるように残しておくものです。</p>
+<p><strong>この記憶の究極形はコードベースです</strong>。コードには、チームが下してきた判断が表れており、何が起き、実際にどう動いているかを示す正本だからです。</p>
+<p>Feature Map は、コードベースという記憶を、エージェントのコンテキストウィンドウのトークンを節約するために、小さくまとめたものです。</p>
+<p>また、<strong>Feature Map は、リポジトリの <code>.cursor/skills/</code> に置かれた検証スキルの中のMarkdownなので、コードベースに関わる全員が、この記憶を共有できます</strong>。</p>
+<h2 id="_6">検証スキルをどう作り、どう保つのか</h2>
+<p>検証スキルを作る手順そのものは、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/03ebca">第26章</a>で見たとおり、エージェントが <code>/create-verification-skill</code> に従って進めます。ここでは、記事が利用者に勧めている、作る前の準備と、作った後の保守の頻度を見ます。</p>
+<h3 id="_7">作る前に、利用者が整えること</h3>
+<h4 id="_8">技術スタックの選び方</h4>
+<p>記事は、アプリを外から操作する手段を用意するうえで、技術スタックの選び方も重要になると指摘しています。<strong>技術スタックがデバッグや操作をしにくいほど、エージェントを生産的に使うのが難しくなる</strong>からです。</p>
+<p>たとえば、エージェントは、Electron（デスクトップアプリを構築するためのフレームワーク）やWebのアプリならCDP（Chrome DevTools Protocol。ブラウザの開発者ツールと同じ機能を、外部のプログラムから使う仕組み）を、iOSのアプリならシミュレータを使って、アプリを操作できます。</p>
+<p>一方、選んだ技術スタックに、エージェントが使えるデバッグの道具がない場合については、エージェントに道具を作ってもらう（例：lldb を使う、開発環境でアプリと一緒に動かす独自のパッケージを作る）か、今ある道具で済ませるしかありません。</p>
+<p>しかし、poteto氏は、エージェントによる検証を非常に重要と考えているので、デバッグの道具を自作することや、別の技術スタックを選ぶことを提案しています。</p>
+<blockquote>
+<p>I personally feel that agentic verification is so important that I would unironically suggest building your own rich debugging tools, or even choosing a different tech stack</p>
+<p>個人的には、エージェントによる検証はとても重要なので、本気で、豊富なデバッグの道具を自作すること、さらには別の技術スタックを選ぶことさえ勧めたい。</p>
+</blockquote>
+<p>私も、個人的には検証が非常に重要かつ有益なものであるため、選んだ技術スタックに検証の道具がない場合、poteto氏の提案を採用すると思います。</p>
+<h4 id="_9">開発体験の準備</h4>
+<p>記事は、利用者に、アプリを動かす準備として、開発体験について、次の3つを考えておくよう勧めています。</p>
+<ul>
+<li>開発用データベースにシードデータ（開発やテストのために最初から入れておくデータ）を入れる方法</li>
+<li>認証とテストユーザーの用意の仕方、テスト環境やステージング環境へのAPIの呼び出し方</li>
+<li>開発環境を、いつも同じ手順でインストールし、立ち上げる方法</li>
+</ul>
+<p>CLIとこれらの準備は、エージェントがアプリを開発するときの主な道具とみなされているため、保守し、テストしておく必要があります。</p>
+<p>準備ができたら、利用者は <code>/create-verification-skill</code> を実行します。記事は、参考として、架空のアプリ向けに作った検証スキルの公開の見本 <a href="https://github.com/poteto/verification-skill-example">poteto/verification-skill-example</a> を挙げています。</p>
+<h3 id="maintain-verification-skill"><code>/maintain-verification-skill</code> で最新に保つ</h3>
+<p>保守の結果の3種類（clean、changed、blocked）や、保守の間はプロダクトのコードを編集しない決まりは、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/03ebca">第26章</a>で見ました。ここでは、記事が勧める実行の頻度と、それを仕組みにする方法を見ます。</p>
+<h4 id="_10">実行の頻度</h4>
+<p><code>/maintain-verification-skill</code> の <code>SKILL.md</code> は、このSkillをどのくらいの頻度で実行するかを定めていません。<code>/create-verification-skill</code> を実行したエージェントも、利用者に聞かれたときだけ頻度を提案します。そのため、本書では、<strong>利用者が、アプリがどのくらいの頻度で変わるかに合わせて、実行の頻度を決める</strong>ものとして扱います。</p>
+<p>記事は、<strong>少なくとも1日1回の実行</strong>を勧めています。</p>
+<p>エージェントは、アプリの作業をしながら検証スキルを更新することもありますが、更新し忘れた箇所が残ることも、よくあります。</p>
+<p>利用者が1日1回 <code>/maintain-verification-skill</code> を実行すれば、更新し忘れた箇所が見つかり、直されます。その結果、エージェントは、常に最新のアプリの操作方法を知ることができます。</p>
+<h4 id="dr-eggbot">Dr Eggbot で毎日の実行を仕組みにする</h4>
+<p>記事は、1日1回の実行を仕組みにする方法として、Dr Eggbot も紹介しています。</p>
+<p>Dr Eggbot は、poteto氏（Lauren Tan）が作った、Grok Bot（AIのBotアプリ。<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/b6ac2d">第5章</a>）を設計して作るBotです。xAI の<a href="https://x.ai/bot/marketplace/bots/dr-eggbot-v2">Botのマーケットプレイス</a>の紹介文は、Dr Eggbot を次のように説明しています。</p>
+<blockquote>
+<p>Asks a few preference questions, then creates them with CreateAgent. Coding bots get the poteto-mode bar (one job, unslopped, verified).</p>
+<p>いくつか好みを質問してから、CreateAgent でBotを作る。コーディング用のBotには、poteto-mode と同じ基準（1つの仕事だけを任せる、AIらしい言い回しを削る、動作を確かめる）を持たせる。</p>
+</blockquote>
+<p><strong>Dr Eggbot は、pstack と一緒に提供されます</strong>。<br />
+そのため、<strong>Dr Eggbot は、コーディング用のBotに pstack の使い方を教えられます。コーディングをしないBotも、同じ厳密さで作れます</strong>。</p>
+<p>Dr Eggbotの推奨される利用方法は、次のとおりです。</p>
+<ol>
+<li>Dr Eggbot に、エンジニア役のBotを作ってもらう</li>
+<li>作ったBotに、<code>/create-verification-skill</code> を実行してもらう</li>
+<li>同じBotに、<code>/maintain-verification-skill</code> を1日1回実行するルーティンを設定してもらう</li>
+</ol>
+<h2 id="_11">作った検証スキルを依頼でどう使い、どう広げるのか</h2>
+<p><strong>利用者は、エージェントへの依頼に、どの検証スキルで確かめ、何を証拠にするかを書きます</strong>。</p>
+<p>利用者が検証スキルを Grok Botのルーティンや Cursor Automations（Cursorで、決まった時刻やイベントをきっかけに処理を動かす機能）に組み込むのは、検証スキルに満足できてから行う必要があります（この章の<a href="#%E4%BD%BF%E3%81%84%E6%96%B93%EF%BC%9A%E3%83%A6%E3%83%BC%E3%82%B6%E3%83%BC%E3%81%AE%E5%A0%B1%E5%91%8A%E3%82%92%E8%87%AA%E5%8B%95%E3%81%A7%E5%86%8D%E7%8F%BE%E3%81%99%E3%82%8B">『使い方3：ユーザーの報告を自動で再現する』</a>）。</p>
+<h3 id="_12">検証スキルの使い方</h3>
+<p>記事は、検証スキルの使い方の例を3つ挙げています。次の依頼例の <code>/control-app</code> は、<code>/create-verification-skill</code> で作った検証スキルを指す、記事での検証スキル名です。</p>
+<h4 id="1">使い方1：新しい機能を作る</h4>
+<p>新しい機能を作るとき、poteto氏は、<code>/poteto-mode</code> と検証スキルを一緒に使い、エージェントに自分の変更を確かめさせます。記事の依頼例は次のとおりです。</p>
+<pre><code>/poteto-mode build &lt;description of feature, any useful context&gt;. use /control-app to verify your changes and show me a video and screenshots as proof
+// &lt;機能の説明と、役に立つコンテキスト&gt;を作って。/control-app で変更を確かめて。証拠として動画とスクリーンショットを見せて。
+</code></pre>
+<p>この依頼は、作る機能の説明に、どの検証スキルで確かめるか（<code>/control-app</code>）と、証拠の形式（動画とスクリーンショット）を添えています。</p>
+<p><strong>Grok Bot から依頼する場合、poteto氏は、Botに作業そのものをさせません。代わりに、Cloud Agents（Cursorのクラウド上でエージェントを動かす機能）のエージェントを起動するよう、Botに頼みます</strong>。次の依頼が、その例です。</p>
+<pre><code>spawn a cloud agent to use /poteto-mode to build &lt;description of feature, any useful context&gt;. use /control-app to verify your changes and show me a video and screenshots as proof
+// クラウドエージェントを起動して、/poteto-mode で&lt;機能の説明と、役に立つコンテキスト&gt;を作らせて。/control-app で変更を確かめて。証拠として動画とスクリーンショットを見せて。
+</code></pre>
+<p><strong>poteto氏がBotに作業をさせないのは、作業をクラウドのエージェントに任せれば、Botは別の作業を続けられ、Botのコンテキストウィンドウも作業の記録で埋まらないから</strong>です。</p>
+<h4 id="2">使い方2：性能を改善する</h4>
+<p>性能を改善するとき、poteto氏は、<strong>エージェントに、まず検証スキルで改善前の性能を測らせ、直した後に同じ検証スキルで改善を確かめさせます</strong>。記事の依頼例は次のとおりです。</p>
+<pre><code>spawn a cloud agent to use /poteto-mode to improve the initial loading time of our app. first use /control-app to take a trace of the status quo, and identify opportunities for improvement. then do a targeted fix and use /control-app + a /swarm to confirm the win
+// クラウドエージェントを起動して、/poteto-mode でアプリの初回読み込み時間を改善させて。まず /control-app で現状のトレースを取り、改善の余地を見つけて。それから狙いを絞って直し、/control-app と /swarm で改善を確かめて。
+</code></pre>
+<p><strong>この依頼は、直す前に、<code>/control-app</code> で現状のトレースを取るよう書いています</strong>。『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/perf-issue.md"><strong>Perf issue</strong></a>』Playbookも、最初の手順で改善前の基準となるトレースを取り、報告に改善前と改善後の数値とその差を書くよう求めています。</p>
+<p>記事は、<strong>多数のWorkers（並列に動く複数のエージェント）を動かして一つの報告にまとめる <code>/swarm</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/2ad346">第24章</a>）を、検証スキルと組み合わせるのに最も相性のよいSkillの一つ</strong>としています。</p>
+<p><code>/swarm</code> で多数の Cloud Agents に検証スキルを実行させれば、十分なサンプル数で性能の改善を確かめたり、ファジング（ランダムな入力や想定外の入力を大量に与えて、異常が起きないかを調べる手法）でアプリが壊れていないことを確かめたりできます。</p>
+<h4 id="3">使い方3：ユーザーの報告を自動で再現する</h4>
+<p>検証スキルに満足できたら、いよいよ利用者は、検証スキルを Grok Botのルーティンや Cursor Automations に組み込めます。どちらも、決まった時刻やイベントをきっかけに処理を動かす仕組みです。</p>
+<p>記事の例では、Botが、Slackなどに届くユーザーのフィードバックを1件ずつ受け取り、クラウドのエージェントを起動して、報告された不具合の再現を自動で試みます。</p>
+<p>このように、<strong>検証スキルと Feature Map の質が十分に高ければ、不具合の修正まで自動にすること</strong>も可能です。</p>
+<h3 id="_13">エージェントを並列に動かす</h3>
+<p>検証スキルを使って何本かのPRをマージできるようになったら、次の段階は、エージェントをもっと並列に動かすことです。</p>
+<p>エージェントが依頼を受けて、ほぼマージできる状態まで作業を進められるなら、利用者は、その間にほかのエージェントも動かせるからです。</p>
+<h4 id="worktree-cloud-agents">worktree ではなく Cloud Agents を使う</h4>
+<p>記事は、並列に動かす方法として、worktree（1つのリポジトリに、作業ディレクトリを追加で作るgitの機能。<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/cdc49b">第18章</a>）ではなく、Cloud Agents を勧めています。本書も、Cloud Agents を勧めます。</p>
+<p>記事が worktree を勧めないのは、worktree が、エージェントごとにリポジトリの作業ディレクトリを1つずつ増やすので、手元のマシンのストレージとリソースを多く使うからです。</p>
+<p>リポジトリの大きさとマシンの性能次第で、worktree で並列に動かせるのは最大10体くらいだと予想できます。</p>
+<p>私の経験でも、ローカルで並列に動かすには、worktree ごとにディレクトリを分け、アプリのポートがぶつからないよう工夫する必要がありました。作った worktree の管理や、消し忘れの手間もかかります。</p>
+<p>一方、Cloud Agents のエージェントは、クラウドの実際のコンピュータを使えるので、依存関係をインストールしてアプリを動かし、動画やスクリーンショットを撮り、実際のユーザーと同じようにアプリを操作できます。</p>
+<p>Cursorは、最初のビルドの後に環境のスナップショット（ある時点の状態をまるごと保存したもの）を取るので、以降の Cloud Agents のエージェントはすぐに起動します。また、エージェントは1体ずつ別のマシンで動くので、各エージェントが動かすアプリのインスタンス（起動中のアプリ1つ1つ）も、初めから分かれています。</p>
+<p><a href="https://x.com/poteto/status/2087977008253071816">https://x.com/poteto/status/2087977008253071816</a></p>
+<p>poteto氏は、Xのポストでも、Cloud Agents を使う理由を次のように書いています。</p>
+<blockquote>
+<p>worktrees are dead. cloud agents are the future. they've allowed me to massively orchestrate swarms of agents, all with their own computer. it's how i've been able to trust that my agents are actually doing what i want them to, because they can run their code, take videos and screenshots, and interact with UIs the same way users do.</p>
+<p>worktree の時代は終わった。これからは Cloud Agents だ。Cloud Agents によって、それぞれが自分のコンピュータを持つエージェントの群れを、大規模に動かせるようになった。エージェントが本当に自分の望みどおりに動いていると信頼できるのも、エージェントがコードを実行し、動画やスクリーンショットを撮り、ユーザーと同じようにUIを操作できるからだ。</p>
+</blockquote>
+<p>ただし、Cloud Agents には注意点もあります。</p>
+<p>Cloud Agents のエージェントは、コマンドを、利用者の許可を待たずに自動で実行します。コマンドを打ち間違えても壊れるのはクラウドのマシンだけで、手元のPCは壊れません。</p>
+<p>一方、リポジトリのコードはクラウドのマシンに渡されるので、それらが外へ持ち出される危険は残ります。<br />
+シークレット（APIキーのような秘密の情報）も同様のリスクがあります。</p>
+<p><a href="https://cursor.com/ja/docs/cloud-agent/security-network">Cursorのドキュメント</a>も、プロンプトインジェクション（エージェントが読む文章に、悪意のある指示を紛れ込ませる攻撃）による持ち出しの危険を、次のように書いています。</p>
+<blockquote>
+<p>自動実行にはデータ流出のリスクがあります。攻撃者がプロンプトインジェクション攻撃を仕掛け、エージェントをだまして悪意のある Web サイトにコードをアップロードさせる可能性があります。</p>
+</blockquote>
+<p>開発環境を整えてあれば、クラウドの環境を用意するのは大きな手間ではありません。</p>
+<p>Cursorでは、開発環境の作り方をコード（<code>.cursor/environment.json</code>）で定義して（EAC: Environment as Code）、リポジトリに置けます。</p>
+<p>検証スキルのために整えた開発環境の立ち上げ手順をこのファイルに書いておけば、どの Cloud Agents のエージェントも、同じ環境で作業を始められます。Cursorは<a href="https://cursor.com/ja/blog/cloud-agent-environment">ブログ</a>で、この考え方を次のように書いています。</p>
+<blockquote>
+<p>開発環境もそれ自体がプロダクトであり、そのユーザーはエージェントである</p>
+</blockquote>
+<p>ちなみに、Cloud Agents のエージェントはクラウドのマシンで動くので、利用者がPCを閉じても作業は止まりません。私も、Cloud Agentsヘビーユーザーです。</p>
+<p><a href="https://zenn.dev/sc30gsw/articles/953334f11df507">https://zenn.dev/sc30gsw/articles/953334f11df507</a></p>
+<h2 id="_14">最初の一歩として何から手を付ければよいか</h2>
+<p>最初の一歩は、利用者が、<strong>エージェントが自分のアプリを外から操作・観察できる手段</strong>があるかを確かめることです。</p>
+<p>本書では、記事の流れにしたがって、<code>/create-verification-skill</code> と <code>/maintain-verification-skill</code> を含め、利用者が進める手順を次のように整理します。</p>
+<ol>
+<li>アプリを外から操作・観察できる手段（既存のハーネス、CDP、シミュレータ、自作の道具）を確かめる</li>
+<li>開発環境を一貫した手順で立ち上げられるようにする（シードデータ、テストユーザー、テスト環境、分離）</li>
+<li><code>/create-verification-skill</code> を実行し、CLIとFeature Mapを生成させる</li>
+<li>生成物を一度、通しで動かし、証拠が残ったことを確かめる。CLIを、エラーなく動くように直す</li>
+<li><code>/maintain-verification-skill</code> の頻度を決める</li>
+<li>普段の依頼に、検証スキルの名前と証拠の形を書く</li>
+<li>検証スキルを使って何本かのPRをマージできるようになり、検証スキルに満足できてから、Cloud Agents での並列化や、ルーティンと自動化に広げる</li>
+</ol>
+<p>記事は最後に、CLIを改善し続け、検証スキルに重要なインフラと同じように投資し、当番制（oncall rotation。検証スキルが壊れたときに対応する担当者を、交代で決めておく仕組み）を置くことまで提案しています。</p>
+<p>私は、この担当にGrok Botを置くことを提案します。<br />
+Grok Botで監査をし続け、作業自体はCloud Agentsに投げるという進め方を想定しています。</p>
+<h2 id="_15">まとめ</h2>
+<ul>
+<li><strong>なぜ最初に作るのか</strong>・・・ 記事は、アプリ開発では検証スキルを最も重要なスキルとしており、pstackの多くのPlaybookも、アプリを操作する手段を前提にしているからです。</li>
+<li><strong>何でできているのか</strong>・・・ 検証スキルの中心は、再実行できるCLIと、機能ごとのたどり着き方をまとめた Feature Map です。</li>
+<li><strong>どう作り、どう保つのか</strong>・・・ 利用者は、作る前に技術スタックと開発体験を整えます。作った後は、記事が勧めるように少なくとも1日1回 <code>/maintain-verification-skill</code> を実行し、Dr Eggbot のルーティンで仕組みにすることもできます。</li>
+<li><strong>どう使い、どう広げるのか</strong>・・・ 利用者は、依頼に検証スキルの名前と証拠の形を書き、満足できてから並列化や自動化に広げます。</li>
+<li><strong>最初の一歩</strong>・・・ 利用者は、エージェントがアプリを外から操作・観察できる手段を確かめることから始めます。</li>
+</ul>
+<p>次の<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/b4b9a1">第40章</a>からは、『The Complete Guide to pstack』<a href="https://x.com/poteto/status/2097732320606507506">Part 2</a>をもとに、何を作るか（どの問題を、どんな設計で解き、どう計画するか）を、エージェントと一緒に決める方法を解説します。<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/b4b9a1">第40章</a>では、本書が Part 2 を13点にまとめた要点のうち、最初の4つを見ます。</p>
+  </div>
+  <footer class="article-footer">
+    <span>取得: 2026-10-06T23:37:36+09:00</span>
+    <a href="#article-top">↑ 先頭へ戻る</a>
+  </footer>
+</main>
+<script>
+(() => {
+  const progress = document.querySelector(".reading-progress > span");
+  const updateProgress = () => {
+    const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+    const ratio = scrollable > 0 ? window.scrollY / scrollable : 0;
+    if (progress) progress.style.width = `${Math.min(1, ratio) * 100}%`;
+  };
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  document.querySelectorAll("pre").forEach((block) => {
+    const button = document.createElement("button");
+    button.className = "copy-button";
+    button.type = "button";
+    button.textContent = "コピー";
+    button.addEventListener("click", async () => {
+      const text = block.querySelector("code")?.innerText || block.innerText;
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const textarea = document.createElement("textarea");
+          textarea.value = text;
+          textarea.style.position = "fixed";
+          textarea.style.opacity = "0";
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand("copy");
+          textarea.remove();
+        }
+        button.textContent = "コピー済み";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      } catch (error) {
+        button.textContent = "失敗";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      }
+    });
+    block.appendChild(button);
+  });
+
+  const links = new Map(
+    [...document.querySelectorAll(".toc a")].map((link) => [link.hash, link])
+  );
+  const headings = [...document.querySelectorAll(
+    ".article-body h2[id], .article-body h3[id], .article-body h4[id]"
+  )];
+  if ("IntersectionObserver" in window && headings.length) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        links.forEach((link) => link.classList.remove("is-active"));
+        links.get(`#${entry.target.id}`)?.classList.add("is-active");
+      });
+    }, { rootMargin: "-12% 0px -72% 0px" });
+    headings.forEach((heading) => observer.observe(heading));
+  }
+})();
+</script>
+</body>
+</html>

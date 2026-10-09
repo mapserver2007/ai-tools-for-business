@@ -1,0 +1,966 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="title" content="第32章 コメントを消し、コードベースを整備する">
+<meta name="book_title" content="【Cursor pstack】AIエージェントに開発を任せる環境をつくる ―月2,500件のPRを支えた開発基盤とは？">
+<meta name="source_url" content="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/8960d3">
+<meta name="author" content="kaito">
+<meta name="published_at" content="2026-10-02">
+<meta name="retrieved_at" content="2026-10-06T23:37:34+09:00">
+<meta name="site" content="zenn.dev">
+<meta name="content_type" content="article">
+<meta name="chapter_position" content="38">
+<title>第32章 コメントを消し、コードベースを整備する</title>
+<style>
+:root {
+  color-scheme: light;
+  --ink: #172033;
+  --muted: #64748b;
+  --line: #dbe4ef;
+  --accent: #2563eb;
+  --accent-dark: #1d4ed8;
+  --accent-soft: #eff6ff;
+  font-family: -apple-system, BlinkMacSystemFont, "Avenir Next",
+    "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 8% 0%, #dbeafe 0, transparent 32rem),
+    radial-gradient(circle at 100% 12%, #e0e7ff 0, transparent 28rem),
+    #f4f7fb;
+  color: var(--ink);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(120deg, transparent 0 48%, rgba(255, 255, 255, 0.4));
+}
+.article {
+  position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
+  max-width: 920px;
+  margin: clamp(1rem, 5vw, 4rem) auto;
+  padding: clamp(2rem, 6vw, 5rem) clamp(1.25rem, 7vw, 5.5rem);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  border-radius: 24px;
+  min-height: 100vh;
+  box-shadow:
+    0 24px 70px rgba(30, 64, 175, 0.1),
+    0 4px 16px rgba(15, 23, 42, 0.04);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 5px;
+  content: "";
+  background: linear-gradient(90deg, #2563eb, #7c3aed, #db2777);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin: 0 0 2.5rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.72rem;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+a {
+  color: var(--accent-dark);
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: #7c3aed;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--ink);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 18ch;
+  margin: 0 0 2.5rem;
+  font-size: clamp(2.15rem, 5vw, 3.65rem);
+  letter-spacing: -0.045em;
+}
+h2 {
+  position: relative;
+  margin: 3.8rem 0 1.25rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--line);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 4.2rem;
+  height: 3px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), #7c3aed);
+  border-radius: 999px;
+}
+h3 {
+  margin: 2.6rem 0 0.8rem;
+  color: var(--accent-dark);
+  font-size: 1.3rem;
+}
+h4, h5, h6 {
+  margin-top: 2rem;
+}
+p {
+  margin: 1.15rem 0;
+}
+ul, ol {
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.35rem 0;
+}
+li::marker {
+  color: var(--accent);
+  font-weight: 700;
+}
+strong {
+  color: #111827;
+}
+blockquote {
+  margin: 1.6rem 0;
+  padding: 0.8rem 1.25rem;
+  color: #475569;
+  background: linear-gradient(90deg, var(--accent-soft), #fff);
+  border-left: 4px solid var(--accent);
+  border-radius: 0 12px 12px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 3rem 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+img {
+  display: block;
+  max-width: 100%;
+  margin: 1.75rem auto;
+  height: auto;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+}
+pre {
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  padding: 1.15rem 1.25rem;
+  color: #e2e8f0;
+  background: #111827;
+  border: 1px solid #253047;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+}
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+:not(pre) > code {
+  padding: 0.15rem 0.4rem;
+  color: #9f1239;
+  background: #fff1f2;
+  border-radius: 5px;
+}
+table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  border-collapse: collapse;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
+  text-align: left;
+}
+th {
+  color: #1e3a8a;
+  background: #eff6ff;
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: #f8fafc;
+}
+@media (max-width: 600px) {
+  .article {
+    margin: 0;
+    padding: 2rem 1rem 4rem;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(2rem, 10vw, 2.75rem);
+  }
+  .metadata {
+    margin-bottom: 2rem;
+  }
+}
+@media print {
+  body {
+    background: #fff;
+  }
+  .article {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  a {
+    color: inherit;
+  }
+}
+</style>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0f1419;
+  --surface: #1a2332;
+  --surface-raised: #202c3f;
+  --surface-soft: rgba(26, 35, 50, 0.72);
+  --border: #2d3a4f;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #58a6ff;
+  --accent-strong: #79c0ff;
+  --green: #3fb950;
+  --purple: #bc8cff;
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+    "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  line-height: 1.75;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+  background: var(--bg);
+}
+body {
+  min-width: 320px;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 2rem 1.5rem 5rem;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(31, 111, 235, 0.18), transparent 32rem),
+    radial-gradient(circle at 100% 12%, rgba(137, 87, 229, 0.14), transparent 28rem),
+    var(--bg);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black, transparent 75%);
+}
+.reading-progress {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 20;
+  height: 3px;
+  background: rgba(45, 58, 79, 0.7);
+}
+.reading-progress > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  box-shadow: 0 0 14px rgba(88, 166, 255, 0.8);
+  transition: width 80ms linear;
+}
+.article {
+  position: relative;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  background: rgba(15, 20, 25, 0.76);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(88, 166, 255, 0.035) inset;
+  backdrop-filter: blur(16px);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  border-radius: 16px 16px 0 0;
+}
+.article-header {
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.eyebrow-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--green);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(63, 185, 80, 0.75);
+}
+.eyebrow-separator {
+  color: var(--border);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  background: rgba(32, 44, 63, 0.68);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+.source-link {
+  color: var(--text);
+  text-decoration: none;
+}
+.source-link:hover {
+  border-color: var(--accent);
+  background: rgba(88, 166, 255, 0.12);
+}
+a {
+  color: var(--accent);
+  overflow-wrap: anywhere;
+  text-decoration: none;
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 24ch;
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  background: linear-gradient(120deg, #fff 12%, #b9d8ff 58%, #bc8cff);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+h2 {
+  position: relative;
+  margin: 3.2rem 0 1.1rem;
+  padding: 0.75rem 0 0.65rem;
+  border-bottom: 1px solid var(--border);
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 3.8rem;
+  height: 2px;
+  content: "";
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(88, 166, 255, 0.7);
+}
+h3 {
+  margin: 2.25rem 0 0.7rem;
+  color: var(--accent-strong);
+  font-size: 1.2rem;
+}
+h4, h5, h6 {
+  margin-top: 1.75rem;
+}
+p {
+  margin: 0.9rem 0;
+}
+ul, ol {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.3rem 0;
+}
+li::marker {
+  color: var(--accent);
+}
+strong {
+  color: #fff;
+}
+blockquote {
+  margin: 1.4rem 0;
+  padding: 0.85rem 1.15rem;
+  color: #c9d1d9;
+  background: linear-gradient(100deg, rgba(88, 166, 255, 0.1), rgba(26, 35, 50, 0.55));
+  border: 1px solid rgba(88, 166, 255, 0.18);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 2.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+}
+pre {
+  position: relative;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  padding: 1rem 1.15rem;
+  color: #dbeafe;
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+pre code {
+  color: inherit;
+  background: transparent;
+}
+code {
+  font-family: "SF Mono", "Fira Code", ui-monospace, monospace;
+  font-size: 0.86em;
+}
+:not(pre) > code {
+  padding: 0.12em 0.38em;
+  color: #ffabbc;
+  background: rgba(248, 81, 73, 0.11);
+  border-radius: 4px;
+}
+.copy-button {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  padding: 0.25rem 0.55rem;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.72rem;
+  background: rgba(32, 44, 63, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.copy-button:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  border-spacing: 0;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.6rem 0.75rem;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+th {
+  color: var(--accent);
+  background: var(--surface);
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: rgba(26, 35, 50, 0.42);
+}
+tr:last-child td {
+  border-bottom: 0;
+}
+th:last-child, td:last-child {
+  border-right: 0;
+}
+.toc {
+  margin: 1.75rem 0 2.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.toc-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--border);
+}
+.toc-title {
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.toc-count {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.toc ol {
+  margin: 0.7rem 0 0;
+  padding-left: 1.25rem;
+}
+.toc ol ol {
+  margin: 0.2rem 0;
+}
+.toc li {
+  margin: 0.18rem 0;
+  font-size: 0.86rem;
+}
+.toc li::marker {
+  color: var(--muted);
+}
+.toc a {
+  display: inline-block;
+  max-width: 100%;
+  color: var(--muted);
+  transition: color 160ms ease, transform 160ms ease;
+}
+.toc a:hover, .toc a.is-active {
+  color: var(--accent-strong);
+  text-decoration: none;
+  transform: translateX(2px);
+}
+.article-body {
+  max-width: 78ch;
+  margin: 0 auto;
+}
+.article-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 1rem;
+  color: var(--muted);
+  font-size: 0.74rem;
+  border-top: 1px solid var(--border);
+}
+.article-footer a {
+  color: var(--muted);
+}
+@media (max-width: 720px) {
+  body {
+    padding: 0 0 3rem;
+  }
+  .article {
+    min-height: 100vh;
+    padding: 1.5rem 1rem 3rem;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+  .article::before {
+    border-radius: 0;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(1.9rem, 9vw, 2.6rem);
+  }
+  .article-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+@media print {
+  :root {
+    color-scheme: light;
+  }
+  body {
+    padding: 0;
+    color: #111;
+    background: #fff;
+  }
+  .reading-progress, .toc, .copy-button {
+    display: none;
+  }
+  .article {
+    max-width: none;
+    padding: 0;
+    background: #fff;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  h1, h2, h3, h4, h5, h6, strong {
+    color: #111;
+    -webkit-text-fill-color: initial;
+  }
+  a {
+    color: inherit;
+    text-decoration: underline;
+  }
+  pre {
+    color: #111;
+    background: #f4f4f4;
+    box-shadow: none;
+  }
+}
+</style>
+</head>
+<body>
+<div class="reading-progress" aria-hidden="true"><span></span></div>
+<main id="article-top" class="article">
+  <header class="article-header">
+    <div class="eyebrow">
+      <span class="eyebrow-dot"></span>
+      <span>ARTICLE</span>
+      <span class="eyebrow-separator">/</span>
+      <span>zenn.dev</span>
+    </div>
+    <div class="metadata" aria-label="記事メタデータ"><span class="metadata-item"><span class="metadata-label">著者</span>kaito</span><span class="metadata-item"><span class="metadata-label">公開日</span>2026-10-02</span><a class="metadata-item source-link" href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/8960d3"><span class="metadata-label">原文</span>読む</a><span class="metadata-item"><span class="metadata-label">サイト</span>zenn.dev</span><span class="metadata-item"><span class="metadata-label">形式</span>ARTICLE</span></div>
+    <h1 id="32">第32章 コメントを消し、コードベースを整備する</h1>
+  </header>
+<nav class="toc" aria-label="目次">
+  <div class="toc-heading">
+    <span class="toc-title">目次</span>
+    <span class="toc-count">20 セクション</span>
+  </div>
+  <ol><li><a href="#_1">この章の構成</a></li><li><a href="#comment-sicko">役割：コメントを書いていないエージェント（Comment Sicko）に、そのコメントを審査させる</a></li><li><a href="#_2">使いどき：レビューの前に、差分を対象に呼ぶ</a><ol><li><a href="#no-comments-prplaybook">/no-comments は、PRを作るPlaybookからも呼ばれる</a><ol><li><a href="#opening-a-pr">『Opening a PR』：レビューの前に、未完成に見える差分を片付ける</a></li><li><a href="#autopilot-fullautopilot-stack">『Autopilot-full』『Autopilot-stack』：コードを確定させてから、検証に渡す</a></li><li><a href="#multi-phase-or-multi-pr-plan">『Multi-phase or multi-PR plan』：計画書のチェックリストに入れる</a></li></ol></li></ol></li><li><a href="#comment-sicko_1">規則と手順：Comment Sicko の指摘を審査する</a><ol><li><a href="#comment-sicko_2">Comment Sicko はコメントを審査して消し、アプリのコードは書き換えない</a></li><li><a href="#lintmust-kill">意外な挙動の説明や、重要なlintルールの抑制は消し、MUST KILL として挙げる</a></li><li><a href="#_3">保存する関数が確認メールも送る例で、コメントを関数名に置き換える</a></li><li><a href="#no-comments-comment-sicko">/no-comments は、Comment Sicko の報告をそのまま受け入れずに審査する</a><ol><li><a href="#1-1">1. 誤りのある報告を却下し、1回だけやり直させる</a></li><li><a href="#2-how-why">2. 根拠の書かれていない注意書きへの判断は、/how か /why で確かめてから受け入れる</a></li><li><a href="#3-architect">3. 直すのに新しいコードの形が必要なら、/architect で形を決めてから直す</a></li></ol></li><li><a href="#_4">受け入れた指摘は根本原因から直す</a></li><li><a href="#_5">制約を主張するコメントは、コードで守らせる方法を提案し、承認を待つ</a></li><li><a href="#comment-sicko-no-comments">コメントを消すのは Comment Sicko で、何を直すかを決めるのは /no-comments である</a></li></ol></li><li><a href="#_6">依頼の書き方：差分を対象に指定する</a></li><li><a href="#_7">まとめ</a></li></ol>
+</nav>
+  <div class="article-body">
+
+<p>この章では、<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/no-comments/SKILL.md"><code>/no-comments</code></a> を扱います。</p>
+<p><code>/no-comments</code> は、エージェントが、レビューの前に、<strong>差分のコメントを、そのコメントを書いていない別のエージェント（Comment Sicko）に審査させる</strong>Skillです。Comment Sicko は、プロジェクト自身のコードの意外な挙動（例：保存する関数が確認メールも送る）を説明するコメントを消し、その関数を、直すべき箇所として報告します。<strong>元のエージェントは、コメントがなくても挙動が分かるよう、関数名を変えたり関数を分けたりしてコードを直します。外部のライブラリなど、自分たちでは変えられないものに強いられた挙動を説明するコメントは、消さずに残します</strong>。</p>
+<p><code>/no-comments</code> は、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/4f9a46">第30章</a>から続く、コードの品質を保つ3つのSkillの3つ目です。<code>/no-comments</code> で、コードを書いたエージェントの代わりにコメントを確かめるのは、コメントを書いていない Comment Sicko です。</p>
+<p><code>/no-comments</code> が審査する対象は、差分の中のコメントと、lint や型チェックの抑制指示（<code>eslint-disable</code>、<code>@ts-ignore</code> など）です。</p>
+<p>!</p>
+<ul>
+<li><strong>抑制指示</strong>・・・ lint や型チェックが出す警告を、その箇所だけ止めるために、コードに書く指示</li>
+<li><strong>Comment Sicko</strong>・・・ pstack に同梱された、コメントを審査して消すサブエージェント（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/096f3d">第8章</a>）</li>
+<li><code>/no-comments</code> が Comment Sicko を起動し、その報告を受けて、<code>/no-comments</code> がコードを直す</li>
+</ul>
+<p>この章では、<code>/no-comments</code> を、役割、使いどき、規則と手順、依頼の書き方の4つの観点で解説します。</p>
+<h2 id="_1">この章の構成</h2>
+<p>この章の構成は次のとおりです。</p>
+<ul>
+<li>役割：コメントを書いていないエージェント（Comment Sicko）に、そのコメントを審査させる</li>
+<li>使いどき：レビューの前に、差分を対象に呼ぶ</li>
+<li>規則と手順：Comment Sicko の指摘を審査する</li>
+<li>依頼の書き方：差分を対象に指定する</li>
+<li>まとめ</li>
+</ul>
+<h2 id="comment-sicko">役割：コメントを書いていないエージェント（Comment Sicko）に、そのコメントを審査させる</h2>
+<p><code>/no-comments</code> は、レビューの前にコメントを取り除くSkillです。</p>
+<p>このSkillは、Comment Sicko（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/096f3d">第8章</a>）を起動し、Comment Sicko の指摘のうち受け入れたものを直します。また、コメントが主張する制約（例：「文言を変えないこと」）を、テストなどのコードで表す案を出します。</p>
+<p>このSkillは、<strong>自分たちのコードの意外な挙動を説明するコメントを、コードを直すべき箇所の印として扱います</strong>。そうした挙動は、名前を変えたり関数を切り出したりすれば、文章で説明しなくてもコードを読めば分かる形に直せるからです。<br />
+※ 「意外な挙動を説明するコメント」については<a href="#%E4%BF%9D%E5%AD%98%E3%81%99%E3%82%8B%E9%96%A2%E6%95%B0%E3%81%8C%E7%A2%BA%E8%AA%8D%E3%83%A1%E3%83%BC%E3%83%AB%E3%82%82%E9%80%81%E3%82%8B%E4%BE%8B%E3%81%A7%E3%80%81%E3%82%B3%E3%83%A1%E3%83%B3%E3%83%88%E3%82%92%E9%96%A2%E6%95%B0%E5%90%8D%E3%81%AB%E7%BD%AE%E3%81%8D%E6%8F%9B%E3%81%88%E3%82%8B">『保存する関数が確認メールも送る例で、コメントを関数名に置き換える』</a>で後述します。</p>
+<p>コメントの審査を別のエージェントに任せる理由を、同梱ガイドの <a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/05-build-and-clean.md"><code>docs/guide/05-build-and-clean.md</code></a> は次のように説明しています。</p>
+<blockquote>
+<p>Comments need their own pass, and not from the agent that wrote them. An author defends its comments the way you'd defend yours.</p>
+<p>コメントには専用の点検が必要で、書いたエージェント以外が行うべきだ。書き手は、あなたが自分のコメントを守るのと同じように、自分のコメントを守ってしまう。</p>
+</blockquote>
+<p>エージェントが自分の書いたコメントを点検すると、<strong>自分のコメントを守ろうとして、不要なコメントでも残してしまいます</strong>。そのため、コメントの審査は、コメントを書いていない Comment Sicko が行います。</p>
+<h2 id="_2">使いどき：レビューの前に、差分を対象に呼ぶ</h2>
+<p><code>/no-comments</code> は <code>disable-model-invocation: true</code> の設定を持つので（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/46bd1f">第25章</a>）、エージェントが会話の内容から <code>/no-comments</code> を選んで動かすことはありません。このSkillを動かすのは、名前で呼ぶ利用者と、<code>/poteto-mode</code> の規則やPlaybookの手順です。</p>
+<p><code>/poteto-mode</code> の節『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/SKILL.md#non-negotiables">Non-negotiables</a>』（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/096f3d">第8章</a>）の規則や、PRを開くときの『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/opening-a-pr.md"><strong>Opening a PR</strong></a>』Playbookなどが、レビューの前に <code>/no-comments</code> を呼ぶよう定めています。</p>
+<p><code>/no-comments</code> が見る範囲は、呼び出し側が渡したファイルか差分です。渡されなければ、ベースブランチ（既定は <code>main</code>）との差分を、まだコミットしていない変更も含めて見ます。</p>
+<p><code>/no-comments</code> と、似た掃除をするほかの2つのSkillは、対象によって次のように分担しています。</p>
+<ul>
+<li><strong>コードの中の不要物</strong>・・・ <code>/deslop</code> が、処理を説明するだけのコメント、根拠のない防御的なチェック、使われなくなった互換性のための経路などを取り除きます。<code>/deslop</code> は <a href="https://github.com/cursor/plugins/tree/main/cursor-team-kit"><code>cursor-team-kit</code></a> に同梱されていて、pstackには含まれません。</li>
+<li><strong>文章の癖</strong>・・・ <code>/unslop</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/44857b">第33章</a>）が、READMEやPR説明などの文章から、AIらしい癖を取り除きます。</li>
+<li><strong>コメント</strong>・・・ <code>/no-comments</code> が、コメントを書いていないエージェントにコメントを審査させます。</li>
+</ul>
+<h3 id="no-comments-prplaybook"><code>/no-comments</code> は、PRを作るPlaybookからも呼ばれる</h3>
+<p><code>/no-comments</code> を呼ぶPlaybookは、どれも、<strong>PRをレビューや検証に出す前に、差分からコメントを取り除いておく</strong>ために <code>/no-comments</code> を使います。呼ぶ側ごとの場面と理由は、次のとおりです。</p>
+<h4 id="opening-a-pr">『Opening a PR』：レビューの前に、未完成に見える差分を片付ける</h4>
+<p>『Opening a PR』は、PRを開くPlaybookで、他のすべてのPlaybookの最後に呼ばれます。このPlaybookは、レビューの前に <code>/no-comments</code> を実行するよう定めています。PRを開くサブエージェントも、<code>/no-comments</code> を実行してから、PRのURLを投稿します。</p>
+<p>同梱ガイドの <code>05-build-and-clean.md</code> は、差分のCleanup（片付け）を省略できない理由として、<strong>処理を説明するだけのコメントや、防御のための不要なコードが残った差分は、レビューする人には未完成に見える</strong>ことを挙げています。同ページは、<strong>残った不要なコードが、次の不具合が潜む場所になる</strong>とも書いています。</p>
+<h4 id="autopilot-fullautopilot-stack">『Autopilot-full』『Autopilot-stack』：コードを確定させてから、検証に渡す</h4>
+<p>『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/autopilot-full.md"><strong>Autopilot-full</strong></a>』と『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/autopilot-stack.md"><strong>Autopilot-stack</strong></a>』（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/8a8dd5">第16章</a>）では、PRごとの担当者（PR1本の変更を最初から最後まで受け持つクラウドエージェント）が、<code>/deslop</code> と <code>/no-comments</code> を済ませ、マージするコードが最終の形になってから、そのコミットのSHA（コミットごとに付く、コミットを一意に指す識別子）を報告します。その後で、担当者自身による検証とCIが、<code>/swarm</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/2ad346">第24章</a>）による独立した検証と並行して進みます。</p>
+<h4 id="multi-phase-or-multi-pr-plan">『Multi-phase or multi-PR plan』：計画書のチェックリストに入れる</h4>
+<p>『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/multi-phase-plan.md"><strong>Multi-phase or multi-PR plan</strong></a>』（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/8a8dd5">第16章</a>）が作る計画書は、PRごとの担当者が1項目ずつ実行し、運用者（計画の実行開始を指示し、証拠を点検する人）が証拠を見て確かめるチェックリストです。計画書のひな形には、すべてのPRに共通する項目として、「コミットの前に毎回 <code>/deslop</code> を、レビューの前に <code>/no-comments</code> を実行する」が入っています。</p>
+<h2 id="comment-sicko_1">規則と手順：Comment Sicko の指摘を審査する</h2>
+<h3 id="comment-sicko_2">Comment Sicko はコメントを審査して消し、アプリのコードは書き換えない</h3>
+<p>Comment Sicko（<a href="https://github.com/cursor/plugins/blob/main/pstack/agents/comment-sicko.md"><code>agents/comment-sicko.md</code></a>）は、コメントを消し、直すべきコードを報告するだけで、アプリのコードは書き換えません。</p>
+<p>Comment Sicko の定義は、「常軌を逸したコメント嫌い」という誇張した口調で書かれています。ただし、残してよいコメントの規則は厳密です。</p>
+<p><strong>Comment Sicko が残すコメントは次の5種類だけで、迷ったら消します</strong>。</p>
+<ul>
+<li>法務・ライセンスのヘッダー</li>
+<li>自分たちでは変えられない外部の依存やプラットフォームに強いられた、自明でない挙動の説明</li>
+<li><code>// prettier-ignore</code>（コード整形ツール Prettier に、直後のコードを整形させない指示）と、ルール自体が誤っている、細かすぎる、またはスタイルだけを扱うlintルールの抑制</li>
+<li>公開APIの契約を定義するドキュメントコメント</li>
+<li>コードでは表せない制約を説明する issue や RFC（設計を提案する文書） へのリンク</li>
+</ul>
+<h3 id="lintmust-kill">意外な挙動の説明や、重要なlintルールの抑制は消し、MUST KILL として挙げる</h3>
+<p>Comment Sicko は、自分たちのコードの意外な挙動を説明するコメントを消し、その挙動を持つシンボル（関数や変数、型などの名前）を、報告の中で <code>MUST KILL</code> として挙げます。<code>MUST KILL</code> は、改名、切り出し、型付け、設計のやり直しなどで、文章で説明しなくても挙動が分かるように直すことを求める指摘です。</p>
+<p>実際に起きうる不具合を見つけるlintルールや、正しさや安全を守るlintルールを、抑制指示（<code>eslint-disable</code>、<code>@ts-ignore</code>、<code>@ts-expect-error</code> など）で止めている場合も、Comment Sicko はその抑制指示を消し、lintの警告の原因になっているシンボルを <code>MUST KILL</code> として挙げます。</p>
+<h3 id="_3">保存する関数が確認メールも送る例で、コメントを関数名に置き換える</h3>
+<p>自分たちのコードの意外な挙動を説明するコメントの例を見てみましょう。</p>
+<p>保存する関数が、実は確認メールも送るケースです。</p>
+<pre><code>type User = { name: string; email: string };
+
+// 前：自分たちの関数の意外な挙動を、コメントで説明している
+// 注意：この関数は、保存に加えて確認メールも送る
+function saveUser(user: User) { /* ... */ }
+</code></pre>
+<pre><code>type User = { name: string; email: string };
+
+// 後：2つの仕事を、名前で分かる2つの関数に切り出す
+function saveUser(user: User) { /* ... */ }
+function sendConfirmationMail(user: User) { /* ... */ }
+</code></pre>
+<p>前のコメントは、外部の依存に強いられた挙動ではなく、自分たちのコードの意外な挙動を説明しています。そのため、Comment Sicko は、このコメントを消し、<code>saveUser</code> を <code>MUST KILL</code> として挙げます。</p>
+<p>Comment Sicko 自身はコードを直しません。<code>/no-comments</code> が、後の例のように2つの関数に切り出せば、コメントがなくても、どちらの関数が何をするかが名前で分かります。</p>
+<p>このように、自分たちのコードの意外な挙動をコメントで説明しているなら、コメントを消し、挙動が名前で分かる形にコードを直す必要があります。</p>
+<h3 id="no-comments-comment-sicko"><code>/no-comments</code> は、Comment Sicko の報告をそのまま受け入れずに審査する</h3>
+<p><code>/no-comments</code> は、Comment Sicko の報告と、Comment Sicko が加えた変更を、そのまま受け入れません。次の3つの段階で審査します。</p>
+<ol>
+<li>誤りのある報告を却下し、1回だけやり直させる</li>
+<li>根拠の書かれていない注意書きへの判断は、<code>/how</code> か <code>/why</code> で確かめてから受け入れる</li>
+<li>直すのに新しいコードの形が必要なら、<code>/architect</code> で形を決めてから直す</li>
+</ol>
+<h4 id="1-1">1. 誤りのある報告を却下し、1回だけやり直させる</h4>
+<p>Comment Sicko の報告や変更には、次のような誤りが混じることがあります。</p>
+<ul>
+<li><strong>渡した範囲の外への指摘</strong>・・・ <code>/no-comments</code> が審査を頼んだファイルや差分の外にある、コードについての指摘</li>
+<li><strong>アプリのコードの書き換え</strong>・・・ Comment Sicko はコメントしか変えてはいけないのに、アプリのコードまで書き換えた変更</li>
+<li><strong>残してよいコメントの削除</strong>・・・ <a href="#comment-sicko-%E3%81%AF%E3%82%B3%E3%83%A1%E3%83%B3%E3%83%88%E3%82%92%E5%AF%A9%E6%9F%BB%E3%81%97%E3%81%A6%E6%B6%88%E3%81%97%E3%80%81%E3%82%A2%E3%83%97%E3%83%AA%E3%81%AE%E3%82%B3%E3%83%BC%E3%83%89%E3%81%AF%E6%9B%B8%E3%81%8D%E6%8F%9B%E3%81%88%E3%81%AA%E3%81%84">『Comment Sicko はコメントを審査して消し、アプリのコードは書き換えない』</a>で挙げた、残してよい5種類に当たるコメントを消した変更</li>
+<li><strong><code>MUST KILL</code> の理由の誤り</strong>・・・ <code>MUST KILL</code> として挙げたシンボルについて、直すべき理由として書いた内容が、実際のコードと合っていない指摘（例：確認メールを送っていない関数を、「確認メールも送る」として挙げる）</li>
+<li><strong>意図したコードへの誤った指摘</strong>・・・ 意図して書き、残すと決めたコードを、直すべきものとして挙げた指摘</li>
+</ul>
+<p>こうした誤りのある報告を見つけたら、<code>/no-comments</code> は、Comment Sicko の変更を元に戻し、何が誤っていたかを伝えて、Comment Sicko にもう一度だけ審査させます。2回目の報告にも誤りがあれば、<code>/no-comments</code> は、その問題を未解決として報告し、<code>/no-comments</code> の実行を失敗として終えます。</p>
+<h4 id="2-how-why">2. 根拠の書かれていない注意書きへの判断は、<code>/how</code> か <code>/why</code> で確かめてから受け入れる</h4>
+<p>コードには、「IMPORTANT」や「do not remove（消さないこと）」のように、理由が書かれていない短い注意書きのコメントがあります。</p>
+<p>Comment Sicko がこうしたコメントを「消す」または「残す」と判断していたら、<code>/no-comments</code> は、その判断を受け入れる前に、コメントが付いているシンボルに <code>/how</code> か <code>/why</code>（どちらも<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/788746">第22章</a>）を実行します。<code>/how</code> でコードの今の仕組みを、<code>/why</code> でコードがその形になった理由を調べ、注意書きの主張が今も正しいかを確かめるためです。</p>
+<p>たとえば、次のような注意書きです。</p>
+<pre><code>declare function sleep(ms: number): Promise&lt;void&gt;;
+declare function saveDraft(): Promise&lt;void&gt;;
+
+async function onClose(): Promise&lt;void&gt; {
+  // IMPORTANT: do not remove
+  await sleep(100);
+  await saveDraft();
+}
+</code></pre>
+<p><code>/why</code> で調べた結果、この待ち時間が、すでに直った古いライブラリの不具合を避けるためのものだと分かれば、注意書きの主張はもう正しくありません。この場合、<code>/no-comments</code> は、Comment Sicko の「消す」という判断を受け入れます。</p>
+<p>調べても判断がつかないときは、<code>/no-comments</code> は、コメントを消します。</p>
+<h4 id="3-architect">3. 直すのに新しいコードの形が必要なら、<code>/architect</code> で形を決めてから直す</h4>
+<p>受け入れた指摘のうち、使われていない処理を消す、不要な引数を外す、本来使うべきAPIを使うといった小さな直しは、<code>/no-comments</code> がそのまま直します。</p>
+<p>関数の分け方や型の作り方など、コードの新しい形を決めないと直せない指摘があれば、<code>/no-comments</code> は、受け入れた指摘をまとめて <code>/architect</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/2ad346">第24章</a>）に一度だけ渡し、形を決めてもらいます。<code>/architect</code> は形を決めるところで止まり、実際にコードを直すのは <code>/no-comments</code> です。</p>
+<h3 id="_4">受け入れた指摘は根本原因から直す</h3>
+<p><code>/no-comments</code> は、審査で受け入れた指摘を、根本原因から直します（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/1fb019">第19章</a>の原則『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-fix-root-causes/SKILL.md"><strong>Fix Root Causes</strong></a>』）。</p>
+<p>たとえば、Comment Sicko が、回避策（不具合の原因を直さずに、症状だけを避けるコード）の理由を説明するコメントを消したなら、<code>/no-comments</code> は、回避策のコードも消し、回避策が必要になった根本原因のほうを直します。</p>
+<p>ただし、<code>/no-comments</code> は、渡された範囲の外のコードを直しません。根本原因が範囲の外にあれば、範囲の中でできる最小の修正だけを行い、残りは未解決として報告します。</p>
+<h3 id="_5">制約を主張するコメントは、コードで守らせる方法を提案し、承認を待つ</h3>
+<p>制約を主張するコメントとは、「do not remove（消さないこと）」「do not change wording（文言を変えないこと）」「talk to X before changing（変える前にXに相談すること）」のように書かれたコメントです。</p>
+<p><code>/no-comments</code> は、こうしたコメントについて、<strong>その制約を、コメントではなくコードで守らせる方法を1つ提案し、利用者の承認を待ちます</strong>。方法の候補は次の4つで、<code>/no-comments</code> は、渡された範囲の中で最も手間の少ないものを選びます。</p>
+<ul>
+<li><strong>型</strong>・・・ 制約に反するコードを、コンパイルエラーにする</li>
+<li><strong>実行時チェック</strong>・・・ 制約に反したら、実行時にエラーを出す</li>
+<li><strong>テスト</strong>・・・ 制約に反したら、テストが失敗する</li>
+<li><strong>lint</strong>・・・ 制約に反するコードを、lint が警告する</li>
+</ul>
+<p>たとえば、「文言を変えないこと」というコメントなら、<code>/no-comments</code> は、その文言が変わると失敗するテストを書く案を出します。そのテストがあれば、コメントがなくても制約が守られます。</p>
+<pre><code>// 前：制約をコメントだけで主張している
+// 文言を変えないこと
+function stockLabel(count: number): string {
+  return count === 0 ? &quot;在庫切れです&quot; : `残り${count}点`;
+}
+</code></pre>
+<pre><code>// テストを1件登録する
+declare function test(name: string, fn: () =&gt; void): void;
+// 値を確かめる
+declare function expect(value: unknown): { toBe(expected: unknown): void };
+
+// 後：制約をテストで表し、コメントを消す
+function stockLabel(count: number): string {
+  return count === 0 ? &quot;在庫切れです&quot; : `残り${count}点`;
+}
+
+test(&quot;在庫が0のときの文言は「在庫切れです」から変わらない&quot;, () =&gt; {
+  expect(stockLabel(0)).toBe(&quot;在庫切れです&quot;);
+});
+</code></pre>
+<p>このように、コメントが制約を主張しているなら、その制約をテストなどのコードで表す必要があります。</p>
+<p>利用者が承認すれば、<code>/no-comments</code> は制約をコードで表してからコメントを消します。承認しなければ、コメントは消したうえで、その制約を未解決として報告します。</p>
+<h3 id="comment-sicko-no-comments">コメントを消すのは Comment Sicko で、何を直すかを決めるのは <code>/no-comments</code> である</h3>
+<p>ここまでの流れを図にすると、次のようになります。</p>
+<p>図のとおり、コメントを消すのは Comment Sicko ですが、どの指摘を受け入れてコードを直すか、制約をコードで表すか未解決として報告するかを決めるのは <code>/no-comments</code> です。</p>
+<h2 id="_6">依頼の書き方：差分を対象に指定する</h2>
+<p>同梱ガイドの <code>05-build-and-clean.md</code> は、レビューの前に、差分のコメントを、書いていないエージェントに渡す次の依頼を挙げています。</p>
+<pre><code>/no-comments the diff
+// 差分に対して
+</code></pre>
+<h2 id="_7">まとめ</h2>
+<ul>
+<li><strong>確かめる役</strong>・・・ コメントを書いていない Comment Sicko が、差分のコメントを審査します。</li>
+<li><strong>使いどき</strong>・・・ レビューの前に、差分を対象に呼びます。</li>
+<li><strong>直し方</strong>・・・ 意外な挙動を説明するコメントを消し、コメントがなくても挙動が分かるようにコードを直します。</li>
+</ul>
+<p>次の<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/44857b">第33章</a>では、文章の品質を保つ3つのSkillを扱います。見ていくのは、<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/unslop/SKILL.md"><code>/unslop</code></a>、<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/bro/SKILL.md"><code>/bro</code></a>、<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/technical-writing/SKILL.md"><code>/technical-writing</code></a>です。</p>
+  </div>
+  <footer class="article-footer">
+    <span>取得: 2026-10-06T23:37:34+09:00</span>
+    <a href="#article-top">↑ 先頭へ戻る</a>
+  </footer>
+</main>
+<script>
+(() => {
+  const progress = document.querySelector(".reading-progress > span");
+  const updateProgress = () => {
+    const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+    const ratio = scrollable > 0 ? window.scrollY / scrollable : 0;
+    if (progress) progress.style.width = `${Math.min(1, ratio) * 100}%`;
+  };
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  document.querySelectorAll("pre").forEach((block) => {
+    const button = document.createElement("button");
+    button.className = "copy-button";
+    button.type = "button";
+    button.textContent = "コピー";
+    button.addEventListener("click", async () => {
+      const text = block.querySelector("code")?.innerText || block.innerText;
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const textarea = document.createElement("textarea");
+          textarea.value = text;
+          textarea.style.position = "fixed";
+          textarea.style.opacity = "0";
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand("copy");
+          textarea.remove();
+        }
+        button.textContent = "コピー済み";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      } catch (error) {
+        button.textContent = "失敗";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      }
+    });
+    block.appendChild(button);
+  });
+
+  const links = new Map(
+    [...document.querySelectorAll(".toc a")].map((link) => [link.hash, link])
+  );
+  const headings = [...document.querySelectorAll(
+    ".article-body h2[id], .article-body h3[id], .article-body h4[id]"
+  )];
+  if ("IntersectionObserver" in window && headings.length) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        links.forEach((link) => link.classList.remove("is-active"));
+        links.get(`#${entry.target.id}`)?.classList.add("is-active");
+      });
+    }, { rootMargin: "-12% 0px -72% 0px" });
+    headings.forEach((heading) => observer.observe(heading));
+  }
+})();
+</script>
+</body>
+</html>

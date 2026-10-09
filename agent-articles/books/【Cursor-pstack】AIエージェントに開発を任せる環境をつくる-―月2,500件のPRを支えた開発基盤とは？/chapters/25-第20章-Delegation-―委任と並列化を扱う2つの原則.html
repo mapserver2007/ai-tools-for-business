@@ -1,0 +1,968 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="title" content="第20章 Delegation ―委任と並列化を扱う2つの原則">
+<meta name="book_title" content="【Cursor pstack】AIエージェントに開発を任せる環境をつくる ―月2,500件のPRを支えた開発基盤とは？">
+<meta name="source_url" content="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/c155cc">
+<meta name="author" content="kaito">
+<meta name="published_at" content="2026-10-02">
+<meta name="retrieved_at" content="2026-10-06T23:37:31+09:00">
+<meta name="site" content="zenn.dev">
+<meta name="content_type" content="article">
+<meta name="chapter_position" content="25">
+<title>第20章 Delegation ―委任と並列化を扱う2つの原則</title>
+<style>
+:root {
+  color-scheme: light;
+  --ink: #172033;
+  --muted: #64748b;
+  --line: #dbe4ef;
+  --accent: #2563eb;
+  --accent-dark: #1d4ed8;
+  --accent-soft: #eff6ff;
+  font-family: -apple-system, BlinkMacSystemFont, "Avenir Next",
+    "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 8% 0%, #dbeafe 0, transparent 32rem),
+    radial-gradient(circle at 100% 12%, #e0e7ff 0, transparent 28rem),
+    #f4f7fb;
+  color: var(--ink);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(120deg, transparent 0 48%, rgba(255, 255, 255, 0.4));
+}
+.article {
+  position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
+  max-width: 920px;
+  margin: clamp(1rem, 5vw, 4rem) auto;
+  padding: clamp(2rem, 6vw, 5rem) clamp(1.25rem, 7vw, 5.5rem);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  border-radius: 24px;
+  min-height: 100vh;
+  box-shadow:
+    0 24px 70px rgba(30, 64, 175, 0.1),
+    0 4px 16px rgba(15, 23, 42, 0.04);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 5px;
+  content: "";
+  background: linear-gradient(90deg, #2563eb, #7c3aed, #db2777);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin: 0 0 2.5rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.72rem;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+a {
+  color: var(--accent-dark);
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: #7c3aed;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--ink);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 18ch;
+  margin: 0 0 2.5rem;
+  font-size: clamp(2.15rem, 5vw, 3.65rem);
+  letter-spacing: -0.045em;
+}
+h2 {
+  position: relative;
+  margin: 3.8rem 0 1.25rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--line);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 4.2rem;
+  height: 3px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), #7c3aed);
+  border-radius: 999px;
+}
+h3 {
+  margin: 2.6rem 0 0.8rem;
+  color: var(--accent-dark);
+  font-size: 1.3rem;
+}
+h4, h5, h6 {
+  margin-top: 2rem;
+}
+p {
+  margin: 1.15rem 0;
+}
+ul, ol {
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.35rem 0;
+}
+li::marker {
+  color: var(--accent);
+  font-weight: 700;
+}
+strong {
+  color: #111827;
+}
+blockquote {
+  margin: 1.6rem 0;
+  padding: 0.8rem 1.25rem;
+  color: #475569;
+  background: linear-gradient(90deg, var(--accent-soft), #fff);
+  border-left: 4px solid var(--accent);
+  border-radius: 0 12px 12px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 3rem 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+img {
+  display: block;
+  max-width: 100%;
+  margin: 1.75rem auto;
+  height: auto;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+}
+pre {
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  padding: 1.15rem 1.25rem;
+  color: #e2e8f0;
+  background: #111827;
+  border: 1px solid #253047;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+}
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+:not(pre) > code {
+  padding: 0.15rem 0.4rem;
+  color: #9f1239;
+  background: #fff1f2;
+  border-radius: 5px;
+}
+table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  border-collapse: collapse;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
+  text-align: left;
+}
+th {
+  color: #1e3a8a;
+  background: #eff6ff;
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: #f8fafc;
+}
+@media (max-width: 600px) {
+  .article {
+    margin: 0;
+    padding: 2rem 1rem 4rem;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(2rem, 10vw, 2.75rem);
+  }
+  .metadata {
+    margin-bottom: 2rem;
+  }
+}
+@media print {
+  body {
+    background: #fff;
+  }
+  .article {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  a {
+    color: inherit;
+  }
+}
+</style>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0f1419;
+  --surface: #1a2332;
+  --surface-raised: #202c3f;
+  --surface-soft: rgba(26, 35, 50, 0.72);
+  --border: #2d3a4f;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #58a6ff;
+  --accent-strong: #79c0ff;
+  --green: #3fb950;
+  --purple: #bc8cff;
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+    "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  line-height: 1.75;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+  background: var(--bg);
+}
+body {
+  min-width: 320px;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 2rem 1.5rem 5rem;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(31, 111, 235, 0.18), transparent 32rem),
+    radial-gradient(circle at 100% 12%, rgba(137, 87, 229, 0.14), transparent 28rem),
+    var(--bg);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black, transparent 75%);
+}
+.reading-progress {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 20;
+  height: 3px;
+  background: rgba(45, 58, 79, 0.7);
+}
+.reading-progress > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  box-shadow: 0 0 14px rgba(88, 166, 255, 0.8);
+  transition: width 80ms linear;
+}
+.article {
+  position: relative;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  background: rgba(15, 20, 25, 0.76);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(88, 166, 255, 0.035) inset;
+  backdrop-filter: blur(16px);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  border-radius: 16px 16px 0 0;
+}
+.article-header {
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.eyebrow-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--green);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(63, 185, 80, 0.75);
+}
+.eyebrow-separator {
+  color: var(--border);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  background: rgba(32, 44, 63, 0.68);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+.source-link {
+  color: var(--text);
+  text-decoration: none;
+}
+.source-link:hover {
+  border-color: var(--accent);
+  background: rgba(88, 166, 255, 0.12);
+}
+a {
+  color: var(--accent);
+  overflow-wrap: anywhere;
+  text-decoration: none;
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 24ch;
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  background: linear-gradient(120deg, #fff 12%, #b9d8ff 58%, #bc8cff);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+h2 {
+  position: relative;
+  margin: 3.2rem 0 1.1rem;
+  padding: 0.75rem 0 0.65rem;
+  border-bottom: 1px solid var(--border);
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 3.8rem;
+  height: 2px;
+  content: "";
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(88, 166, 255, 0.7);
+}
+h3 {
+  margin: 2.25rem 0 0.7rem;
+  color: var(--accent-strong);
+  font-size: 1.2rem;
+}
+h4, h5, h6 {
+  margin-top: 1.75rem;
+}
+p {
+  margin: 0.9rem 0;
+}
+ul, ol {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.3rem 0;
+}
+li::marker {
+  color: var(--accent);
+}
+strong {
+  color: #fff;
+}
+blockquote {
+  margin: 1.4rem 0;
+  padding: 0.85rem 1.15rem;
+  color: #c9d1d9;
+  background: linear-gradient(100deg, rgba(88, 166, 255, 0.1), rgba(26, 35, 50, 0.55));
+  border: 1px solid rgba(88, 166, 255, 0.18);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 2.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+}
+pre {
+  position: relative;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  padding: 1rem 1.15rem;
+  color: #dbeafe;
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+pre code {
+  color: inherit;
+  background: transparent;
+}
+code {
+  font-family: "SF Mono", "Fira Code", ui-monospace, monospace;
+  font-size: 0.86em;
+}
+:not(pre) > code {
+  padding: 0.12em 0.38em;
+  color: #ffabbc;
+  background: rgba(248, 81, 73, 0.11);
+  border-radius: 4px;
+}
+.copy-button {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  padding: 0.25rem 0.55rem;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.72rem;
+  background: rgba(32, 44, 63, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.copy-button:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  border-spacing: 0;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.6rem 0.75rem;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+th {
+  color: var(--accent);
+  background: var(--surface);
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: rgba(26, 35, 50, 0.42);
+}
+tr:last-child td {
+  border-bottom: 0;
+}
+th:last-child, td:last-child {
+  border-right: 0;
+}
+.toc {
+  margin: 1.75rem 0 2.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.toc-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--border);
+}
+.toc-title {
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.toc-count {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.toc ol {
+  margin: 0.7rem 0 0;
+  padding-left: 1.25rem;
+}
+.toc ol ol {
+  margin: 0.2rem 0;
+}
+.toc li {
+  margin: 0.18rem 0;
+  font-size: 0.86rem;
+}
+.toc li::marker {
+  color: var(--muted);
+}
+.toc a {
+  display: inline-block;
+  max-width: 100%;
+  color: var(--muted);
+  transition: color 160ms ease, transform 160ms ease;
+}
+.toc a:hover, .toc a.is-active {
+  color: var(--accent-strong);
+  text-decoration: none;
+  transform: translateX(2px);
+}
+.article-body {
+  max-width: 78ch;
+  margin: 0 auto;
+}
+.article-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 1rem;
+  color: var(--muted);
+  font-size: 0.74rem;
+  border-top: 1px solid var(--border);
+}
+.article-footer a {
+  color: var(--muted);
+}
+@media (max-width: 720px) {
+  body {
+    padding: 0 0 3rem;
+  }
+  .article {
+    min-height: 100vh;
+    padding: 1.5rem 1rem 3rem;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+  .article::before {
+    border-radius: 0;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(1.9rem, 9vw, 2.6rem);
+  }
+  .article-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+@media print {
+  :root {
+    color-scheme: light;
+  }
+  body {
+    padding: 0;
+    color: #111;
+    background: #fff;
+  }
+  .reading-progress, .toc, .copy-button {
+    display: none;
+  }
+  .article {
+    max-width: none;
+    padding: 0;
+    background: #fff;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  h1, h2, h3, h4, h5, h6, strong {
+    color: #111;
+    -webkit-text-fill-color: initial;
+  }
+  a {
+    color: inherit;
+    text-decoration: underline;
+  }
+  pre {
+    color: #111;
+    background: #f4f4f4;
+    box-shadow: none;
+  }
+}
+</style>
+</head>
+<body>
+<div class="reading-progress" aria-hidden="true"><span></span></div>
+<main id="article-top" class="article">
+  <header class="article-header">
+    <div class="eyebrow">
+      <span class="eyebrow-dot"></span>
+      <span>ARTICLE</span>
+      <span class="eyebrow-separator">/</span>
+      <span>zenn.dev</span>
+    </div>
+    <div class="metadata" aria-label="記事メタデータ"><span class="metadata-item"><span class="metadata-label">著者</span>kaito</span><span class="metadata-item"><span class="metadata-label">公開日</span>2026-10-02</span><a class="metadata-item source-link" href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/c155cc"><span class="metadata-label">原文</span>読む</a><span class="metadata-item"><span class="metadata-label">サイト</span>zenn.dev</span><span class="metadata-item"><span class="metadata-label">形式</span>ARTICLE</span></div>
+    <h1 id="20-delegation-2">第20章 Delegation ―委任と並列化を扱う2つの原則</h1>
+  </header>
+<nav class="toc" aria-label="目次">
+  <div class="toc-heading">
+    <span class="toc-title">目次</span>
+    <span class="toc-count">16 セクション</span>
+  </div>
+  <ol><li><a href="#_1">この章の構成</a></li><li><a href="#2">2原則の一覧</a></li><li><a href="#guard-the-context-window">『Guard the Context Window』は、大きな出力や文書をサブエージェントに読ませ、主スレッドに要約を残す</a><ol><li><a href="#_2">ルール：コストに見合うものだけを主スレッドに置く</a><ol><li><a href="#1">1. 大きな出力や文書をサブエージェントに読ませる</a></li><li><a href="#2-skillmd">2. 毎回使うテンプレートや参考資料は SKILL.md 本体に置く</a></li><li><a href="#3">3. 段階ごとの作業の範囲に上限を設ける</a></li><li><a href="#_3">基準は、コストに見合うかどうか</a></li></ol></li><li><a href="#_4">発火条件</a></li><li><a href="#playbook4">Playbookの例：コードベースを調べるサブエージェントに、返す中身を4つに限定している</a></li></ol></li><li><a href="#never-block-on-the-human">『Never Block on the Human』は、元に戻せる作業を人間の確認を待たずに進める</a><ol><li><a href="#_5">ルール：元に戻せない操作だけ人間に確認する</a></li><li><a href="#_6">発火条件</a></li><li><a href="#poteto-mode-2">/poteto-mode の2か所が、止まる操作と進める操作の線引きを具体的にしている</a></li></ol></li><li><a href="#_7">エージェントのコンテキストと人間の注意を守ると、人間は隣で見張らずに済む</a></li><li><a href="#_8">まとめ</a></li></ol>
+</nav>
+  <div class="article-body">
+
+<p>この章では、次の2つの原則を扱います。</p>
+<ol>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-guard-the-context-window/SKILL.md">Guard the Context Window</a></li>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-never-block-on-the-human/SKILL.md">Never Block on the Human</a></li>
+</ol>
+<p>2件はDelegation（委任）のグループの原則で、どちらも、エージェントがサブエージェントに仕事を任せたり、人間の返事を待たずに作業を進めたりするときの判断を決めます。</p>
+<p>同梱ガイドのページ <a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/08-principles.md"><code>docs/guide/08-principles.md</code></a> は、2件を、<strong>並列に進める仕事を正常に保つ原則</strong>（原文は「keep parallel work sane」）とまとめています。<br />
+どちらも、仕事を任せる側のエージェントが、サブエージェントの大量の出力でコンテキストを埋めたり、人間の返事を待って止まったりせずに、並列の仕事を回し続けられるようにする原則です。</p>
+<p>2件を使うと、エージェントは、次のように動作します。</p>
+<ul>
+<li>何千行もあるテストのログや、何百ページもあるAPIの仕様書はサブエージェントに読ませ、主スレッド（サブエージェントを呼び出す元の会話）では、「どのテストが、なぜ失敗したか」のような数行の要約だけを受け取る</li>
+<li>関数の名前の変更のような元に戻せる作業は、「変えてもいいですか」などと人間に聞かずに実行し、変えた結果と理由を人間に見せる</li>
+<li>共有ブランチへのforce-push（リモートのブランチの履歴を上書きするpush）のような元に戻せない操作だけは、実行する前に人間に確認する</li>
+</ul>
+<p>また、<strong>2つの原則は、守るものが違います</strong>。『Guard the Context Window』はエージェントのコンテキストを、生のデータ（何千行もあるテストのログ、スクリーンショット、大きな文書のように、要約せずにそのまま読み込んだ出力）で埋まらないように守ります。</p>
+<p>こうしたデータは、ほとんどの部分が判断に使われないのに、読み込んだ分だけコンテキストを使うため、この原則でエージェントのコンテキストを守るようにしています。</p>
+<p>『Never Block on the Human』は人間の注意を、エージェントからの承認を求める問い合わせに、その都度割かれないように守ります。</p>
+<p>ちなみに、2つの原則は、Playbookの手順の中でも使われています。</p>
+<p>たとえば、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/7d7609">第15章</a>の『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/session-pickup.md"><strong>Session pickup</strong></a>』Playbookは、長いトランスクリプト（エージェントとの会話の記録）をサブエージェントに読ませます（『Guard the Context Window』）。<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/8a8dd5">第16章</a>の『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/multi-phase-plan.md"><strong>Multi-phase or multi-PR plan</strong></a>』Playbookは、プロトタイプを動かせば答えが出る問いを、運用者に尋ねません（『Never Block on the Human』）。</p>
+<p>この章では、2つの原則を<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a8e80b">第17章</a>と同じく、ルールと発火条件の観点で1件ずつ解説し、最後に、<a href="https://x.com/poteto/status/2102050467505430555">講演</a>の主題である「人間が隣で見張らずに済む状態」とのつながりを見ます。</p>
+<p>!</p>
+<p>本章の2件の原則には、依頼例を載せていません。</p>
+<p>本書では、依頼例を、pstackの同梱ガイド、<a href="https://github.com/cursor/plugins/blob/main/pstack/README.md">README</a>、poteto氏のポストに記載があるものだけにとどめるものとします。原文に依頼例がない原則について本書で依頼例を作ると、pstackが想定していない使い方を示してしまうおそれがあるためです。</p>
+<h2 id="_1">この章の構成</h2>
+<p>この章の構成は次のとおりです。</p>
+<ul>
+<li>2原則の一覧</li>
+<li>『Guard the Context Window』は、大きな出力や文書をサブエージェントに読ませ、主スレッドに要約を残す</li>
+<li>『Never Block on the Human』は、元に戻せる作業を人間の確認を待たずに進める</li>
+<li>エージェントのコンテキストと人間の注意を守ると、人間は隣で見張らずに済む</li>
+<li>まとめ</li>
+</ul>
+<h2 id="2">2原則の一覧</h2>
+<table>
+<thead>
+<tr>
+<th>Principle</th>
+<th>一文の結論</th>
+<th>守る資源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>『<strong>Guard the Context Window</strong>』</td>
+<td>大きな出力や文書（例：何千行ものログ、何百ページもある仕様書）はサブエージェントに読ませ、主スレッドには要約だけを置く</td>
+<td>エージェントのコンテキスト</td>
+</tr>
+<tr>
+<td>『<strong>Never Block on the Human</strong>』</td>
+<td>元に戻せる作業（例：コードを書く、関数の名前を変える）は確認を待たずに進め、結果と理由を人間に見せ、元に戻せない操作（例：force-push、本番データの削除）だけは、実行する前に確認する</td>
+<td>人間の注意</td>
+</tr>
+</tbody>
+</table>
+<h2 id="guard-the-context-window">『Guard the Context Window』は、大きな出力や文書をサブエージェントに読ませ、主スレッドに要約を残す</h2>
+<p>原則『<strong>Guard the Context Window</strong>』は、<strong>主スレッドに入れるものを、一つずつ「コストに見合うか」で選ぶ</strong>よう求めます。ここでのコストは、主スレッドに読み込むトークン（AIモデルが文章を数える単位）の量です。</p>
+<p>!</p>
+<p><strong>コストに見合う</strong>・・・ 主スレッドに読み込むトークンの量に対して、その中身がエージェントの次の判断に役立つこと</p>
+<p>たとえば、「どのテストが、なぜ失敗したか」を数行にまとめた要約は、エージェントが次に何を直すかを決めるのにそのまま使えるので、コストに見合います。</p>
+<p>一方、成功したテストの行も含めた何千行ものログをそのまま主スレッドに読み込むと、エージェントが判断に使うのはそのごく一部なので、コストに見合いません。</p>
+<p>原則がこれを求めるのは、<strong>コンテキストウィンドウ（モデルが一度に読み込んで扱えるテキストの量の上限）には限りがあり、同じセッションの中では、一度使った分を空けることができない</strong>からです。</p>
+<p>コンテキストウィンドウが埋まると、エージェントの推論の質が落ちます。さらに、会話のコンパクション（入りきらない分の会話を要約して詰める処理）で、前に読んだ内容の一部が要約から抜け落ち、最後には作業そのものが止まります。</p>
+<h3 id="_2">ルール：コストに見合うものだけを主スレッドに置く</h3>
+<p>原則が挙げるやり方は、次の3つです。</p>
+<h4 id="1">1. 大きな出力や文書をサブエージェントに読ませる</h4>
+<p>エージェントは、冗長な出力（例：何千行もあるテストのログ）、スクリーンショット、大きな文書をサブエージェントに読ませ、主スレッドでは、生のデータではなく要約だけを受け取ります。生のデータを主スレッドで読むと、その分だけ主スレッドのコンテキストが埋まるからです。</p>
+<p>たとえば、大きな文書を読むときの仕事の分け方を見てみましょう。何百ページもあるAPIの仕様書から、注文APIの呼び方だけを知りたいケースでは、エージェントは次のように仕事を分けます。</p>
+<p>何百ページの仕様書を読んで埋まるのは、サブエージェントのコンテキストだけです。主スレッドのコンテキストは、依頼の文と数行の要約の分しか減りません。</p>
+<p>このように、大きな文書を主スレッドで読むとその分だけ主スレッドのコンテキストが埋まるので、サブエージェントに読ませる必要があります。</p>
+<h4 id="2-skillmd">2. 毎回使うテンプレートや参考資料は <code>SKILL.md</code> 本体に置く</h4>
+<p>エージェントは、Skillを使うたびに読むテンプレートや参考資料を、別ファイルに分けず、<code>SKILL.md</code> 本体に書きます。別ファイルに分けると、Skillを使うたびに、そのファイルを読む分のコストが増えるからです。</p>
+<p>たとえば、レビューのSkillが、毎回同じ形で報告を書くケースだと、ファイルの置き方は次のようになります。</p>
+<pre><code>前：毎回使う報告の形を、別ファイルに分けている
+skills/review/SKILL.md             ← 手順と「報告は templates/report.md の形で書く」という一文
+skills/review/templates/report.md  ← 報告の形
+
+後：毎回使う報告の形を、SKILL.md 本体に書く
+skills/review/SKILL.md             ← 手順と、報告の形
+</code></pre>
+<p>前の形では、エージェントはSkillを使うたびに、<code>SKILL.md</code> を読んだ後、<code>templates/report.md</code> も読みます。後の形なら、<code>SKILL.md</code> を1回読むだけで済みます。</p>
+<p>このように、置き場所によって毎回の読み込みの回数が変わるなら、毎回使うものは <code>SKILL.md</code> 本体に置く必要があります。</p>
+<h4 id="3">3. 段階ごとの作業の範囲に上限を設ける</h4>
+<p>エージェントは、大きな作業を段階（原文では phase）に分け、1つの段階で扱うファイルの数と、使ってよいターン数（エージェントがモデルに依頼して応答を受け取る往復の回数）の上限を決めます。</p>
+<p>また、エージェントは、サブエージェントの呼び出しのような、作業を進める仕組みそのものが使うコンテキストも、先に見込んでおきます。たとえば、サブエージェントに渡す依頼の文と、サブエージェントから戻る要約も、主スレッドのコンテキストを使います。</p>
+<p>上限を決めず、仕組みが使う分も見込まないと、1つの段階の途中でコンテキストが埋まります。すると、その段階を終える前に、エージェントの推論の質が落ちたり、作業が止まったりします。</p>
+<h4 id="_3">基準は、コストに見合うかどうか</h4>
+<p><strong>原則の基準は、読む量を減らすことではなく、コストに見合うこと</strong>です。2つ目のやり方が、このことを示しています。</p>
+<p>テンプレートを <code>SKILL.md</code> 本体に置くと、<code>SKILL.md</code> は長くなり、1回に読む量は増えます。</p>
+<p>それでも原則が本体に置くほうを選ぶのは、毎回使うテンプレートは、別ファイルに分けても結局、毎回読むことになるからです。読み込む中身は変わらず、読み込みの回数が1回増えるだけなので、本体に置いたほうがコストは小さくなります。</p>
+<h3 id="_4">発火条件</h3>
+<p>大きな出力、長いファイル、同じファイルの読み直しなどで、コンテキストが埋まってきたときです。仕事を複数のサブエージェントに分けて並列に進める計画（原文では fan-out）を立てるときにも当てはまります。</p>
+<h3 id="playbook4">Playbookの例：コードベースを調べるサブエージェントに、返す中身を4つに限定している</h3>
+<p>『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/multi-phase-plan.md"><strong>Multi-phase or multi-PR plan</strong></a>』Playbook（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/8a8dd5">第16章</a>）は、計画書を書く前に、コードベースを調べる仕事をサブエージェントに任せます。そのとき、この原則を引用して、<strong>サブエージェントが返す中身を、次の4つに限定しています</strong>。</p>
+<ul>
+<li>関係するファイルの場所</li>
+<li>コードベースの慣習</li>
+<li>テストのコマンド</li>
+<li>処理の入口（原文では entry points。調べる機能の処理が始まる関数やファイル。例：APIのリクエストを最初に受け取るハンドラ、CLIのコマンドを受け取る関数）</li>
+</ul>
+<p>また、Playbookは、サブエージェントが読んだコードをそのまま貼り付けて返すこと（原文では inlined dumps）を禁じています。</p>
+<p>返す中身をこの4つに限定すれば、主スレッドに入るのは、計画書を書くのに使う情報だけになります。</p>
+<h2 id="never-block-on-the-human">『Never Block on the Human』は、元に戻せる作業を人間の確認を待たずに進める</h2>
+<p>原則『<strong>Never Block on the Human</strong>』は、元に戻せる作業なら、エージェントが<strong>許可を求めずに実行し</strong>、その結果と理由を人間に見せるよう求めます。人間は、その結果を見て、あとから作業の方向を直します（原文では course-correct）。</p>
+<p>原則の冒頭は、次の2文です。</p>
+<blockquote>
+<p>The human supervises asynchronously. Agents must stay unblocked.</p>
+<p>人間は非同期に監督する。エージェントは止まってはいけない。</p>
+</blockquote>
+<p>つまり、人間はエージェントの作業にその場で付き添わず、あとから結果を確かめるので、エージェントは人間の返事を待って止まってはいけない、ということです。</p>
+<p>原則がこれを求めるのは、<strong>エージェントが人間の許可を待って止まるたびに、作業の流れ（原文では pipeline）が止まり、人間の返事が作業全体の進みを決めてしまう</strong>からです。</p>
+<p>コードの変更は元に戻せてレビューもできるので、<strong>間違った判断のコストは、たいてい止まるコストより小さく済みます</strong>。間違った判断をしても、人間がレビューで気づいて変更を戻せば済みますが、止まれば、人間が返事をするまで後の作業がすべて進まなくなります。</p>
+<h3 id="_5">ルール：元に戻せない操作だけ人間に確認する</h3>
+<p>原則は、「Xをしてもいいですか」と聞く代わりに、Xを実行してから結果と理由を見せるよう求めます（原文では Proceed, then present）。</p>
+<p>たとえば、エージェントが関数の名前を変えるかどうか迷ったケースで、聞いて待つ場合と、進めてから見せる場合を比べると、次のようになります。</p>
+<p>聞いて待つと、人間が返事をするまで作業が止まります。進めてから見せれば、名前が合わなくても、人間はレビューで気づいて「元に戻して」と返すだけで済みます。</p>
+<p>このように、元に戻せる作業で聞いて待つと作業が止まるので、進めてから見せる必要があります。</p>
+<p>また、<strong>原則は、仕組みが自分で直っていくようにすること</strong>（原文では self-healing）も求めます。エージェントは、作業の途中で問題に気づいたら、人間の指示を待たずにその問題を記録し、次の回の作業で直します。気づくたびに人間の指示を待てば、そのたびに作業が止まるからです。</p>
+<p>たとえば、エージェントが作業の途中で、別のテストが時々失敗することに気づいたケースでは、エージェントはそのことを記録し、次の回の作業で直します。気づいた問題を人間に伝えて、指示が来るまで止まるのは、self-healingではありません。</p>
+<p>確認を待たずに進めてよい根拠は、変更を元に戻せることでした。<br />
+元に戻せない操作は、間違えても取り返せないので、エージェントは実行する前に人間に確認します。</p>
+<p>扱いは、操作の種類で次の3つに分かれます。</p>
+<table>
+<thead>
+<tr>
+<th>種類</th>
+<th>扱い</th>
+<th>例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>元に戻せない操作</td>
+<td>確認が必要</td>
+<td>force-push、本番データの削除、外部へのメッセージ送信</td>
+</tr>
+<tr>
+<td>元に戻せる操作</td>
+<td>止まらずに進める</td>
+<td>コードを書く、メモを編集する、タスクを分ける</td>
+</tr>
+<tr>
+<td>プロダクトの方針</td>
+<td>何を作るかの方針は人間が決める。方針が決まった後の実装では止まらずに進める</td>
+<td>どの機能を作るかの決定</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_6">発火条件</h3>
+<p>元に戻せる作業について、「Xをしてもいいですか」と聞きたくなったときです。</p>
+<h3 id="poteto-mode-2"><code>/poteto-mode</code> の2か所が、止まる操作と進める操作の線引きを具体的にしている</h3>
+<p>作業を始めるときに使うSkill <code>/poteto-mode</code> の2つの節が、エージェントが止まる操作と進める操作を具体的に定めています。</p>
+<ul>
+<li>節『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/SKILL.md#autonomy">Autonomy</a>』は、共有ブランチへのforce-push、デプロイ、データの削除、顧客へのメッセージといった元に戻せない書き込みの前では、必ず止まるよう定めています。一方、元に戻せる作業と、チームのチャットへの投稿やチケットの更新のような外部への操作は、聞かずに進めるよう定めています（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/4f8911">第38章</a>）。</li>
+<li>節『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/SKILL.md#non-negotiables">Non-negotiables</a>』（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/096f3d">第8章</a>）は、<strong>答えが実行すれば観察できる事実（例：挙動、かかる時間、画面の配置、出力）なら、人間に聞かずプロトタイプで試して決める</strong>よう求めています。人間に聞くのは、どんな実験でも決められないプロダクトや好みの判断だけです（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/7549a7">第41章</a>）。</li>
+</ul>
+<p>原則『<strong>Never Block on the Human</strong>』は、外部へのメッセージの送信を、相手を区別せずに元に戻せない操作とし、実行する前に人間への確認が必要としています（<a href="#%E3%83%AB%E3%83%BC%E3%83%AB%EF%BC%9A%E5%85%83%E3%81%AB%E6%88%BB%E3%81%9B%E3%81%AA%E3%81%84%E6%93%8D%E4%BD%9C%E3%81%A0%E3%81%91%E4%BA%BA%E9%96%93%E3%81%AB%E7%A2%BA%E8%AA%8D%E3%81%99%E3%82%8B">『ルール：元に戻せない操作だけ人間に確認する』</a>の表の1行目）。一方、節『Autonomy』は、外部への操作を相手で分け、顧客へのメッセージは止まる側に、チームのチャットへの投稿は進める側に入れています。</p>
+<p>つまり、節『Autonomy』のほうが、線引きが細かくなっている、という違いがあります。</p>
+<h2 id="_7">エージェントのコンテキストと人間の注意を守ると、人間は隣で見張らずに済む</h2>
+<p>講演で挙げられたポイントの1つは、環境が十分に整っていれば、人間が常に隣で見張る必要はない、ということでした。</p>
+<p>本書では、エージェントがDelegationの2原則に沿って動けば、<strong>人間は隣で見張らなくても済む</strong>と考えます。理由は次の2つです。</p>
+<ul>
+<li>エージェントのコンテキストが生のデータで埋まらなければ、長い作業の途中でも推論の質が落ちにくく、作業も止まりにくくなります。そのため、人間が途中で様子を見に行く必要が減ります。</li>
+<li>エージェントが元に戻せる作業を聞かずに進めれば、人間はエージェントからの承認問い合わせ（「してもいいですか？」）に、その場で答えなくて済みます。人間は、都合のよいときに、エージェントが見せた結果と理由を読んで判断するだけで済みます。</li>
+</ul>
+<h2 id="_8">まとめ</h2>
+<ul>
+<li>『<strong>Guard the Context Window</strong>』・・・ エージェントのコンテキストを守ります。大きな中身（例：何千行ものログ）はサブエージェントに読ませ、主スレッドには要約だけを残します。基準は「読む量を減らす」ではなく「コストに見合う」で、毎回使うテンプレートは、<code>SKILL.md</code> が長くなっても本体に置きます。</li>
+<li>『<strong>Never Block on the Human</strong>』・・・ 人間の注意を守ります。元に戻せる作業（例：コードを書く）は進めてから結果と理由を見せ、元に戻せない操作（例：force-push、本番データの削除）とプロダクトの方針（どの機能を作るか）だけを人間に確認します。</li>
+<li><strong>コンテキストと注意を守ると</strong>・・・ 人間は隣で見張らずに、エージェントが見せた結果と理由を読んで判断するだけで済みます。</li>
+</ul>
+<p>次の<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/dd2d9f">第21章</a>では、Metaの原則『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-encode-lessons-in-structure/SKILL.md"><strong>Encode Lessons in Structure</strong></a>』を扱います。</p>
+  </div>
+  <footer class="article-footer">
+    <span>取得: 2026-10-06T23:37:31+09:00</span>
+    <a href="#article-top">↑ 先頭へ戻る</a>
+  </footer>
+</main>
+<script>
+(() => {
+  const progress = document.querySelector(".reading-progress > span");
+  const updateProgress = () => {
+    const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+    const ratio = scrollable > 0 ? window.scrollY / scrollable : 0;
+    if (progress) progress.style.width = `${Math.min(1, ratio) * 100}%`;
+  };
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  document.querySelectorAll("pre").forEach((block) => {
+    const button = document.createElement("button");
+    button.className = "copy-button";
+    button.type = "button";
+    button.textContent = "コピー";
+    button.addEventListener("click", async () => {
+      const text = block.querySelector("code")?.innerText || block.innerText;
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const textarea = document.createElement("textarea");
+          textarea.value = text;
+          textarea.style.position = "fixed";
+          textarea.style.opacity = "0";
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand("copy");
+          textarea.remove();
+        }
+        button.textContent = "コピー済み";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      } catch (error) {
+        button.textContent = "失敗";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      }
+    });
+    block.appendChild(button);
+  });
+
+  const links = new Map(
+    [...document.querySelectorAll(".toc a")].map((link) => [link.hash, link])
+  );
+  const headings = [...document.querySelectorAll(
+    ".article-body h2[id], .article-body h3[id], .article-body h4[id]"
+  )];
+  if ("IntersectionObserver" in window && headings.length) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        links.forEach((link) => link.classList.remove("is-active"));
+        links.get(`#${entry.target.id}`)?.classList.add("is-active");
+      });
+    }, { rootMargin: "-12% 0px -72% 0px" });
+    headings.forEach((heading) => observer.observe(heading));
+  }
+})();
+</script>
+</body>
+</html>

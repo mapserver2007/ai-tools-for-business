@@ -1,0 +1,1126 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="title" content="第26章 検証の仕組みを作り、アプリに合わせ続ける">
+<meta name="book_title" content="【Cursor pstack】AIエージェントに開発を任せる環境をつくる ―月2,500件のPRを支えた開発基盤とは？">
+<meta name="source_url" content="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/03ebca">
+<meta name="author" content="kaito">
+<meta name="published_at" content="2026-10-02">
+<meta name="retrieved_at" content="2026-10-06T23:37:33+09:00">
+<meta name="site" content="zenn.dev">
+<meta name="content_type" content="article">
+<meta name="chapter_position" content="32">
+<title>第26章 検証の仕組みを作り、アプリに合わせ続ける</title>
+<style>
+:root {
+  color-scheme: light;
+  --ink: #172033;
+  --muted: #64748b;
+  --line: #dbe4ef;
+  --accent: #2563eb;
+  --accent-dark: #1d4ed8;
+  --accent-soft: #eff6ff;
+  font-family: -apple-system, BlinkMacSystemFont, "Avenir Next",
+    "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 8% 0%, #dbeafe 0, transparent 32rem),
+    radial-gradient(circle at 100% 12%, #e0e7ff 0, transparent 28rem),
+    #f4f7fb;
+  color: var(--ink);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(120deg, transparent 0 48%, rgba(255, 255, 255, 0.4));
+}
+.article {
+  position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
+  max-width: 920px;
+  margin: clamp(1rem, 5vw, 4rem) auto;
+  padding: clamp(2rem, 6vw, 5rem) clamp(1.25rem, 7vw, 5.5rem);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  border-radius: 24px;
+  min-height: 100vh;
+  box-shadow:
+    0 24px 70px rgba(30, 64, 175, 0.1),
+    0 4px 16px rgba(15, 23, 42, 0.04);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 5px;
+  content: "";
+  background: linear-gradient(90deg, #2563eb, #7c3aed, #db2777);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin: 0 0 2.5rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.72rem;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+a {
+  color: var(--accent-dark);
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: #7c3aed;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--ink);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 18ch;
+  margin: 0 0 2.5rem;
+  font-size: clamp(2.15rem, 5vw, 3.65rem);
+  letter-spacing: -0.045em;
+}
+h2 {
+  position: relative;
+  margin: 3.8rem 0 1.25rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--line);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 4.2rem;
+  height: 3px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), #7c3aed);
+  border-radius: 999px;
+}
+h3 {
+  margin: 2.6rem 0 0.8rem;
+  color: var(--accent-dark);
+  font-size: 1.3rem;
+}
+h4, h5, h6 {
+  margin-top: 2rem;
+}
+p {
+  margin: 1.15rem 0;
+}
+ul, ol {
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.35rem 0;
+}
+li::marker {
+  color: var(--accent);
+  font-weight: 700;
+}
+strong {
+  color: #111827;
+}
+blockquote {
+  margin: 1.6rem 0;
+  padding: 0.8rem 1.25rem;
+  color: #475569;
+  background: linear-gradient(90deg, var(--accent-soft), #fff);
+  border-left: 4px solid var(--accent);
+  border-radius: 0 12px 12px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 3rem 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+img {
+  display: block;
+  max-width: 100%;
+  margin: 1.75rem auto;
+  height: auto;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+}
+pre {
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  padding: 1.15rem 1.25rem;
+  color: #e2e8f0;
+  background: #111827;
+  border: 1px solid #253047;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+}
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+:not(pre) > code {
+  padding: 0.15rem 0.4rem;
+  color: #9f1239;
+  background: #fff1f2;
+  border-radius: 5px;
+}
+table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  border-collapse: collapse;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
+  text-align: left;
+}
+th {
+  color: #1e3a8a;
+  background: #eff6ff;
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: #f8fafc;
+}
+@media (max-width: 600px) {
+  .article {
+    margin: 0;
+    padding: 2rem 1rem 4rem;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(2rem, 10vw, 2.75rem);
+  }
+  .metadata {
+    margin-bottom: 2rem;
+  }
+}
+@media print {
+  body {
+    background: #fff;
+  }
+  .article {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  a {
+    color: inherit;
+  }
+}
+</style>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0f1419;
+  --surface: #1a2332;
+  --surface-raised: #202c3f;
+  --surface-soft: rgba(26, 35, 50, 0.72);
+  --border: #2d3a4f;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #58a6ff;
+  --accent-strong: #79c0ff;
+  --green: #3fb950;
+  --purple: #bc8cff;
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+    "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  line-height: 1.75;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+  background: var(--bg);
+}
+body {
+  min-width: 320px;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 2rem 1.5rem 5rem;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(31, 111, 235, 0.18), transparent 32rem),
+    radial-gradient(circle at 100% 12%, rgba(137, 87, 229, 0.14), transparent 28rem),
+    var(--bg);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black, transparent 75%);
+}
+.reading-progress {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 20;
+  height: 3px;
+  background: rgba(45, 58, 79, 0.7);
+}
+.reading-progress > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  box-shadow: 0 0 14px rgba(88, 166, 255, 0.8);
+  transition: width 80ms linear;
+}
+.article {
+  position: relative;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  background: rgba(15, 20, 25, 0.76);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(88, 166, 255, 0.035) inset;
+  backdrop-filter: blur(16px);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  border-radius: 16px 16px 0 0;
+}
+.article-header {
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.eyebrow-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--green);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(63, 185, 80, 0.75);
+}
+.eyebrow-separator {
+  color: var(--border);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  background: rgba(32, 44, 63, 0.68);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+.source-link {
+  color: var(--text);
+  text-decoration: none;
+}
+.source-link:hover {
+  border-color: var(--accent);
+  background: rgba(88, 166, 255, 0.12);
+}
+a {
+  color: var(--accent);
+  overflow-wrap: anywhere;
+  text-decoration: none;
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 24ch;
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  background: linear-gradient(120deg, #fff 12%, #b9d8ff 58%, #bc8cff);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+h2 {
+  position: relative;
+  margin: 3.2rem 0 1.1rem;
+  padding: 0.75rem 0 0.65rem;
+  border-bottom: 1px solid var(--border);
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 3.8rem;
+  height: 2px;
+  content: "";
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(88, 166, 255, 0.7);
+}
+h3 {
+  margin: 2.25rem 0 0.7rem;
+  color: var(--accent-strong);
+  font-size: 1.2rem;
+}
+h4, h5, h6 {
+  margin-top: 1.75rem;
+}
+p {
+  margin: 0.9rem 0;
+}
+ul, ol {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.3rem 0;
+}
+li::marker {
+  color: var(--accent);
+}
+strong {
+  color: #fff;
+}
+blockquote {
+  margin: 1.4rem 0;
+  padding: 0.85rem 1.15rem;
+  color: #c9d1d9;
+  background: linear-gradient(100deg, rgba(88, 166, 255, 0.1), rgba(26, 35, 50, 0.55));
+  border: 1px solid rgba(88, 166, 255, 0.18);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 2.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+}
+pre {
+  position: relative;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  padding: 1rem 1.15rem;
+  color: #dbeafe;
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+pre code {
+  color: inherit;
+  background: transparent;
+}
+code {
+  font-family: "SF Mono", "Fira Code", ui-monospace, monospace;
+  font-size: 0.86em;
+}
+:not(pre) > code {
+  padding: 0.12em 0.38em;
+  color: #ffabbc;
+  background: rgba(248, 81, 73, 0.11);
+  border-radius: 4px;
+}
+.copy-button {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  padding: 0.25rem 0.55rem;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.72rem;
+  background: rgba(32, 44, 63, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.copy-button:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  border-spacing: 0;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.6rem 0.75rem;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+th {
+  color: var(--accent);
+  background: var(--surface);
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: rgba(26, 35, 50, 0.42);
+}
+tr:last-child td {
+  border-bottom: 0;
+}
+th:last-child, td:last-child {
+  border-right: 0;
+}
+.toc {
+  margin: 1.75rem 0 2.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.toc-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--border);
+}
+.toc-title {
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.toc-count {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.toc ol {
+  margin: 0.7rem 0 0;
+  padding-left: 1.25rem;
+}
+.toc ol ol {
+  margin: 0.2rem 0;
+}
+.toc li {
+  margin: 0.18rem 0;
+  font-size: 0.86rem;
+}
+.toc li::marker {
+  color: var(--muted);
+}
+.toc a {
+  display: inline-block;
+  max-width: 100%;
+  color: var(--muted);
+  transition: color 160ms ease, transform 160ms ease;
+}
+.toc a:hover, .toc a.is-active {
+  color: var(--accent-strong);
+  text-decoration: none;
+  transform: translateX(2px);
+}
+.article-body {
+  max-width: 78ch;
+  margin: 0 auto;
+}
+.article-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 1rem;
+  color: var(--muted);
+  font-size: 0.74rem;
+  border-top: 1px solid var(--border);
+}
+.article-footer a {
+  color: var(--muted);
+}
+@media (max-width: 720px) {
+  body {
+    padding: 0 0 3rem;
+  }
+  .article {
+    min-height: 100vh;
+    padding: 1.5rem 1rem 3rem;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+  .article::before {
+    border-radius: 0;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(1.9rem, 9vw, 2.6rem);
+  }
+  .article-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+@media print {
+  :root {
+    color-scheme: light;
+  }
+  body {
+    padding: 0;
+    color: #111;
+    background: #fff;
+  }
+  .reading-progress, .toc, .copy-button {
+    display: none;
+  }
+  .article {
+    max-width: none;
+    padding: 0;
+    background: #fff;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  h1, h2, h3, h4, h5, h6, strong {
+    color: #111;
+    -webkit-text-fill-color: initial;
+  }
+  a {
+    color: inherit;
+    text-decoration: underline;
+  }
+  pre {
+    color: #111;
+    background: #f4f4f4;
+    box-shadow: none;
+  }
+}
+</style>
+</head>
+<body>
+<div class="reading-progress" aria-hidden="true"><span></span></div>
+<main id="article-top" class="article">
+  <header class="article-header">
+    <div class="eyebrow">
+      <span class="eyebrow-dot"></span>
+      <span>ARTICLE</span>
+      <span class="eyebrow-separator">/</span>
+      <span>zenn.dev</span>
+    </div>
+    <div class="metadata" aria-label="記事メタデータ"><span class="metadata-item"><span class="metadata-label">著者</span>kaito</span><span class="metadata-item"><span class="metadata-label">公開日</span>2026-10-02</span><a class="metadata-item source-link" href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/03ebca"><span class="metadata-label">原文</span>読む</a><span class="metadata-item"><span class="metadata-label">サイト</span>zenn.dev</span><span class="metadata-item"><span class="metadata-label">形式</span>ARTICLE</span></div>
+    <h1 id="26">第26章 検証の仕組みを作り、アプリに合わせ続ける</h1>
+  </header>
+<nav class="toc" aria-label="目次">
+  <div class="toc-heading">
+    <span class="toc-title">目次</span>
+    <span class="toc-count">24 セクション</span>
+  </div>
+  <ol><li><a href="#_1">この章の構成</a></li><li><a href="#2skill">2つのSkillが受け持つ仕事</a><ol><li><a href="#2-setup-pstack">2つは、利用者か /setup-pstack が名前で呼んだときだけ動く</a></li><li><a href="#_2">最初に検証スキルを作るのは、エージェントが自分の仕事を確かめられるようにするため</a></li></ol></li><li><a href="#create-verification-skill">/create-verification-skill は、アプリをユーザーと同じ経路で動かす手段を作る</a><ol><li><a href="#_3">役割：実際のアプリを動かして挙動を証明する手段を、プロジェクトに作る</a></li><li><a href="#_4">使いどき：アプリの挙動を、スクリプトで確かめる手段がないとき</a></li><li><a href="#_5">手順：リポジトリを調べて検証スキルを書き、一度実行してから渡す</a><ol><li><a href="#1">手順1：アプリの動かし方を、利用者に聞く前にリポジトリから調べる</a></li><li><a href="#2skillmd-6">手順2：SKILL.md の6つの見出しを書く</a></li><li><a href="#3feature-map">手順3：Feature Map の最初の版を作る</a></li><li><a href="#4">手順4：生成した検証スキルを一度最後まで実行する</a></li></ol></li><li><a href="#_6">依頼の書き方：コマンドだけで始められる</a></li></ol></li><li><a href="#maintain-verification-skill-feature-map">/maintain-verification-skill は、Feature Map と今のアプリのずれを定期的に直す</a><ol><li><a href="#feature-map">役割：検証スキルと Feature Map を、今のアプリと食い違わないよう保つ</a></li><li><a href="#_7">使いどき：アプリが変わった後に、定期的に使う</a></li><li><a href="#_8">手順：ソースコードは並列に読み、アプリの操作は主エージェントだけが行う</a><ol><li><a href="#feature-map_1">プロダクトのコードは編集せず、退行は Feature Map を直さずに報告する</a></li><li><a href="#7pr">7段の手順で、索引の整備からPRにするかの判断までを進める</a></li><li><a href="#_9">複数のエージェントが同じアプリを操作すると、証拠が信用できなくなる</a></li><li><a href="#3">主エージェントは、操作の間に3つの決まりを守る</a></li><li><a href="#33">見つけた問題は3種類に仕分け、結果は3つのどれか一つで示す</a></li></ol></li><li><a href="#_10">依頼の書き方：コマンドだけで足りる</a></li></ol></li><li><a href="#_11">まとめ</a></li></ol>
+</nav>
+  <div class="article-body">
+
+<p>この章では、次の2つのSkillを扱います。</p>
+<ol>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/create-verification-skill/SKILL.md"><code>/create-verification-skill</code></a></li>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/maintain-verification-skill/SKILL.md"><code>/maintain-verification-skill</code></a></li>
+</ol>
+<p>2つとも、エージェントが実際にアプリを動かして、自分の仕事を確かめられるようにするためのSkillです。2つは、それぞれ次の仕事を受け持ちます。</p>
+<ul>
+<li><strong><code>/create-verification-skill</code></strong>・・・ エージェントがアプリを起動し、実際のユーザーと同じように操作して、スクリーンショットなどの証拠を取るための手順を、プロジェクトに作ります。</li>
+<li><strong><code>/maintain-verification-skill</code></strong>・・・ <code>/create-verification-skill</code> が作った手順に書かれた機能や操作が、今のアプリと食い違っていないかを、エージェントが定期的に点検し、ずれを直します。</li>
+</ul>
+<p><code>/create-verification-skill</code> は、実際のユーザーのように、アプリを動かして確かめるために、<strong>検証スキル</strong>（原文では verification skill）を作ります。検証スキルは、エージェントが作業中のアプリを起動し、操作し、証拠（スクリーンショット、ターミナルの出力、ログなど）を取るための、プロジェクト専用のSkillです（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a88ea5">第3章</a>）。</p>
+<p>2つのうち、<strong>利用者が最初に使うのは、検証スキルを作る <code>/create-verification-skill</code> です</strong>。</p>
+<p>この章では、2つの分担、2つを誰が呼ぶか、検証スキルから始める理由を確かめたうえで、1つずつ、役割、使いどき、手順、依頼の書き方の4つの観点で解説します。</p>
+<h2 id="_1">この章の構成</h2>
+<p>この章の構成は次のとおりです。</p>
+<ul>
+<li>2つのSkillが受け持つ仕事</li>
+<li><code>/create-verification-skill</code> は、アプリをユーザーと同じ経路で動かす手段を作る</li>
+<li><code>/maintain-verification-skill</code> は、<strong>Feature Map</strong> と今のアプリのずれを定期的に直す</li>
+<li>まとめ</li>
+</ul>
+<h2 id="2skill">2つのSkillが受け持つ仕事</h2>
+<p>2つのSkillの役割と成果物を表にまとめると、次のようになります。</p>
+<table>
+<thead>
+<tr>
+<th>Skill</th>
+<th>役割</th>
+<th>成果物</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/create-verification-skill</code></td>
+<td>アプリを起動・操作して証拠（スクリーンショットなど）を残す手順を、プロジェクトに作る</td>
+<td><code>.cursor/skills/verify-&lt;app&gt;/</code>（検証スキルと <strong>Feature Map</strong>）</td>
+</tr>
+<tr>
+<td><code>/maintain-verification-skill</code></td>
+<td>検証スキルと <strong>Feature Map</strong> を、今のアプリに合わせ続ける</td>
+<td>アプリを動かして確かめた修正をまとめたPR（1本まで）、または報告だけ</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Feature Map</strong> は、アプリの機能ごとに、何ができるか、ユーザーがその機能にどうたどり着くか、検証スキルでどう操作し、どんな結果を確かめられるかをまとめた文書です（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/dc9141">第4章</a>）。</p>
+<p><code>/create-verification-skill</code> と <code>/maintain-verification-skill</code> は、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/1fb019">第19章</a>の原則『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-prove-it-works/SKILL.md"><strong>Prove It Works</strong></a>』が求める「実際に機能を動かして確かめる」ことを、どの作業でもできるよう、確かめる手段をプロジェクトに作り、保ち続けるSkillです。</p>
+<h3 id="2-setup-pstack">2つは、利用者か <code>/setup-pstack</code> が名前で呼んだときだけ動く</h3>
+<p>2つの <code>SKILL.md</code> は、どちらも <code>disable-model-invocation: true</code> の設定を持っています（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/46bd1f">第25章</a>）。この設定があるSkillを、エージェントが会話の内容から自分で選んで動かすことはありません。そのため、2つが動くのは、利用者が名前で呼んだときか、ほかのSkillが手順の中で名前を指定して呼んだときだけです。</p>
+<p>2つを誰が呼ぶかは、次のとおりです。</p>
+<ul>
+<li><strong><code>/create-verification-skill</code></strong>・・・ 利用者が名前で呼びます。また、<code>/setup-pstack</code> は、最後の手順で、アプリを動かして確かめる手段がプロジェクトにないと分かると生成を提案し、利用者が受け入れればこのSkillを呼びます。</li>
+<li><strong><code>/maintain-verification-skill</code></strong>・・・ 利用者が名前で呼んだときだけ動きます。</li>
+</ul>
+<h3 id="_2">最初に検証スキルを作るのは、エージェントが自分の仕事を確かめられるようにするため</h3>
+<p>利用者が検証スキルを最初に用意するのは、<strong>エージェントが自分の仕事を確かめられないと、どれだけ多くの仕事をエージェントに任せても、最後は人間が1つずつ確かめることになり、人間が作業の流れを止める存在（ボトルネック）になる</strong>からです。</p>
+<p><strong>人間がボトルネックになってしまうと、一日中エージェントの面倒を見ることになります</strong>。検証スキルがあれば、エージェントは自分でアプリを動かして確かめ、成功するまで作業を続けられます。利用者は、エージェントが確かめ終えた結果だけを見れば済みます。</p>
+<p>poteto氏も、『The Complete Guide to pstack』<a href="https://x.com/poteto/status/2094457600259842065">Part 1</a>と<a href="https://x.com/poteto/status/2097732320606507506">Part 2</a>で、この考えを繰り返し述べています。</p>
+<p>特に、Part 1では、検証スキルがあれば、ほかのSkillや、自動で動く仕組みにも、アプリの確認を任せられると述べています。このように、poteto氏は、検証スキルを、他のSkillや定期的な作業のための土台と位置づけています。</p>
+<p>ちなみに、Part 1が挙げる例は、次の2つです。</p>
+<ul>
+<li><code>/swarm</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/2ad346">第24章</a>）が、多数のクラウドエージェントに検証スキルを実行させ、性能の改善を十分な回数で確かめる。</li>
+<li>Grok Bot のルーティン（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/46bd1f">第25章</a>）が、Slackに届いたユーザーの報告を受け取るたびに、クラウドエージェントに検証スキルでその不具合を再現させる。</li>
+</ul>
+<h2 id="create-verification-skill"><code>/create-verification-skill</code> は、アプリをユーザーと同じ経路で動かす手段を作る</h2>
+<h3 id="_3">役割：実際のアプリを動かして挙動を証明する手段を、プロジェクトに作る</h3>
+<p><code>/create-verification-skill</code> は、プロジェクト専用の検証スキルを <code>.cursor/skills/verify-&lt;app&gt;/</code> に生成するSkillです。エージェントは、生成された検証スキルを使って、<strong>実際のアプリを起動し、ユーザーと同じように操作して</strong>、証拠を残せるようになります。</p>
+<p>エージェントは、生成する検証スキルを、人間ではなく、ほかのエージェントが読むものとして書きます。<strong>読み手は、そのアプリを一度も見たことがなく、作業の途中で予備知識なしにこの検証スキルを開くエージェント</strong>だからです。そのため、エージェントは、読み手が推測しなくて済むよう、このリポジトリで実際に使うコマンドやセレクタ（画面の要素を指す書き方）を、検証スキルにそのまま書きます。</p>
+<p>検証スキルができれば、利用者が「アプリで確かめて」と頼むだけで、どのエージェントも、アプリの起動や操作の方法を利用者から教わらずに確かめられるようになります（<a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/06-verify-and-ship.md"><code>docs/guide/06-verify-and-ship.md</code></a>）。</p>
+<h3 id="_4">使いどき：アプリの挙動を、スクリプトで確かめる手段がないとき</h3>
+<p>利用者がこのSkillを使うのは、アプリの挙動を、スクリプトで繰り返し確かめる手段がプロジェクトにないときです。</p>
+<p>たとえば、ブラウザを自動で操作して画面を確かめるスクリプトも、CLIを実行して出力を確かめるスクリプトも、まだプロジェクトにない場合です。</p>
+<p>pstack が使うモデルを設定する <code>/setup-pstack</code> も、最後の手順で、アプリを動かして確かめる手段（<code>verify-*</code> のSkillや、既存のハーネス）がプロジェクトになければ、一度だけ生成を提案し、利用者が受け入れれば <code>/create-verification-skill</code> を呼びます（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/8487f0">第36章</a>）。</p>
+<h3 id="_5">手順：リポジトリを調べて検証スキルを書き、一度実行してから渡す</h3>
+<h4 id="1">手順1：アプリの動かし方を、利用者に聞く前にリポジトリから調べる</h4>
+<p><strong>エージェントは、最初の手順で、アプリの動かし方を、利用者に聞く前にリポジトリのコードや設定から調べます</strong>（原文では、この調査を「面談（interview）」と呼んでいます）。</p>
+<p>エージェントが利用者に聞くのは、コードベースから観察できないことだけです。<strong>コードを読めば分かることまで利用者に聞くと、利用者の手間が増え、返事を待つ間は作業も止まってしまう</strong>からです。</p>
+<p>エージェントは、次の5つの問いに、コードベースから答えます。5つの問いは、検証スキルに書く中身（何をどう起動し、どう操作し、何を証拠に残すか）を集めるためのものです。</p>
+<table>
+<thead>
+<tr>
+<th>観点</th>
+<th>問い</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Surface（ユーザーが触れるもの）</td>
+<td>ユーザーは実際に何に触れるか（Web UI、CLI、API など）</td>
+</tr>
+<tr>
+<td>Run（起動）</td>
+<td>アプリはローカルでどう起動するか（package の scripts、Makefile、READMEのクイックスタートなど、リポジトリ自身の開発用コマンドを優先する）</td>
+</tr>
+<tr>
+<td>Drive（操作）</td>
+<td>エージェントはどうやってプログラムから操作できるか。Playwright や Cypress のテスト、curl で呼べるエンドポイントなど、リポジトリにすでにある仕組みを先に探す。なければ、CDP、PTY や tmux、素の HTTP といった汎用の手段を選ぶ</td>
+</tr>
+<tr>
+<td>Observe（観察）</td>
+<td>どんな証拠を残せるか（スクリーンショット、ターミナルの記録、応答の本文、ログ、終了コード、データベースの状態など）</td>
+</tr>
+<tr>
+<td>Isolate（分離）</td>
+<td>アプリのインスタンスを2つ、ポートやデータのディレクトリを分けて並べて動かせるか</td>
+</tr>
+</tbody>
+</table>
+<p>!</p>
+<ul>
+<li><strong>Playwright・Cypress</strong>・・・ ブラウザを自動で操作してテストするツール</li>
+<li><strong>CDP</strong>・・・ ブラウザの開発者ツールと同じ機能をプログラムから使う仕組み。WebアプリやElectron（デスクトップアプリを構築するためのフレームワーク）アプリでは、エージェントはCDPでブラウザにつなぎ、クリックや文字の入力を送って、画面の状態を読み取る</li>
+<li><strong>PTY</strong>・・・ 疑似端末（pseudo terminal）。本物の端末の代わりにプログラムが用意する端末で、その中で動くアプリからは、人が端末を使っているのと同じに見える</li>
+<li><strong>tmux</strong>・・・ 1つのターミナル画面上で、複数のセッションやウィンドウ、分割画面（ペイン）を管理できる端末多重化ソフトウェア（<code>Terminal Multiplexer</code>）。外からコマンドで、セッションにキー入力を送ったり、画面に表示された内容を取り出したりもできる</li>
+<li>CLIやTUIでは、エージェントは、PTYやtmuxのセッションの中でアプリを起動し、キー入力を送って、画面に表示された文字を読み取る</li>
+<li><strong>素の HTTP</strong>・・・ 画面を通さず、curl などでHTTPのリクエストをアプリに直接送り、返ってきた応答を確かめること</li>
+<li><strong>インスタンス</strong>・・・ 起動中のアプリ1つ1つを指す。たとえば、同じWebアプリをポート3000と3001で1つずつ起動すれば、インスタンスは2つとなる</li>
+</ul>
+<p>2つのインスタンスを並べて動かせないなら、エージェントは、そのことを検証スキルに書き、1つのインスタンスを2体のエージェントで同時に操作しないよう指示します。利用者が使っているインスタンスをエージェントが同時に操作すると、利用者が作業中のセッションを壊すおそれがあるからです。</p>
+<p>リポジトリのコードが今の状態で、ビルドか起動のどちらかができないなら、エージェントは、検証スキルを生成する前に、ビルドと起動ができるように直すか、何が足りないかを正確に報告します。ビルドも起動もできない状態を前提に書いた検証スキルは、読んだエージェントに間違った手順を伝えてしまうからです。</p>
+<h4 id="2skillmd-6">手順2：<code>SKILL.md</code> の6つの見出しを書く</h4>
+<p>エージェントは、生成する <code>SKILL.md</code> に、次の6つの見出しを置きます。アプリを一度も見ていない次のエージェントが、起動から片付けまでを順に進められるようにするためです。</p>
+<p>エージェントは、中身を<a href="#%E6%89%8B%E9%A0%861%EF%BC%9A%E3%82%A2%E3%83%97%E3%83%AA%E3%81%AE%E5%8B%95%E3%81%8B%E3%81%97%E6%96%B9%E3%82%92%E3%80%81%E5%88%A9%E7%94%A8%E8%80%85%E3%81%AB%E8%81%9E%E3%81%8F%E5%89%8D%E3%81%AB%E3%83%AA%E3%83%9D%E3%82%B8%E3%83%88%E3%83%AA%E3%81%8B%E3%82%89%E8%AA%BF%E3%81%B9%E3%82%8B">手順1</a>の調査で見つけた事実だけで書き、プレースホルダー（後で埋めるための仮の文字列）を残しません。アプリを知らない次のエージェントには、仮の文字列を正しい値に置き換えることができないからです。</p>
+<p>プレースホルダが残った書き方と、調査で見つけた事実で書いた書き方を比べると、次のようになります。</p>
+<pre><code>&lt;!-- プレースホルダが残っている：次のエージェントは、何を実行し、何をクリックすればよいか分からない --&gt;
+起動：`&lt;起動コマンド&gt;` を実行し、`http://localhost:&lt;PORT&gt;` が応答したら準備完了
+操作：`TODO: 送信ボタンのセレクタ` をクリックする
+
+&lt;!-- 調査で見つけた事実で書いている：次のエージェントは、そのまま実行できる --&gt;
+起動：`pnpm dev` を実行し、`http://localhost:5173` が応答したら準備完了
+操作：`getByRole('button', { name: '送信' })` をクリックする
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>見出し</th>
+<th>中身</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Launch（起動）</td>
+<td>起動するコマンド、アプリの「準備ができたこと」を判断する方法（特定のログの1行が出る、ポートが応答するなど）、停止方法</td>
+</tr>
+<tr>
+<td>Doctor（診断）</td>
+<td>「このインスタンスを操作して確かめる意味があるか」を確かめる、読み取りだけのチェック（プロセスが動いているか、ビルドが正しいか、そのポートを使っているのが自分の起動したインスタンスか、認証が有効かなどを見る）</td>
+</tr>
+<tr>
+<td>Drive（操作）</td>
+<td>このリポジトリの実際のセレクタやコマンドを使った操作手順。画面の座標やTabキーでフォーカスが移る順番ではなく、ARIAラベルや data 属性のような変わりにくい目印を使う</td>
+</tr>
+<tr>
+<td>Evidence（証拠）</td>
+<td>証明のために何を残し、どこに置くか</td>
+</tr>
+<tr>
+<td>Cleanup（片付け）</td>
+<td>この実行が作ったインスタンスの片付け方。証拠は消さない</td>
+</tr>
+<tr>
+<td>Helpers（補助スクリプト）</td>
+<td>同梱するスクリプトの呼び方</td>
+</tr>
+</tbody>
+</table>
+<p>!</p>
+<p><strong>ARIAラベル</strong>・・・ 画面の読み上げ用に、ボタンなどの要素へ付ける名前</p>
+<p>Drive の「変わりにくい目印」を、Playwright のコードで比べると、次のようになります。</p>
+<pre><code>declare const page: {
+  mouse: { click(x: number, y: number): Promise&lt;void&gt; };
+  getByRole(role: &quot;button&quot;, options: { name: string }): { click(): Promise&lt;void&gt; };
+  locator(selector: string): { click(): Promise&lt;void&gt; };
+};
+
+// 前：画面の座標で押す。ボタンの位置が変わると、別の場所を押してしまう
+async function saveByPosition() {
+  await page.mouse.click(640, 410);
+}
+
+// 後：ARIAラベルで押す。ボタンの位置が変わっても、同じボタンを押せる
+async function saveByLabel() {
+  await page.getByRole(&quot;button&quot;, { name: &quot;保存&quot; }).click();
+}
+
+// 後：data 属性で押す。ボタンの位置が変わっても、同じボタンを押せる
+async function saveByDataAttribute() {
+  await page.locator('[data-testid=&quot;save&quot;]').click();
+}
+</code></pre>
+<p>Evidence には、証明の基準も書きます。基準には、次のようなものがあります。</p>
+<ul>
+<li>テスト専用の近道ではなく、ユーザーが通る実際の経路を操作する</li>
+<li>画面だけでなく、副作用（書かれたファイル、追加された行、送られたメッセージなど）も確かめる</li>
+</ul>
+<p>テスト専用の近道とは、たとえば、内部の値を直接書き換える関数や、テストのためだけに用意したエンドポイントです。エージェントが近道で確かめても、ユーザーが通る経路（実際のアプリの挙動）が正しく動くことの証明にはなりません。</p>
+<h4 id="3feature-map">手順3：Feature Map の最初の版を作る</h4>
+<p>エージェントは、生成する検証スキルに <strong>Feature Map</strong> も付けます。</p>
+<p><strong>Feature Map</strong> は、ユーザー向けの機能ごとに1つずつ作る機能ファイルと、それらをまとめる目次の <code>features/README.md</code> からなります。エージェントは、最初は、主な機能を3〜5件ほど見つけ、機能ごとに機能ファイルを作ります。</p>
+<p>エージェントは、主な機能を、次の4つから探します。</p>
+<ul>
+<li><strong>ルート</strong>・・・ Webアプリの画面ごとに決まっているURLのパス（例：<code>/settings</code>）。</li>
+<li><strong>コマンド</strong>・・・ CLIが受け付けるコマンドやサブコマンド（例：<code>git commit</code> の <code>commit</code>）。</li>
+<li><strong>メニュー</strong>・・・ アプリの画面に並ぶメニューの項目</li>
+<li><strong>ドキュメント</strong>・・・ README や使い方の説明など、アプリの機能を説明した文書</li>
+</ul>
+<p>機能ファイルの中身と、<strong>Feature Map</strong> を記憶として育てる考え方は、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/7d7081">第39章</a>で扱います。</p>
+<blockquote>
+<p>The map is the repo's maintained verification source; a proof that drives one convenient entry point is incomplete when the map lists others.</p>
+<p>Map は、リポジトリで保守される検証の正本である。Map がほかの入口も挙げているとき、都合のよい入口を一つだけ操作した証明は不完全である。</p>
+</blockquote>
+<p>ここでいう入口は、ユーザーがその機能にたどり着く方法のことです（ボタン、キー操作、コマンドなど）。</p>
+<p><strong>Feature Map</strong> が一つの機能に複数の入口を挙げているなら、エージェントは、すべての入口を確かめて初めて、その機能が動くことを証明できます。この決まりによって、<strong>Feature Map は、どの入口まで確かめれば証明になるかを決める一覧にもなります</strong>。</p>
+<p>たとえば、この決まりを、同梱の <strong>Feature Map</strong> の例に当てはめてみましょう。この例の、メモの検索機能の機能ファイル <a href="https://github.com/cursor/plugins/blob/main/pstack/skills/create-verification-skill/references/feature-map-example/search.md"><code>search.md</code></a> には、ユーザーが検索機能にたどり着く方法が、次のように書かれています。</p>
+<blockquote>
+<p><strong>How to get to it (user POV)</strong></p>
+<ul>
+<li>Choose the <code>Search</code> button in the browser toolbar.</li>
+<li>Press <code>/</code> in the browser while focus is outside an editable field.</li>
+<li>Run <code>notes search &lt;query&gt;</code> in a terminal.</li>
+</ul>
+<p><strong>機能へのたどり着き方（ユーザーの視点）</strong></p>
+<ul>
+<li>ブラウザのツールバーの <code>Search</code> ボタンを選ぶ。</li>
+<li>ブラウザで、編集できる欄の外にフォーカスがあるときに <code>/</code> キーを押す。</li>
+<li>ターミナルで <code>notes search &lt;query&gt;</code> を実行する。</li>
+</ul>
+</blockquote>
+<p>この例では、メモの検索機能に、ツールバーの <code>Search</code> ボタン、<code>/</code> キー、ターミナルの <code>notes search &lt;query&gt;</code> の3つの入口があります。この機能を、エージェントが <code>Search</code> ボタンで確かめただけでは、証明として足りません。残りの2つの入口も確かめて、初めて証明になります。</p>
+<p>このように、<strong>Feature Map</strong> が一つの機能に複数の入口を挙げているなら、エージェントは、すべての入口を確かめる必要があります。</p>
+<h4 id="4">手順4：生成した検証スキルを一度最後まで実行する</h4>
+<p>エージェントは、生成した検証スキルを<strong>利用者に手渡す前に、その検証スキルに書いた指示どおり一度最後まで実行します</strong>。操作する機能は一つで足ります。残りの機能は、<strong>Feature Map</strong> を使って後の実行で確かめられるからです。</p>
+<p>実行の流れを図にすると、次のようになります。</p>
+<p>エージェントは、失敗した回でも片付けを実行するので、失敗した試行が起動したプロセスや、使っていたポートは残りません。</p>
+<p>また、エージェントは、片付けの後に証拠が残っていなければ、その実行を不合格とします。片付けが証拠まで消してしまうと、証明が何も残らないからです。</p>
+<p>さらに、エージェントは、生成した検証スキルを、一度も実行していないうちは、成果物ではなく下書きとして扱います。書いた手順に誤りがあっても、実行するまでは見つからないからです。</p>
+<p>たとえば、Launch に書いたポート番号が間違っていても、実行しなければ気づけません。</p>
+<p>最後に、エージェントは、<strong>Feature Map</strong> を保守する <code>/maintain-verification-skill</code> を利用者に案内します。</p>
+<h3 id="_6">依頼の書き方：コマンドだけで始められる</h3>
+<p><code>docs/guide/06-verify-and-ship.md</code> によると、利用者は、次のようにコマンドだけを打てば <strong>Feature Map</strong>と検証スキルの作成を開始できます。エージェントはアプリの動かし方をリポジトリから調べるので、利用者が前もって説明を用意する必要はありません。</p>
+<pre><code>/create-verification-skill
+</code></pre>
+<p>検証スキルを実際に作って育てる流れは、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/7d7081">第39章</a>で扱います。</p>
+<h2 id="maintain-verification-skill-feature-map"><code>/maintain-verification-skill</code> は、<strong>Feature Map</strong> と今のアプリのずれを定期的に直す</h2>
+<h3 id="feature-map">役割：検証スキルと <strong>Feature Map</strong> を、今のアプリと食い違わないよう保つ</h3>
+<p><code>/maintain-verification-skill</code> は、検証スキルと <strong>Feature Map</strong> が今のアプリと食い違っていないかを点検し、ずれを直すSkillです。</p>
+<blockquote>
+<p>A feature map rots the moment the app changes.</p>
+<p>アプリが変わった瞬間から、<strong>Feature Map</strong> は古くなり始める。</p>
+</blockquote>
+<p>アプリが変わると、その時点から、<strong>Feature Map</strong> の記述は実際のアプリと合わなくなり始めます。そのため、<strong>Feature Map</strong> は作った後もメンテナンスし続ける必要があり、そのメンテナンスを受け持つのがこのSkillです。</p>
+<h3 id="_7">使いどき：アプリが変わった後に、定期的に使う</h3>
+<p>利用者がこのSkillを使うのは、アプリが変わって、<strong>Feature Map</strong> の記述と今のアプリがずれたときです。</p>
+<p>poteto氏は、『The Complete Guide to pstack』<a href="https://x.com/poteto/status/2094457600259842065">Part 1</a>で、少なくとも1日1回の実行を勧めています。エージェントがアプリを操作するための情報を、いつも最新に保つためです。</p>
+<p>同梱ガイドの<a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/06-verify-and-ship.md"><code>06-verify-and-ship.md</code></a>も、実行し忘れないように、<strong>少なくとも1日1回、可能であれば、決まった時刻にSkillを自動で実行する仕組み（原文では scheduled automation）を使う</strong>よう勧めています。</p>
+<p>そのため、本書でも少なくとも1日1回の実行と、Routineなどで、このSkillの実行を自動化することを推奨します。</p>
+<h3 id="_8">手順：ソースコードは並列に読み、アプリの操作は主エージェントだけが行う</h3>
+<h4 id="feature-map_1">プロダクトのコードは編集せず、退行は <strong>Feature Map</strong> を直さずに報告する</h4>
+<p><strong>エージェントが編集してよいのは、検証スキル自身のディレクトリ（<code>SKILL.md</code>、<code>features/</code>、検証スキルが持つスクリプト）だけです</strong>。</p>
+<p>エージェントは、点検中にプロダクトのコードを編集しません。アプリが <strong>Feature Map</strong> に書かれたとおりに動かないときは、その食い違いが <strong>Feature Map</strong> の書き誤りなのか、プロダクトの退行（以前は動いていた機能が壊れること）なのかを見分けます。書き誤りなら <strong>Feature Map</strong> を直し、退行なら利用者に報告します。</p>
+<p>エージェントが退行を <strong>Feature Map</strong> の修正で済ませないのは、<strong>プロダクトが壊れているのに Feature Map の記述を今の挙動に合わせてしまうと、壊れていること自体が隠れてしまう</strong>からです。</p>
+<h4 id="7pr">7段の手順で、索引の整備からPRにするかの判断までを進める</h4>
+<p>手順は次のとおりです。</p>
+<ol>
+<li><strong>対象を探す</strong>・・・ 主エージェントは、点検する検証スキル（通常は <code>.cursor/skills/verify-*/</code>）を探します。見つからなければ止まり、<code>/create-verification-skill</code> を案内します。</li>
+<li><strong>索引を整える</strong>・・・ 主エージェントは、<strong>Feature Map</strong> の目次（<code>README</code>）と機能ファイルを見比べ、欠けた項目やリンク切れを直します。</li>
+<li><strong>ソースコードを読む</strong>・・・ 主エージェントは、機能ファイルごとに、読み取りだけを行うサブエージェントを並列に起動します。各サブエージェントは、<strong>Feature Map の説明</strong>と今のソースコード間で、ずれている疑いのある箇所を、根拠となるソースコードの場所とともに返します。</li>
+<li><strong>突き合わせる</strong>・・・ 主エージェントは、手順3で挙がったずれている疑いのある箇所のうち、いくつかを実際に確かめます。また、最近の変更の中から、<strong>Feature Map</strong> に記載がない機能を探します。</li>
+<li><strong>実際に操作する</strong>・・・ 主エージェントは、ソースコードに問題が見つからなくても、すべての機能を少なくとも一度操作します。</li>
+<li><strong>仕分ける</strong>・・・ 主エージェントは、見つけた問題を、この後の<a href="#%E8%A6%8B%E3%81%A4%E3%81%91%E3%81%9F%E5%95%8F%E9%A1%8C%E3%81%AF3%E7%A8%AE%E9%A1%9E%E3%81%AB%E4%BB%95%E5%88%86%E3%81%91%E3%80%81%E7%B5%90%E6%9E%9C%E3%81%AF3%E3%81%A4%E3%81%AE%E3%81%A9%E3%82%8C%E3%81%8B%E4%B8%80%E3%81%A4%E3%81%A7%E7%A4%BA%E3%81%99">『見つけた問題は3種類に仕分け、結果は3つのどれか一つで示す』</a>の表の3種類に分けます。</li>
+<li><strong>PRにするか止めるか決める</strong>・・・ 実際に操作して確かめた修正があれば、主エージェントは、変更したファイルを読み直してから1本のPRにまとめます。直すものがないときや、確認を終えられなかったときは、主エージェントはPRを作らず、結果と確かめた範囲を報告します。</li>
+</ol>
+<p>手順3でサブエージェントがずれを見つけなかった機能も、主エージェントは、手順5で実際に操作します。<strong>ソースコードを読んだだけでは、アプリが Feature Map の説明どおりに動くことを証明できない</strong>からです。証明するには、実際にアプリを動かして確かめる必要があります（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/1fb019">第19章</a>の原則『Prove It Works』）。</p>
+<h4 id="_9">複数のエージェントが同じアプリを操作すると、証拠が信用できなくなる</h4>
+<p>サブエージェントがソースコードを並列に読んでも、互いの作業に干渉しません。一方、<strong>複数のエージェントが同じアプリを同時に操作すると、状態が混ざり</strong>、証拠が信用できなくなります。</p>
+<p>たとえば、一方のエージェントが開いた画面を、もう一方のエージェントが閉じてしまうと、撮ったスクリーンショットがどちらの操作の結果なのか分からなくなります。そのため、アプリの操作は、主エージェント1体だけが受け持ちます。</p>
+<p>手順3から手順5までの分担を図にすると、次のようになります。</p>
+<h4 id="3">主エージェントは、操作の間に3つの決まりを守る</h4>
+<p>主エージェントは、手順5で操作している間、途中でどんな失敗が起きても、次の3つを守ります。</p>
+<ul>
+<li>インスタンスが予想外の挙動を示したら、次に操作する前に Doctor のチェックを実行し、まだ操作できる状態かを確かめ直します。<blockquote>
+<p>Doctor（診断）・・・ 「このインスタンスを操作して確かめる意味があるか」を確かめる、読み取りだけのチェック（プロセスが動いているか、ビルドが正しいか、そのポートを使っているのが自分の起動したインスタンスか、認証が有効かなどを見る）</p>
+</blockquote>
+</li>
+<li>取得した証拠は、Cleanup（片付け）で消さずに残します。<blockquote>
+<p>Cleanup（片付け）・・・ この実行が作ったインスタンスの片付け方。証拠は消さない</p>
+</blockquote>
+</li>
+<li>操作のために起動したものは、残さずにCleanup（片付け）します。</li>
+</ul>
+<h4 id="33">見つけた問題は3種類に仕分け、結果は3つのどれか一つで示す</h4>
+<p>問題の仕分けは次の3種類です。</p>
+<table>
+<thead>
+<tr>
+<th>種類</th>
+<th>対応</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ドキュメントのずれ（ユーザーから見た機能の説明が誤っている、または欠けている）</td>
+<td><strong>Feature Map</strong> を直す</td>
+</tr>
+<tr>
+<td>ハーネスの欠落（アプリは正しく動くのに、検証スキルの操作手順やスクリプトでは操作できない）</td>
+<td>操作手順やスクリプトを直す</td>
+</tr>
+<tr>
+<td>プロダクトの欠陥（アプリの挙動そのものが壊れている）</td>
+<td>利用者のために記録する。このPRでは直さない</td>
+</tr>
+</tbody>
+</table>
+<p>結果は、直すものがない <code>clean</code>、確かめた修正を1本のPRにまとめる <code>changed</code>、確認を終えられなかった <code>blocked</code> のどれか一つです。</p>
+<h3 id="_10">依頼の書き方：コマンドだけで足りる</h3>
+<p><code>docs/guide/06-verify-and-ship.md</code> も、次のようにコマンドだけの依頼を載せています。</p>
+<pre><code>/maintain-verification-skill
+</code></pre>
+<p><code>SKILL.md</code> の説明には、次の依頼でも呼べると書かれています。</p>
+<pre><code>audit the verify skill
+// 検証スキルを点検して
+</code></pre>
+<h2 id="_11">まとめ</h2>
+<ul>
+<li><strong><code>/create-verification-skill</code></strong>・・・ アプリの起動や操作の方法を、利用者に聞く前にリポジトリのコードや設定から調べて、検証スキルと <strong>Feature Map</strong> を生成します。起動から片付けまでを一度最後まで実行し、片付けの後も証拠が残ることを確かめてから手渡します。</li>
+<li><strong>Feature Map</strong>・・・ アプリの機能ごとに、何ができるか、ユーザーがどうたどり着くか、検証スキルでどう操作し、どんな結果を確かめられるかをまとめた文書です。</li>
+<li><strong><code>/maintain-verification-skill</code></strong>・・・ 検証スキルのディレクトリだけを編集し、プロダクトの退行は直さずに報告します。すべての機能を少なくとも一度実際に操作し、直すものがない <code>clean</code>、確かめた修正を1本のPRにまとめる <code>changed</code>、確認を終えられなかった <code>blocked</code> のどれか一つで終えます。</li>
+</ul>
+<p>次の<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/167c91">第27章</a>では、測った性能の数値を、報告したり、その数値をもとに判断したりする前に点検する <a href="https://github.com/cursor/plugins/blob/main/pstack/skills/benchmark-checklist/SKILL.md"><code>/benchmark-checklist</code></a> を扱います。</p>
+  </div>
+  <footer class="article-footer">
+    <span>取得: 2026-10-06T23:37:33+09:00</span>
+    <a href="#article-top">↑ 先頭へ戻る</a>
+  </footer>
+</main>
+<script>
+(() => {
+  const progress = document.querySelector(".reading-progress > span");
+  const updateProgress = () => {
+    const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+    const ratio = scrollable > 0 ? window.scrollY / scrollable : 0;
+    if (progress) progress.style.width = `${Math.min(1, ratio) * 100}%`;
+  };
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  document.querySelectorAll("pre").forEach((block) => {
+    const button = document.createElement("button");
+    button.className = "copy-button";
+    button.type = "button";
+    button.textContent = "コピー";
+    button.addEventListener("click", async () => {
+      const text = block.querySelector("code")?.innerText || block.innerText;
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const textarea = document.createElement("textarea");
+          textarea.value = text;
+          textarea.style.position = "fixed";
+          textarea.style.opacity = "0";
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand("copy");
+          textarea.remove();
+        }
+        button.textContent = "コピー済み";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      } catch (error) {
+        button.textContent = "失敗";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      }
+    });
+    block.appendChild(button);
+  });
+
+  const links = new Map(
+    [...document.querySelectorAll(".toc a")].map((link) => [link.hash, link])
+  );
+  const headings = [...document.querySelectorAll(
+    ".article-body h2[id], .article-body h3[id], .article-body h4[id]"
+  )];
+  if ("IntersectionObserver" in window && headings.length) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        links.forEach((link) => link.classList.remove("is-active"));
+        links.get(`#${entry.target.id}`)?.classList.add("is-active");
+      });
+    }, { rootMargin: "-12% 0px -72% 0px" });
+    headings.forEach((heading) => observer.observe(heading));
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1365 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="title" content="第17章 Core ― 作業の進め方を決める10の原則">
+<meta name="book_title" content="【Cursor pstack】AIエージェントに開発を任せる環境をつくる ―月2,500件のPRを支えた開発基盤とは？">
+<meta name="source_url" content="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a8e80b">
+<meta name="author" content="kaito">
+<meta name="published_at" content="2026-10-02">
+<meta name="retrieved_at" content="2026-10-06T23:37:30+09:00">
+<meta name="site" content="zenn.dev">
+<meta name="content_type" content="article">
+<meta name="chapter_position" content="22">
+<title>第17章 Core ― 作業の進め方を決める10の原則</title>
+<style>
+:root {
+  color-scheme: light;
+  --ink: #172033;
+  --muted: #64748b;
+  --line: #dbe4ef;
+  --accent: #2563eb;
+  --accent-dark: #1d4ed8;
+  --accent-soft: #eff6ff;
+  font-family: -apple-system, BlinkMacSystemFont, "Avenir Next",
+    "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 8% 0%, #dbeafe 0, transparent 32rem),
+    radial-gradient(circle at 100% 12%, #e0e7ff 0, transparent 28rem),
+    #f4f7fb;
+  color: var(--ink);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(120deg, transparent 0 48%, rgba(255, 255, 255, 0.4));
+}
+.article {
+  position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
+  max-width: 920px;
+  margin: clamp(1rem, 5vw, 4rem) auto;
+  padding: clamp(2rem, 6vw, 5rem) clamp(1.25rem, 7vw, 5.5rem);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  border-radius: 24px;
+  min-height: 100vh;
+  box-shadow:
+    0 24px 70px rgba(30, 64, 175, 0.1),
+    0 4px 16px rgba(15, 23, 42, 0.04);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 5px;
+  content: "";
+  background: linear-gradient(90deg, #2563eb, #7c3aed, #db2777);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin: 0 0 2.5rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.72rem;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+a {
+  color: var(--accent-dark);
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: #7c3aed;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--ink);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 18ch;
+  margin: 0 0 2.5rem;
+  font-size: clamp(2.15rem, 5vw, 3.65rem);
+  letter-spacing: -0.045em;
+}
+h2 {
+  position: relative;
+  margin: 3.8rem 0 1.25rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--line);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 4.2rem;
+  height: 3px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), #7c3aed);
+  border-radius: 999px;
+}
+h3 {
+  margin: 2.6rem 0 0.8rem;
+  color: var(--accent-dark);
+  font-size: 1.3rem;
+}
+h4, h5, h6 {
+  margin-top: 2rem;
+}
+p {
+  margin: 1.15rem 0;
+}
+ul, ol {
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.35rem 0;
+}
+li::marker {
+  color: var(--accent);
+  font-weight: 700;
+}
+strong {
+  color: #111827;
+}
+blockquote {
+  margin: 1.6rem 0;
+  padding: 0.8rem 1.25rem;
+  color: #475569;
+  background: linear-gradient(90deg, var(--accent-soft), #fff);
+  border-left: 4px solid var(--accent);
+  border-radius: 0 12px 12px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 3rem 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+img {
+  display: block;
+  max-width: 100%;
+  margin: 1.75rem auto;
+  height: auto;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+}
+pre {
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  padding: 1.15rem 1.25rem;
+  color: #e2e8f0;
+  background: #111827;
+  border: 1px solid #253047;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+}
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+:not(pre) > code {
+  padding: 0.15rem 0.4rem;
+  color: #9f1239;
+  background: #fff1f2;
+  border-radius: 5px;
+}
+table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  border-collapse: collapse;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
+  text-align: left;
+}
+th {
+  color: #1e3a8a;
+  background: #eff6ff;
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: #f8fafc;
+}
+@media (max-width: 600px) {
+  .article {
+    margin: 0;
+    padding: 2rem 1rem 4rem;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(2rem, 10vw, 2.75rem);
+  }
+  .metadata {
+    margin-bottom: 2rem;
+  }
+}
+@media print {
+  body {
+    background: #fff;
+  }
+  .article {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  a {
+    color: inherit;
+  }
+}
+</style>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0f1419;
+  --surface: #1a2332;
+  --surface-raised: #202c3f;
+  --surface-soft: rgba(26, 35, 50, 0.72);
+  --border: #2d3a4f;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #58a6ff;
+  --accent-strong: #79c0ff;
+  --green: #3fb950;
+  --purple: #bc8cff;
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+    "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  line-height: 1.75;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+  background: var(--bg);
+}
+body {
+  min-width: 320px;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 2rem 1.5rem 5rem;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(31, 111, 235, 0.18), transparent 32rem),
+    radial-gradient(circle at 100% 12%, rgba(137, 87, 229, 0.14), transparent 28rem),
+    var(--bg);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black, transparent 75%);
+}
+.reading-progress {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 20;
+  height: 3px;
+  background: rgba(45, 58, 79, 0.7);
+}
+.reading-progress > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  box-shadow: 0 0 14px rgba(88, 166, 255, 0.8);
+  transition: width 80ms linear;
+}
+.article {
+  position: relative;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  background: rgba(15, 20, 25, 0.76);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(88, 166, 255, 0.035) inset;
+  backdrop-filter: blur(16px);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  border-radius: 16px 16px 0 0;
+}
+.article-header {
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.eyebrow-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--green);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(63, 185, 80, 0.75);
+}
+.eyebrow-separator {
+  color: var(--border);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  background: rgba(32, 44, 63, 0.68);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+.source-link {
+  color: var(--text);
+  text-decoration: none;
+}
+.source-link:hover {
+  border-color: var(--accent);
+  background: rgba(88, 166, 255, 0.12);
+}
+a {
+  color: var(--accent);
+  overflow-wrap: anywhere;
+  text-decoration: none;
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 24ch;
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  background: linear-gradient(120deg, #fff 12%, #b9d8ff 58%, #bc8cff);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+h2 {
+  position: relative;
+  margin: 3.2rem 0 1.1rem;
+  padding: 0.75rem 0 0.65rem;
+  border-bottom: 1px solid var(--border);
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 3.8rem;
+  height: 2px;
+  content: "";
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(88, 166, 255, 0.7);
+}
+h3 {
+  margin: 2.25rem 0 0.7rem;
+  color: var(--accent-strong);
+  font-size: 1.2rem;
+}
+h4, h5, h6 {
+  margin-top: 1.75rem;
+}
+p {
+  margin: 0.9rem 0;
+}
+ul, ol {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.3rem 0;
+}
+li::marker {
+  color: var(--accent);
+}
+strong {
+  color: #fff;
+}
+blockquote {
+  margin: 1.4rem 0;
+  padding: 0.85rem 1.15rem;
+  color: #c9d1d9;
+  background: linear-gradient(100deg, rgba(88, 166, 255, 0.1), rgba(26, 35, 50, 0.55));
+  border: 1px solid rgba(88, 166, 255, 0.18);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 2.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+}
+pre {
+  position: relative;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  padding: 1rem 1.15rem;
+  color: #dbeafe;
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+pre code {
+  color: inherit;
+  background: transparent;
+}
+code {
+  font-family: "SF Mono", "Fira Code", ui-monospace, monospace;
+  font-size: 0.86em;
+}
+:not(pre) > code {
+  padding: 0.12em 0.38em;
+  color: #ffabbc;
+  background: rgba(248, 81, 73, 0.11);
+  border-radius: 4px;
+}
+.copy-button {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  padding: 0.25rem 0.55rem;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.72rem;
+  background: rgba(32, 44, 63, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.copy-button:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  border-spacing: 0;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.6rem 0.75rem;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+th {
+  color: var(--accent);
+  background: var(--surface);
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: rgba(26, 35, 50, 0.42);
+}
+tr:last-child td {
+  border-bottom: 0;
+}
+th:last-child, td:last-child {
+  border-right: 0;
+}
+.toc {
+  margin: 1.75rem 0 2.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.toc-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--border);
+}
+.toc-title {
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.toc-count {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.toc ol {
+  margin: 0.7rem 0 0;
+  padding-left: 1.25rem;
+}
+.toc ol ol {
+  margin: 0.2rem 0;
+}
+.toc li {
+  margin: 0.18rem 0;
+  font-size: 0.86rem;
+}
+.toc li::marker {
+  color: var(--muted);
+}
+.toc a {
+  display: inline-block;
+  max-width: 100%;
+  color: var(--muted);
+  transition: color 160ms ease, transform 160ms ease;
+}
+.toc a:hover, .toc a.is-active {
+  color: var(--accent-strong);
+  text-decoration: none;
+  transform: translateX(2px);
+}
+.article-body {
+  max-width: 78ch;
+  margin: 0 auto;
+}
+.article-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 1rem;
+  color: var(--muted);
+  font-size: 0.74rem;
+  border-top: 1px solid var(--border);
+}
+.article-footer a {
+  color: var(--muted);
+}
+@media (max-width: 720px) {
+  body {
+    padding: 0 0 3rem;
+  }
+  .article {
+    min-height: 100vh;
+    padding: 1.5rem 1rem 3rem;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+  .article::before {
+    border-radius: 0;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(1.9rem, 9vw, 2.6rem);
+  }
+  .article-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+@media print {
+  :root {
+    color-scheme: light;
+  }
+  body {
+    padding: 0;
+    color: #111;
+    background: #fff;
+  }
+  .reading-progress, .toc, .copy-button {
+    display: none;
+  }
+  .article {
+    max-width: none;
+    padding: 0;
+    background: #fff;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  h1, h2, h3, h4, h5, h6, strong {
+    color: #111;
+    -webkit-text-fill-color: initial;
+  }
+  a {
+    color: inherit;
+    text-decoration: underline;
+  }
+  pre {
+    color: #111;
+    background: #f4f4f4;
+    box-shadow: none;
+  }
+}
+</style>
+</head>
+<body>
+<div class="reading-progress" aria-hidden="true"><span></span></div>
+<main id="article-top" class="article">
+  <header class="article-header">
+    <div class="eyebrow">
+      <span class="eyebrow-dot"></span>
+      <span>ARTICLE</span>
+      <span class="eyebrow-separator">/</span>
+      <span>zenn.dev</span>
+    </div>
+    <div class="metadata" aria-label="記事メタデータ"><span class="metadata-item"><span class="metadata-label">著者</span>kaito</span><span class="metadata-item"><span class="metadata-label">公開日</span>2026-10-02</span><a class="metadata-item source-link" href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a8e80b"><span class="metadata-label">原文</span>読む</a><span class="metadata-item"><span class="metadata-label">サイト</span>zenn.dev</span><span class="metadata-item"><span class="metadata-label">形式</span>ARTICLE</span></div>
+    <h1 id="17-core-10">第17章 Core ― 作業の進め方を決める10の原則</h1>
+  </header>
+<nav class="toc" aria-label="目次">
+  <div class="toc-heading">
+    <span class="toc-title">目次</span>
+    <span class="toc-count">68 セクション</span>
+  </div>
+  <ol><li><a href="#_1">この章の構成</a></li><li><a href="#principle3">Principleを読む前に押さえる3つの前提</a></li><li><a href="#10">10原則の一覧</a></li><li><a href="#laziness-protocol">『Laziness Protocol』は、最小の変更で最大の結果を得る</a><ol><li><a href="#_2">ルール：コードを消し、呼び出しの階層を浅くし、判断を一か所で決める</a><ol><li><a href="#_3">消せるものを先に探す</a></li><li><a href="#_4">呼び出しの階層を浅くする</a></li><li><a href="#_5">判断を一か所にまとめる</a></li><li><a href="#_6">差分を最小にする</a></li><li><a href="#_7">新しい値を層に通す前に止まる</a></li></ol></li><li><a href="#_8">発火条件</a></li></ol></li><li><a href="#subtract-before-you-add">『Subtract Before You Add』は、機能を追加する前に複雑さを削る</a><ol><li><a href="#_9">ルール：作る前に複雑さを取り除く</a></li><li><a href="#_10">発火条件</a></li><li><a href="#_11">依頼の例：古いアダプタを消してから設計させる</a></li></ol></li><li><a href="#minimize-reader-load">『Minimize Reader Load』は、読み手がたどる間接参照の層と、覚えておく必要があるコードの状態を減らす</a><ol><li><a href="#_12">ルール：層と状態を減らす</a><ol><li><a href="#_13">受け渡すだけの層をなくす</a></li><li><a href="#_14">状態の範囲を狭める</a></li><li><a href="#_15">不変条件は、境界で一度だけ確かめて名前を付ける</a></li><li><a href="#30">30秒テストで判定する</a></li></ol></li><li><a href="#_16">発火条件</a></li></ol></li><li><a href="#foundational-thinking">『Foundational Thinking』は、ロジックの前にデータ構造と土台を決める</a><ol><li><a href="#_17">ルール：データ構造を決め、並行する状態を分け、土台を作ってから仕組みを積む</a><ol><li><a href="#_18">データ構造を先に決める</a></li><li><a href="#_19">コードでは、行の重複より構造の重複をなくす</a></li><li><a href="#_20">同時に書き換えられる値は、共有せず分ける</a></li><li><a href="#_21">土台を先に作る</a></li><li><a href="#11">変更を1つ行うたびに、まとまった仕組みを1つ置く</a></li></ol></li><li><a href="#_22">発火条件</a></li></ol></li><li><a href="#redesign-from-first-principles">『Redesign from First Principles』は、新しい要件を最初からあった前提として設計し直す</a><ol><li><a href="#4">ルール：4つの手順で設計し直す</a></li><li><a href="#_23">発火条件</a></li></ol></li><li><a href="#attack-the-premise2">『Attack the Premise』は、同じ前提に立つ修正が同じテストで2回落ちたら前提を疑う</a><ol><li><a href="#_24">ルール：直す前に前提を書き出し、偏りを数える</a><ol><li><a href="#_25">前提を書き出す</a></li><li><a href="#census">次の修正の前に、census を取る</a></li><li><a href="#_26">偏り方を読む</a></li><li><a href="#_27">偏りを後から補わず、偏りを生む割り当てそのものをなくす</a></li><li><a href="#census_1">前提とcensusができるまで、次の修正を始めない</a></li></ol></li><li><a href="#_28">発火条件</a></li></ol></li><li><a href="#outcome-oriented-execution">『Outcome-Oriented Execution』は、移行途中のコードの整合性を保つための一時的なコードより、確かめられる最終形を優先する</a><ol><li><a href="#_29">ルール：途中で壊れてよい場所を先に決め、最後に全部を確かめる</a></li><li><a href="#_30">発火条件</a></li></ol></li><li><a href="#experience-first">『Experience First』は、実装の都合よりユーザーの体験を選ぶ</a><ol><li><a href="#_31">ルール：機能を少なく、よく作る</a><ol><li><a href="#_32">すべての機能、操作、選択肢に理由を持たせる</a></li><li><a href="#_33">機能を少なく作り、よく作る</a></li><li><a href="#_34">決める前にプロトタイプを作る</a></li><li><a href="#_35">細部を正しくする</a></li><li><a href="#_36">ユーザーが主に行う作業の流れを中心にする</a></li><li><a href="#_37">影響はユーザーの視点で説明する</a></li></ol></li><li><a href="#_38">発火条件</a></li></ol></li><li><a href="#exhaust-the-design-space23">『Exhaust the Design Space』は、前例のない設計では2〜3案を作って比べる</a><ol><li><a href="#23">ルール：形の違う2〜3案を並べて比べる</a></li><li><a href="#_39">発火条件</a></li><li><a href="#2">依頼の例：プロトタイプを2つ作って比べる</a></li></ol></li><li><a href="#build-the-lever">『Build the Lever』は、手作業ではなく作業をする道具を作る</a><ol><li><a href="#1">ルール：最初の1回を手でやって手順を学んでから道具を作る</a><ol><li><a href="#1_1">最初の1回は手でやり、それから道具を作る</a></li><li><a href="#_40">作業に合った道具を選ぶ</a></li><li><a href="#_41">スクリプトでできることはスクリプトで行い、複数のサブエージェントに分けて任せない</a></li><li><a href="#skill">サブエージェントに配るときは、手順書をSkillとして書く</a></li><li><a href="#_42">作るのはフレームワークではなく、最小のスクリプトにする</a></li><li><a href="#_43">作業がセッションをまたいで続くなら、道具をコミットする</a></li></ol></li><li><a href="#_44">発火条件</a></li><li><a href="#_45">依頼の例：席を外している間に移行を任せる</a></li></ol></li><li><a href="#_46">まとめ</a></li></ol>
+</nav>
+  <div class="article-body">
+
+<p>この章では、次の10の原則を扱います。</p>
+<ol>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-laziness-protocol/SKILL.md">Laziness Protocol</a></li>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-subtract-before-you-add/SKILL.md">Subtract Before You Add</a></li>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-minimize-reader-load/SKILL.md">Minimize Reader Load</a></li>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-foundational-thinking/SKILL.md">Foundational Thinking</a></li>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-redesign-from-first-principles/SKILL.md">Redesign from First Principles</a></li>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-attack-the-premise/SKILL.md">Attack the Premise</a></li>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-outcome-oriented-execution/SKILL.md">Outcome-Oriented Execution</a></li>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-experience-first/SKILL.md">Experience First</a></li>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-exhaust-the-design-space/SKILL.md">Exhaust the Design Space</a></li>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-build-the-lever/SKILL.md">Build the Lever</a></li>
+</ol>
+<p>10件はCore（中核）のグループの原則です。同梱ガイドのページ <a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/08-principles.md"><code>docs/guide/08-principles.md</code></a> は、Coreの10件を「<strong>どれだけ作るか、いつ設計を見直すか</strong>を決める原則」と説明しています。エージェントは、たとえば、差分を最小にする、機能を追加する前に複雑さを削る、同じ前提の修正が2回落ちたら前提を疑う、といった判断にこれらの原則を使います。</p>
+<p>10件を1件ずつ並べるだけでは、どの原則をどんな場面の判断に使うのかが見えにくくなります。そこで本章では、10件を、何についての判断かによって4つのまとまりに分けて扱います。4つのまとまりは次のとおりです。</p>
+<ul>
+<li><strong>1〜3</strong>・・・ コードを減らす原則</li>
+<li><strong>4〜7</strong>・・・ 設計の置き方（設計の土台と、見直すタイミング）を決める原則</li>
+<li><strong>8と9</strong>・・・ 何を目指すか（ユーザーの体験や複数の案をもとにした目指す形）を決める原則</li>
+<li><strong>10</strong>・・・ 手作業を道具に変える原則</li>
+</ul>
+<p>この章では、10原則をこの順に、1件ずつ次の観点で解説します。</p>
+<ul>
+<li><strong>ルール</strong>・・・ その原則が求めること</li>
+<li><strong>発火条件</strong>・・・ その原則が当てはまる場面</li>
+</ul>
+<h2 id="_1">この章の構成</h2>
+<p>この章の構成は次のとおりです。</p>
+<ul>
+<li>Principleを読む前に押さえる3つの前提</li>
+<li>10原則の一覧</li>
+<li>『Laziness Protocol』は、最小の変更で最大の結果を得る</li>
+<li>『Subtract Before You Add』は、機能を追加する前に複雑さを削る</li>
+<li>『Minimize Reader Load』は、読み手がたどる間接参照の層と、覚えておく必要があるコードの状態を減らす</li>
+<li>『Foundational Thinking』は、ロジックの前にデータ構造と土台を決める</li>
+<li>『Redesign from First Principles』は、新しい要件を最初からあった前提として設計し直す</li>
+<li>『Attack the Premise』は、同じ前提に立つ修正が同じテストで2回落ちたら前提を疑う</li>
+<li>『Outcome-Oriented Execution』は、移行途中のコードの整合性を保つための一時的なコードより、確かめられる最終形を優先する</li>
+<li>『Experience First』は、実装の都合よりユーザーの体験を選ぶ</li>
+<li>『Exhaust the Design Space』は、前例のない設計では2〜3案を作って比べる</li>
+<li>『Build the Lever』は、手作業ではなく作業をする道具を作る</li>
+<li>まとめ</li>
+</ul>
+<h2 id="principle3">Principleを読む前に押さえる3つの前提</h2>
+<p>Principleの仕組みは<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/096f3d">第8章</a>と<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/6b7496">第9章</a>でも扱いましたが、本章を読むうえでは、次の3つだけ押さえておけば十分です。</p>
+<ol>
+<li><strong>Principleは今の変更を入れるか、まだ完了ではないかを決める</strong><br />
+<strong>Principle自体は手順や能力ではなく、判断の基準</strong>です。ただし『Build the Lever』や『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-prove-it-works/SKILL.md"><strong>Prove It Works</strong></a>』のように、適用するとスクリプトを書くことを求めるものもあります。</li>
+<li><strong>発火条件は、<code>/poteto-mode</code> のPrinciple一覧と、各Principleの冒頭に書かれている</strong><br />
+   原則が当てはまる場面を、本書では発火条件と呼びます。本章の発火条件は、<code>/poteto-mode</code> の『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/SKILL.md#principles">Principles</a>』の各項目にある「いつ当てはまるか」と、各Principleの <code>SKILL.md</code> の冒頭（description）にある適用の場面をもとにした訳です。</li>
+<li><strong>原則の名前は、依頼に書かなくても使われる</strong><br />
+   エージェントは、<strong>作業が発火条件に当てはまれば、原則を自分で読んで適用します</strong>。ただし、<strong>エージェントが一覧（索引）を読むのは手順が複数ある作業の始めで、当てはまるかどうかの判断もエージェントに任されている</strong>ため、当てはまる場面を見落とすことがあります。<br />
+   エージェントが原則の適用を見落とした（見送った）場合、人間が<strong>原則名を依頼に明示すれば</strong>、エージェントはその原則を適用し、作業の方向を修正します。</li>
+</ol>
+<p>!</p>
+<p>本章で依頼例を載せているのは、10件のうち『Subtract Before You Add』『Exhaust the Design Space』『Build the Lever』の3件だけです。</p>
+<p>本書では、依頼例を、pstackの同梱ガイドや<a href="https://github.com/cursor/plugins/blob/main/pstack/README.md">README</a>に記載があるものだけにとどめるものとします。原文に依頼例がない原則について本書で依頼例を作ると、pstackが想定していない使い方を示してしまうおそれがあるためです。</p>
+<h2 id="10">10原則の一覧</h2>
+<table>
+<thead>
+<tr>
+<th>まとまり</th>
+<th>Principle</th>
+<th>一文の結論</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>コードを減らす</td>
+<td>『<strong>Laziness Protocol</strong>』</td>
+<td>最小のコードと複雑さで、最大の結果を得る</td>
+</tr>
+<tr>
+<td>コードを減らす</td>
+<td>『<strong>Subtract Before You Add</strong>』</td>
+<td>機能を追加する前に、複雑さを削る</td>
+</tr>
+<tr>
+<td>コードを減らす</td>
+<td>『<strong>Minimize Reader Load</strong>』</td>
+<td>読み手がたどる間接参照の層と、覚えておく必要があるコードの状態を減らす</td>
+</tr>
+<tr>
+<td>設計の置き方</td>
+<td>『<strong>Foundational Thinking</strong>』</td>
+<td>ロジックの前にデータ構造と土台を決める</td>
+</tr>
+<tr>
+<td>設計の置き方</td>
+<td>『<strong>Redesign from First Principles</strong>』</td>
+<td>新しい要件を、最初からあった前提として設計し直す</td>
+</tr>
+<tr>
+<td>設計の置き方</td>
+<td>『<strong>Attack the Premise</strong>』</td>
+<td>同じ前提に立つ修正が同じテストで2回落ちたら、前提を疑う</td>
+</tr>
+<tr>
+<td>設計の置き方</td>
+<td>『<strong>Outcome-Oriented Execution</strong>』</td>
+<td>移行途中のコードの整合性を保つための一時的なコードより、確かめられる最終形を優先する</td>
+</tr>
+<tr>
+<td>何を目指すか</td>
+<td>『<strong>Experience First</strong>』</td>
+<td>実装の都合より、ユーザーの体験を選ぶ</td>
+</tr>
+<tr>
+<td>何を目指すか</td>
+<td>『<strong>Exhaust the Design Space</strong>』</td>
+<td>前例のない設計では、2〜3案を作って比べる</td>
+</tr>
+<tr>
+<td>道具に変える</td>
+<td>『<strong>Build the Lever</strong>』</td>
+<td>手作業ではなく、作業をする道具か、作業の正しさを証明する道具を作る</td>
+</tr>
+</tbody>
+</table>
+<h2 id="laziness-protocol">『Laziness Protocol』は、最小の変更で最大の結果を得る</h2>
+<p>原則『<strong>Laziness Protocol</strong>』は、<strong>最小のコードと複雑さで最大の結果を得る</strong>ことを求めます。この原則が解決策の良し悪しを判定する基準は、人間の開発者が<strong>そのコードの保守に疲れ果てるかどうか</strong>という一点です。原文では「<strong>そのコードの保守に疲れ果てるなら悪い解決策</strong>」と明示されています。</p>
+<h3 id="_2">ルール：コードを消し、呼び出しの階層を浅くし、判断を一か所で決める</h3>
+<p>主なルールは次のとおりです。</p>
+<h4 id="_3">消せるものを先に探す</h4>
+<p>改善を頼まれたら、コードを追加する前に、消せるものを探します。</p>
+<h4 id="_4">呼び出しの階層を浅くする</h4>
+<p>コード上で目的のものを探すために、4つ以上のファイルをたどるか、処理を4層以上たどる必要があるなら、間の層をなくして階層を浅くします。何層もたどらないと答えが出ないコードは、保守する人を疲れさせるためです。</p>
+<h4 id="_5">判断を一か所にまとめる</h4>
+<p>同じ条件を複数の場所で判定せず、一か所で判定します。<br />
+たとえば、入力欄が空かどうかを一度判定し、その結果を「ボタンの活性・非活性制御」や「案内の表示」といった複数箇所で使います。条件を変えるときも、判定箇所を一か所直せば済みます。同じ判断が何か所にもあると、それらをそろえ続ける手間がいつまでも残るからです。</p>
+<h4 id="_6">差分を最小にする</h4>
+<p>凝った定型コードより、行数が少ないほうが良いと判断します。</p>
+<h4 id="_7">新しい値を層に通す前に止まる</h4>
+<p>新しい値を型、スキーマ、パイプラインと何層にも通す依頼が来たら、一旦止まり、より直接的な選択肢を探します。</p>
+<p>たとえば、有料会員にだけボタンを表示する機能を追加するときに、「有料会員かどうか」という新しい値を、APIの型、変換処理、親から子へ渡す値と何層にも追加していくのではなく、ボタンの近くですでに使えるユーザー情報から直接判定できないかを先に探します。</p>
+<h3 id="_8">発火条件</h3>
+<ul>
+<li>リファクタリングや差分の見積もりをするとき</li>
+<li>抽象化や層を追加したくなったとき</li>
+<li>新しい値を何層にもまたいで受け渡したくなったとき</li>
+</ul>
+<h2 id="subtract-before-you-add">『Subtract Before You Add』は、機能を追加する前に複雑さを削る</h2>
+<p>原則『<strong>Subtract Before You Add</strong>』は、<strong>システムを育てるときは先に複雑さを取り除き、それから作る</strong>ことを求めます。複雑なシステムに機能を追加すると、複雑さが積み重なるからです。先に複雑さを削れば、コードが減り、システムの本質的な構造が見えて、次にどう設計すればよいかも大抵、明確になります。</p>
+<h3 id="_9">ルール：作る前に複雑さを取り除く</h3>
+<ul>
+<li>作る前に複雑さを取り除き、品質を磨く前に最小限まで削る</li>
+<li>必要性がまだ確かめられていない例外（エッジケース）への対応を増やさず、実際に確認できた使われ方に合わせて設計する</li>
+<li>検証器やガードは仕様が求める範囲にとどめ、推測で追加しない</li>
+<li>プロンプトやSkillの文章でも、重複した指示を消す</li>
+</ul>
+<h3 id="_10">発火条件</h3>
+<p>機能や処理の追加、リファクタリング、書き直しを、どの順番で進めるかを決めるときです。</p>
+<h3 id="_11">依頼の例：古いアダプタを消してから設計させる</h3>
+<p>次の依頼例は、エージェントが、すでにある3つのアダプタに4つ目を追加しようとしている場面で、同梱ガイドが挙げているものです。</p>
+<pre><code>use subtract before you add. delete the obsolete adapters first, then design what's left.
+// subtract before you add を使って。まず古くなったアダプタを消して。それから残ったものを設計して。
+</code></pre>
+<p>!</p>
+<p><strong>アダプタ</strong>・・・ 外部サービスごとの違いを吸収して、同じ呼び方で使えるようにする部品</p>
+<p>たとえば、A社・B社・C社の決済サービスは呼び出し方がそれぞれ違いますが、会社ごとのアダプタを用意すれば、アプリ側はどの会社でも <code>pay(金額)</code> という同じ書き方で呼べます。</p>
+<h2 id="minimize-reader-load">『Minimize Reader Load』は、読み手がたどる間接参照の層と、覚えておく必要があるコードの状態を減らす</h2>
+<p>原則『<strong>Minimize Reader Load</strong>』は、保守しやすさを「<strong>読み手がコードを理解するためにする仕事の量</strong>」と定義します。コードは、書かれるよりも読まれるほうがはるかに多いからです。</p>
+<p>この原則は、読み手の負担を「たどる層」と「抱える状態」の2つの軸で測ります。</p>
+<p>「たどる層」とは、読み手が疑問を持ってから答えにたどり着くまでに、関数やファイルを何段たどるかという段数のことです。</p>
+<p>「抱える状態」とは、読み手がコードの挙動を理解するために頭の中に覚えておく必要がある、隠れた状態や書き換えられる値のことで、「どの値」が「どこ」で「変わるか」をどれだけ追い続ける必要があるか、といった「コードを追跡する際の負荷」を指します。</p>
+<p>2つの軸は、それぞれ異なる種類の読みにくさを生みます。</p>
+<p>たとえば、関数を何段もたどらずに済む1つのファイルでも、どこからでも書き換えられる変数（グローバル変数）が50個あれば、読み手が、ある値がいつ、どこで変わるかを追うのは難しくなります。逆に、変数が少なくても、答えにたどり着くまでに6層のアダプタ（変換を受け持つ層）をたどる必要があれば、それも読みにくいコードです。</p>
+<p>そのため、この原則は、片方だけでなく両方を減らすよう求めます。</p>
+<p>『<strong>Minimize Reader Load</strong>』は、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/c155cc">第20章</a>の『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-guard-the-context-window/SKILL.md"><strong>Guard the Context Window</strong></a>』（エージェントのコンテキストウィンドウを大量の出力で埋めないための原則）の人間版に該当します。一度に覚えておける量（作業記憶）に限りがあるのは、エージェントだけでなく、コードを読む人間も同じだからです。</p>
+<h3 id="_12">ルール：層と状態を減らす</h3>
+<h4 id="_13">受け渡すだけの層をなくす</h4>
+<p>内部で別の関数を呼ぶだけの関数が1か所からしか使われていないなら、その関数をなくし、呼び出し元から、その関数を直接呼びます。<br />
+たとえば、<code>saveUser()</code> が <code>db.save()</code> を呼ぶだけなら、<code>db.save()</code> を直接呼びます。</p>
+<pre><code>type User = { name: string };
+declare const db: { save(user: User): Promise&lt;void&gt; };
+declare const user: User;
+
+// 前：saveUser は db.save を呼ぶだけで、使われているのはここ1か所
+function saveUser(user: User) {
+  return db.save(user);
+}
+await saveUser(user);
+
+// 後：saveUser をなくし、db.save を直接呼ぶ
+await db.save(user);
+</code></pre>
+<p>また、呼び出し元と実際の処理の間に挟んだ層も、取り替え先が1つもないなら、同じようになくします。将来の拡張性などを考えて挟んだ層も、これに含まれます。</p>
+<p>たとえば、決済サービスを1社しか使っていないのに、<code>PaymentGateway</code> のような取り替え用の窓口を挟んでいる場合です。こうした層は、読み手に「開いて中を確かめる」手間を増やすだけだからです。</p>
+<pre><code>declare const aPayClient: { charge(amount: number): Promise&lt;void&gt; };
+
+// 前：取り替え用の窓口を挟んでいるが、実装は A社用の1つしかない
+interface PaymentGateway {
+  pay(amount: number): Promise&lt;void&gt;;
+}
+
+class APayPaymentGateway implements PaymentGateway {
+  pay(amount: number) {
+    return aPayClient.charge(amount);
+  }
+}
+
+const gateway: PaymentGateway = new APayPaymentGateway();
+await gateway.pay(1000);
+
+// 後：窓口をなくし、A社の決済を直接呼ぶ
+await aPayClient.charge(1000);
+</code></pre>
+<h4 id="_14">状態の範囲を狭める</h4>
+<p>値を書き換えられる範囲を狭くします。たとえば、どこからでも書き換えられる変数（グローバル変数）より、1つの関数の中だけで使う変数（ローカル変数）を選びます。</p>
+<p>また、ほかの値から計算できる値を、別の変数として持ちません。<br />
+たとえば、商品の一覧とは別に「商品の件数」という変数を持つと、一覧を変えるたびに件数も更新する必要があります。3件の一覧に商品を1つ追加したのに件数の更新を忘れると、一覧には4件あるのに件数は3のままになります。件数は、必要なときに一覧から数えます。</p>
+<p>状態の範囲が狭いほど、読み手が覚えておく必要があるコード上の状態が減るからです。</p>
+<h4 id="_15">不変条件は、境界で一度だけ確かめて名前を付ける</h4>
+<p>不変条件とは、「金額は0以上」のように、プログラムが動いている間、常に守られていなければならない条件のことです。原則は、不変条件を、利用側のすべてではなく境界で一度だけ確かめるよう求めます。</p>
+<p>!</p>
+<p>ここでいう<strong>境界</strong>とは、フォームの入力やAPIの応答のように、外からデータが入ってくる場所のことです。</p>
+<p>たとえば、注文フォームから金額を受け取る関数が、「金額が0以上か」を一度だけ確かめ、確かめた値を <code>NonNegativeAmount</code>（0以上の金額）という名前の型にして渡します。</p>
+<p>金額を使う側の関数（合計を計算する関数や、請求書を作る関数など）は、金額を <code>NonNegativeAmount</code> 型で受け取り、同じ確認（条件）を繰り返しません。</p>
+<p>型の名前を見れば、「この金額は、境界で0以上だと確かめ済み」だと分かるからです。こうすると、<strong>読み手は境界の一か所と型の名前を読むだけで、その条件を一度で覚えられます</strong>。</p>
+<pre><code>// 0以上だと確かめ済みの金額を表す型
+type NonNegativeAmount = number &amp; { readonly __brand: &quot;NonNegativeAmount&quot; };
+
+// 境界：注文フォームから受け取った金額を、ここで一度だけ確かめる
+function parseAmount(input: number): NonNegativeAmount {
+  if (input &lt; 0) {
+    throw new Error(&quot;金額は0以上で入力してください&quot;);
+  }
+
+  return input as NonNegativeAmount; // 確かめた直後なので、ここでだけ型を付ける
+}
+
+// 使う側：NonNegativeAmount で受け取るので、「0以上か」を確かめ直さない
+function calcTotal(price: NonNegativeAmount, quantity: number): number {
+  return price * quantity;
+}
+
+function createInvoice(amount: NonNegativeAmount): string {
+  return `ご請求金額：${amount}円`;
+}
+</code></pre>
+<p><code>calcTotal</code> と <code>createInvoice</code> には、<code>if (amount &lt; 0)</code> のような確認がありません。<code>parseAmount</code> を通っていない数値を渡すと、コンパイルの時点でエラーになるため、使う側で確かめ直す必要がないからです。</p>
+<h4 id="30">30秒テストで判定する</h4>
+<p><strong>この原則は、層や状態が多すぎるかどうかを「30秒テスト」で判定します</strong>。新しい読み手が「Xはどこから来るか」「何がXを変えうるか」に30秒以内に答えられなければ、層か状態を削ります。</p>
+<h3 id="_16">発火条件</h3>
+<p>処理を追いにくいコードをレビューするとき、またはそうしたコードを書いたり、構成を組み直したりするときです。</p>
+<h2 id="foundational-thinking">『Foundational Thinking』は、ロジックの前にデータ構造と土台を決める</h2>
+<p>原則『<strong>Foundational Thinking</strong>』は、<strong>ロジックを書く前にデータの形を決める</strong>ことを求めます。</p>
+<p>この原則は、判断を以下の2種類に分けています。</p>
+<ol>
+<li>構造の判断（データの形や作業の順番を決めること）</li>
+<li>コードの書き方の判断</li>
+</ol>
+<p>構造の判断は、将来の選択肢を守ります。ここでいう、構造の判断とは「データの形や作業の順番を決めること」で、将来の選択肢は「後から別の道を選べる余地のこと」です。<br />
+コードの書き方の判断は、コードの単純さを守ります。データ構造を正しく選べば、その後に書くコードで何を書けばよいかは自然に決まります。</p>
+<p>poteto氏は『The Complete Guide to pstack』<a href="https://x.com/poteto/status/2097732320606507506">Part 2</a>で、<strong>エージェントの時代のエンジニアはアーキテクチャやデータ構造の選択に時間を使い、実装の詳細はエージェントが埋める</strong>、という分担を示しています。この原則は、データ構造を選ぶ判断を、エージェントの作業の最初に置いています。</p>
+<h3 id="_17">ルール：データ構造を決め、並行する状態を分け、土台を作ってから仕組みを積む</h3>
+<h4 id="_18">データ構造を先に決める</h4>
+<p>ロジックを書く前に、中心になるデータの型を決めます。そのうえで、そのデータをどこでどう読み書きするかを一通り洗い出し、最もよく使われる処理に合う形を選びます。</p>
+<p>たとえば、商品一覧の機能なら、先に「商品は名前、価格、在庫数を持つ」という形を決め、画面への表示やカートへの追加をどう書くかはその後に考えます。データの形が決まれば、それを使う処理は迷わずに書けるからです。</p>
+<pre><code>// 先に決める：商品は名前、価格、在庫数を持つ
+type Product = {
+  name: string;
+  price: number;
+  stock: number;
+};
+
+// 形が決まっているので、表示やカートへの追加は迷わずに書ける
+function formatProduct(product: Product): string {
+  return `${product.name}　${product.price}円（在庫 ${product.stock}）`;
+}
+
+function canAddToCart(product: Product): boolean {
+  return product.stock &gt; 0;
+}
+</code></pre>
+<h4 id="_19">コードでは、行の重複より構造の重複をなくす</h4>
+<p>似た行があるたびに共通の関数へまとめるのではなく、データの形のような構造の重複をなくします。</p>
+<p>この原則は、似た文が3つ並ぶ程度なら、急いで共通化するより、そのまま書いたほうが良いとします。また、凝った書き方より、見れば分かる書き方を選びます。凝った書き方とは、短く書けるが、読む人が一度では意味を取れない書き方のことです。たとえば、数が奇数かどうかを <code>n &amp; 1</code> のようなビット演算で判定するより、<code>n % 2 === 1</code> と書きます。</p>
+<p><strong>早すぎる共通化や凝った書き方は、コードを単純に保つという目的に反する</strong>からです。</p>
+<h4 id="_20">同時に書き換えられる値は、共有せず分ける</h4>
+<p>複数の主体（同時に動くWorkerやエージェント）で1つの値を共有する前に、「<strong>ほかの主体が同じ値を同時に書き換えたら、何が起きるか</strong>」を考えます。何か問題が起きるなら、値を共有せず、主体ごとに自分専用の値を持たせます。</p>
+<p>たとえば、2つのWorkerA・Bが、共有の「処理済み件数」をそれぞれ1ずつ増やすとします。件数が10のときにAとBがほぼ同時に動くと、次の流れになります。</p>
+<p>2つのWorkerが1件ずつ処理したので本当は12になるはずが、Bは、Aが書き込む前の10をもとに11を書き込むため、件数は11になり、1件分が消えてしまいます。</p>
+<p>そこで、Workerごとに自分の件数を持たせ、全体の件数が必要なときだけ合計します。主体ごとに値が分かれていれば、ほかの主体に書き換えられる心配そのものがなくなるからです。</p>
+<pre><code>type Job = { id: string };
+declare const store: {
+  get(key: string): Promise&lt;number&gt;;
+  set(key: string, value: number): Promise&lt;void&gt;;
+};
+declare function processJob(job: Job): Promise&lt;void&gt;;
+declare const jobsForA: Job[];
+declare const jobsForB: Job[];
+
+// 前：全Workerで1つの「処理済み件数」を共有し、読んでから書き込む
+async function countUp() {
+  // A と B がほぼ同時に 10 を読む
+  const current = await store.get(&quot;processedCount&quot;); 
+  // どちらも 11 を書き込み、1件分が消える
+  await store.set(&quot;processedCount&quot;, current + 1);
+}
+
+// 後：Workerごとに自分の件数を持たせ、全体が必要なときだけ合計する
+async function runWorker(jobs: Job[]): Promise&lt;number&gt; {
+  let processedCount = 0; // このWorker専用の値
+
+  for (const job of jobs) {
+    await processJob(job);
+    processedCount += 1;
+  }
+
+  return processedCount;
+}
+
+const counts = await Promise.all([runWorker(jobsForA), runWorker(jobsForB)]);
+const total = counts[0] + counts[1];
+</code></pre>
+<h4 id="_21">土台を先に作る</h4>
+<p>「<strong>この後のすべての段階が、これがあることで得をするか</strong>」と問い、答えが「Yes」なら先に作ります。CI、lint、テスト基盤、共有の型が土台の例です。この原則は、こうした土台を <strong>scaffold</strong>（直訳すると「足場」）と呼びます。</p>
+<p>機能より準備を、修正よりテストを先にします。また、コミットは小さく、目的を1つに絞ることを優先します。土台が先にあれば、その後の作業すべてがそれを使えるからです。</p>
+<p>ただし、<strong>土台を作ることよりも、使われていないコードを消すことを優先します</strong>。</p>
+<p>使われていないコードを残したまま土台を作ると、共有の型やテストが、その不要なコードまで支える形になってしまうからです。先に消しておけば、本当に使われている部分だけが見えるので、それに合った土台を作れます。これは、この章の<a href="#%E3%80%8Esubtract-before-you-add%E3%80%8F%E3%81%AF%E3%80%81%E6%A9%9F%E8%83%BD%E3%82%92%E8%BF%BD%E5%8A%A0%E3%81%99%E3%82%8B%E5%89%8D%E3%81%AB%E8%A4%87%E9%9B%91%E3%81%95%E3%82%92%E5%89%8A%E3%82%8B">『Subtract Before You Add』</a>と同じ考え方です。</p>
+<p>また、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/dc9141">第4章</a>で見たように、コードベースはエージェントにとって記憶でもあるため、間違ったコンテキストが残ることを避けるためにも使われていないコードを消すことを優先している、と本書では読みます。</p>
+<h4 id="11">変更を1つ行うたびに、まとまった仕組みを1つ置く</h4>
+<p>変更を1つ行うたびに、まとまった仕組み（複数の箇所から使える共通の関数や部品など）を1つ作るか、今ある共通の関数や部品などの仕組みを、より使いやすくします。</p>
+<p>新しい機能を追加するときは、その機能を使う箇所ごとに、例外的な処理をあちこちに追加しません。たとえば、商品一覧に並べ替えの機能を追加するなら、一覧を表示する画面ごとに並べ替えの処理を追加するのではなく、並べ替えを受け持つ部品を1つ作り、各画面はその部品を呼び出して使うようにします。</p>
+<p><strong>新しい機能が1か所にまとまっていれば、読む人も直す人もその1か所を見れば済む</strong>からです。</p>
+<h3 id="_22">発火条件</h3>
+<ul>
+<li>ロジックを書く前（中心になる型やデータ構造を選ぶとき）</li>
+<li>土台（CI、lint、テスト基盤、共有の型のように、その後のすべての作業が使う仕組み）と機能のどちらを先に作るかを決めるとき</li>
+<li>並行して動く複数の<strong>主体</strong>が、何を共有するかを考えるとき</li>
+</ul>
+<p>!</p>
+<p>ここでいう<strong>主体</strong>とは、同時に動いて処理を進めるもののことです。</p>
+<p>たとえば、キューから仕事を取り出して並行に処理する複数のWorker（処理を受け持つプログラム）や、同じリポジトリで同時に作業する複数のエージェントが主体に該当します。</p>
+<h2 id="redesign-from-first-principles">『Redesign from First Principles』は、新しい要件を最初からあった前提として設計し直す</h2>
+<p>原則『<strong>Redesign from First Principles</strong>』は、変更を今の設計に後付けせず、<strong>その要件が最初からあったかのように設計し直す</strong>ことを求めます。『<strong>Foundational Thinking</strong>』が「新しく何かを作るときの原則」なら、『<strong>Redesign from First Principles</strong>』は「今ある設計に変更を組み込むときの原則」だと、本書では読みます。</p>
+<h3 id="4">ルール：4つの手順で設計し直す</h3>
+<ol>
+<li>影響するファイルをすべて読み、今の設計を理解する</li>
+<li>「この新しい要件を最初から知っていて、ゼロから書くとしたら、何を作るか」と問う</li>
+<li>型、ドキュメント、例、設計の理由を書いた節まで、変更に関わるすべての箇所を新しい設計に合わせて直す</li>
+<li>設計し直した全体像を先に考えてから、変更は少しずつ分けて入れる</li>
+</ol>
+<p>たとえば、「日本円だけを扱っていた料金計算に、ドルでの支払いを加える」というケースでは以下のように考えられます。</p>
+<ul>
+<li>後付けの場合、金額を使う箇所ごとに「ドルならこう計算する」という分岐を追加する</li>
+<li>設計し直すなら、「最初から複数の通貨を扱う前提だったら、どう作るか」と考え、金額を「数値と通貨の組」として持つ形に改める</li>
+</ul>
+<p>最後に、設計し直した結果を反映するため、金額を使う箇所、型、ドキュメントをすべてその形に合わせて修正します。</p>
+<pre><code>// 後付け：金額は円の数値のまま、使う箇所ごとに「ドルなら」の分岐を追加する
+function formatPrice(amount: number, isDollar: boolean): string {
+  if (isDollar) {
+    return `$${amount.toFixed(2)}`;
+  }
+
+  return `${amount}円`;
+}
+</code></pre>
+<pre><code>// 設計し直す：金額を「数値と通貨の組」として持ち、使う箇所はすべてこの型を受け取る
+type Currency = &quot;JPY&quot; | &quot;USD&quot;;
+type Money = { amount: number; currency: Currency };
+
+function formatPrice(price: Money): string {
+  if (price.currency === &quot;USD&quot;) {
+    return `$${price.amount.toFixed(2)}`;
+  }
+
+  return `${price.amount}円`;
+}
+</code></pre>
+<p>この原則は、この4つの手順を、<strong>今ある設計に変更を組み込みながら将来の選択肢を残す</strong>ための方法だと説明しています。後付けで済ませると、後から追加した部分と元の設計が食い違ったまま残ります。その後の変更は、この食い違いを避けて書くしかなくなるため、後から選べる設計が少なくなります。</p>
+<h3 id="_23">発火条件</h3>
+<p>新しい要件を今ある設計に組み込むときです。</p>
+<h2 id="attack-the-premise2">『Attack the Premise』は、同じ前提に立つ修正が同じテストで2回落ちたら前提を疑う</h2>
+<p>原則『<strong>Attack the Premise</strong>』は、同じ前提に立つ2つ以上の修正が、同じ gate で落ちたら、<strong>修正ではなく前提を疑う</strong>よう定めます。</p>
+<p>!</p>
+<ul>
+<li><strong>gate</strong>・・・ 「関門」という意味があり、修正が通らなければならないテストやチェックのことを指す</li>
+<li><strong>前提</strong>・・・ 修正を書いた人やエージェントが「原因はこれだ」と当然のように考えていたことを指す</li>
+</ul>
+<p>たとえば、エージェントが「処理が遅いのはデータ量が多いせいだ」と考えて、1回目も2回目も一度に扱うデータ量を減らす修正を行い、どちらも同じテストに落ちたケースを考えてみましょう。</p>
+<p>データ量が原因なら、データ量を減らせばテストは通るはずです。しかし、テストは2回とも通らなかったので、遅さの原因がデータ量ではない可能性が考えられます。そこでエージェントは、3回目の修正を書く前に、「データ量が多いせいだ」という考え自体を疑います。同じ前提に立つ修正が失敗するたびに、<strong>その失敗が前提そのものについての証拠になる</strong>ため、エージェント自身が前提を疑うことができます。</p>
+<p>『<strong>Redesign from First Principles</strong>』が新しい要件を中心に設計を組み直すのに対し、この原則は、<strong>今の設計が「当然のこと」として扱っている前提を疑います</strong>。</p>
+<h3 id="_24">ルール：直す前に前提を書き出し、偏りを数える</h3>
+<h4 id="_25">前提を書き出す</h4>
+<p>失敗したすべての修正が当然としていた前提を、一文で書き出します。書き出すことで、疑う対象がはっきりします。</p>
+<h4 id="census">次の修正の前に、census を取る</h4>
+<p><strong>census</strong>（直訳すると「人口調査」）は、偏りを、主体（同時に動いて処理を進めるWorkerやエージェント）ごとに数えた内訳です。</p>
+<p>たとえば、4つのWorkerで仕事を分けて処理しているなら、Workerごとに未処理の件数を数え、「Worker1は30件、Worker2〜4は2件ずつ」のような内訳を作ります。censusで分かるのは、偏りの大きさではなく、どの主体に偏りが集まっているか（この例ではWorker1）です。</p>
+<p>エージェントは、censusを取る処理を、何度でも実行し直せるスクリプトとして書きます。これは、本章の最後で扱う<a href="#%E3%80%8Ebuild-the-lever%E3%80%8F%E3%81%AF%E3%80%81%E6%89%8B%E4%BD%9C%E6%A5%AD%E3%81%A7%E3%81%AF%E3%81%AA%E3%81%8F%E4%BD%9C%E6%A5%AD%E3%82%92%E3%81%99%E3%82%8B%E9%81%93%E5%85%B7%E3%82%92%E4%BD%9C%E3%82%8B">『Build the Lever』</a>に沿ったやり方です。</p>
+<h4 id="_26">偏り方を読む</h4>
+<p><strong>何度実行しても同じ少数の主体に偏りが集まるなら、設定やコードなどのどこかが、その主体に、偏りを生む役割を割り当てています</strong>。エージェントは、その割り当てを探します。</p>
+<p>その割り当てが、次に問うべき「なぜ」です。<br />
+これは、『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-fix-root-causes/SKILL.md"><strong>Fix Root Causes</strong></a>』（「なぜ」を重ねて症状ではなく根本原因を直す原則。<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/1fb019">第19章</a>）の考え方です。</p>
+<h4 id="_27">偏りを後から補わず、偏りを生む割り当てそのものをなくす</h4>
+<p>以下のいずれかの方法で、毎回同じ主体がその役割を持たないようにします。</p>
+<ul>
+<li>役割を主体の間で順番に交代させる</li>
+<li>割り当てをランダムにする</li>
+<li>役割を別の場所へ移す</li>
+</ul>
+<p>たとえば、最初の仕事の束がいつも1番目のWorkerに渡る設定なら、渡す相手を毎回替えます。</p>
+<p>後から補う仕組みを追加しても、偏りを生む割り当ては残ったままで、実行のたびに余分な仕事が増えるだけだからです（『<strong>Laziness Protocol</strong>』）。後から補う仕組みとは、手の空いたWorkerがほかのWorkerの仕事を取りに行く仕組み、全員で仕事を出し合う共有の置き場、仕事をまとめて受け渡す仕組み、定期的な配り直しなどです。</p>
+<h4 id="census_1">前提とcensusができるまで、次の修正を始めない</h4>
+<p>エージェントは、前提を書き出し、censusができあがるまで、次の修正を始めません。censusの内訳が主体の間で均等なら、その前提は原因ではありません。その場合、エージェントは原因を別の場所で探し、censusは証拠として残します。</p>
+<p>!</p>
+<p>たとえば、複数のWorkerでキューを処理し、「上限時間内にキューが空になる」というテストに2回落ちたケースを考えてみましょう。</p>
+<p>まず、エージェントは各回で次の処理を追加します。</p>
+<ul>
+<li>1回目・・・ 手の空いたWorkerがほかのWorkerの仕事を取りに行く仕組みを追加</li>
+<li>2回目・・・ 定期的に仕事を配り直す仕組みを追加</li>
+</ul>
+<p>どちらも「一部のWorkerに仕事が溜まるのは、仕事ごとの大きさ（処理にかかる時間）がばらばらだからだ」という同じ前提に立っています。</p>
+<p>次にエージェントは、3つ目の修正を書く前に、実行ログからWorkerごとの未処理件数を数えるスクリプトを書きます。</p>
+<p>仕事の大きさのばらつきが原因なら、仕事が溜まるWorkerは実行ごとに変わるはずです。<br />
+しかし、3回の実行のどれでもWorker1の未処理件数だけが多いなら、前提は当たっていない、ということになります。次の「なぜ」は、「何がWorker1にその役割を割り当てているのか？」です。</p>
+<p>その何かは、たとえば、最初の仕事の束を常にWorker1が受け取る設定などが挙げられます。</p>
+<h3 id="_28">発火条件</h3>
+<p>一つの前提を共有する2つ以上の修正が、同じgateで落ちたときです。</p>
+<h2 id="outcome-oriented-execution">『Outcome-Oriented Execution』は、移行途中のコードの整合性を保つための一時的なコードより、確かめられる最終形を優先する</h2>
+<p>原則『<strong>Outcome-Oriented Execution</strong>』は、移行途中のコードをなめらかに動く状態に保つことより、<strong>最後に目指す形（最終形）にたどり着き、それが正しいと確かめられること</strong>を優先するよう定めます。途中のすべての段階を動く状態に保とうとすると、<strong>古い形と新しい形の両方で動かすための一時的な互換コードが生まれ、それが消されずに長く残って負債になりやすい</strong>からです。</p>
+<p>たとえば、設定ファイルを古い形式から新しい形式へ移すときに、途中のどの段階でもどちらの形式でも読めるように、古い形式を新しい形式に変換する橋渡しのコードを書くとします。</p>
+<p>移行が終われば古い形式は使われなくなり、このコードは要らなくなるはずが、消し忘れられたり、まだ古い形式が残っているかもしれないという懸念から、残りがちです。この原則に従うエージェントは、そうしたコードで途中の整合性を保つより、目指す形へ進みます。そして、検証の境界（あらかじめ決めておいた、正しさを確かめる区切り）で正しさを証明します。</p>
+<h3 id="_29">ルール：途中で壊れてよい場所を先に決め、最後に全部を確かめる</h3>
+<ul>
+<li>途中で一時的に動かなくなることは、それが計画どおりで、範囲が限られていて、元に戻せるときだけ許します。</li>
+<li>どこなら一時的に壊れてよいかを、先に宣言します。たとえば、「移行の途中は、管理画面の検索が動かなくてよい」と計画に書きます。</li>
+<li>移行の途中でも、いま手を入れている箇所には、問題が起きたらすぐに分かるチェックを残します。</li>
+<li>計画の最後には、コードを動かさずに行う検証（型のチェックなど）と、実際に動かして確かめる検証を、両方とも完全に通します。</li>
+</ul>
+<p>この原則は、途中で壊すことを無条件に許すものではなく、<strong>壊してよい場所を計画に先に書いて宣言する</strong>ことを求めます。</p>
+<h3 id="_30">発火条件</h3>
+<p>段階の区切りがあらかじめ決まっている、計画済みの書き直しや移行の最中です。エージェントは、区切りのない普段の小さな修正にはこの原則を使いません。</p>
+<p>!</p>
+<p>段階の区切り（原文では <strong>phase boundaries</strong>）とは、大きな作業をいくつかの段階に分けたときの、段階と段階の境目のことです。</p>
+<p>たとえば、設定ファイルの形式を移す場合、以下のように段階を分け、各段階の終わりで、正しく動くかを確かめます。</p>
+<ol>
+<li>新しい形式を読めるようにする</li>
+<li>すべての設定ファイルを新しい形式に書き換える</li>
+<li>古い形式を読む処理を消す</li>
+</ol>
+<h2 id="experience-first">『Experience First』は、実装の都合よりユーザーの体験を選ぶ</h2>
+<p>原則『<strong>Experience First</strong>』は、<strong>作る側にとって楽な方法と、ユーザーの体験を良くする方法が衝突したら、ユーザーの体験を良くする方法を選ぶ</strong>よう定めます。よく仕上げた3つの機能は、粗い10の機能に勝ります。また、設計の判断は、本番のコードで試すより、使い捨てのHTMLで試すほうが安く済みます。</p>
+<h3 id="_31">ルール：機能を少なく、よく作る</h3>
+<h4 id="_32">すべての機能、操作、選択肢に理由を持たせる</h4>
+<p>画面に置くボタンや設定の選択肢の一つひとつについて、なぜ必要かを説明できるようにします。</p>
+<h4 id="_33">機能を少なく作り、よく作る</h4>
+<p>粗い機能を10個そろえるより、よく仕上げた3つの機能を作ります。</p>
+<h4 id="_34">決める前にプロトタイプを作る</h4>
+<p>本番のコードを書く前に、使い捨てのHTMLなどでプロトタイピングし、プロトタイプを触って、実際に確かめてから、どういう設計にするかを決めます。本番のコードで作り直すより、プロトタイプの段階で間違いに気づくほうが安く済むからです。</p>
+<h4 id="_35">細部を正しくする</h4>
+<p>画面の切り替わり方、要素の揃え方、余白、操作への反応、エラー時の表示を正しくします。</p>
+<p>たとえば、保存に失敗したときに何も表示しないのではなく、何が起きたかを表示します。</p>
+<h4 id="_36">ユーザーが主に行う作業の流れを中心にする</h4>
+<p>すべての機能は、ユーザーが主に行う作業の流れに役立つか、その流れの邪魔をしないか、のどちらかにします。</p>
+<h4 id="_37">影響はユーザーの視点で説明する</h4>
+<p>原則のいうユーザーは、作ったものを使う人すべてです。画面ならアプリを使う人、ライブラリや内部APIならそれを import する同僚が該当し、次にそのコードを保守するエンジニアもユーザーに含まれます。</p>
+<p>たとえば、「APIの応答の形式を変えた」ではなく、「一覧画面が今までより速く表示される」のように、ユーザーから見て何が変わるかで説明します。</p>
+<p>この原則は、2つの原則の役割を分けています。『<strong>Foundational Thinking</strong>』は作業の順番を決め、『<strong>Experience First</strong>』は目指す形を決めます。そのうえで、CI、テスト基盤、共有の型などの土台も、ユーザーの体験を良くするためにあると考えます。</p>
+<h3 id="_38">発火条件</h3>
+<p>プロダクト、UX、機能の範囲について、どちらかを取ればどちらかを諦める、トレードオフの選択が出てきたときです。</p>
+<h2 id="exhaust-the-design-space23">『Exhaust the Design Space』は、前例のない設計では2〜3案を作って比べる</h2>
+<p>原則『<strong>Exhaust the Design Space</strong>』は、コードベースに前例のない操作や設計判断では、<strong>実装の前に、具体的な代案をいくつか試す</strong>ことを求めます。間違ったものを作ってしまうコストのほうが、3つの案を試すコストより大きいからです。</p>
+<h3 id="23">ルール：形の違う2〜3案を並べて比べる</h3>
+<p>正解がはっきりしない設計では、エージェントは、互いに競う形の違う案（原文では competing prototypes）を2〜3個作り、比べてから、どの案を採用するかを決めます。案は、実際に触れるプロトタイプか、下書きの形で作ります。この規則は「Design it twice（二度設計せよ）」の別名でもあります。</p>
+<p>重要なのは、<strong>案どうしの形が根本的に違うこと</strong>です。1つ目の案を少し変えただけのものは、2つ目の案として数えません。形の違う案を比べてはじめて、どちらの形がユーザーに合っているかが分かるからです。</p>
+<p>たとえば、会員登録の画面を作るなら、次の2つは形が違うので、別の案になります。</p>
+<p><img alt="会員登録の2つの案。案Aは1ページに名前・メールアドレス・パスワードの入力欄をまとめて並べ、案Bは1項目ずつ3つの画面を切り替えて順番に聞く" src="https://static.zenn.studio/user-upload/802fac6e0ca9-20260926.png" /></p>
+<p>一方、案Aのボタンの色や位置を変えただけのものは、画面の形が案Aと同じなので、別の案にはなりません。</p>
+<h3 id="_39">発火条件</h3>
+<ul>
+<li>コードベースにまだ同じような前例がない、新しいUIの操作を作るとき</li>
+<li>実現できる方法が複数あるアーキテクチャを選ぶとき</li>
+<li>使い心地が理屈より感覚で決まる、プロダクトの設計を判断するとき</li>
+</ul>
+<p>逆に、次の変更には、この原則は当てはまりません。</p>
+<ul>
+<li>やり方が確立した機械的な実装</li>
+<li>目指す状態がはっきりした不具合修正やリファクタリング</li>
+<li>制約から、実現できる方法が1つに決まる変更</li>
+</ul>
+<h3 id="2">依頼の例：プロトタイプを2つ作って比べる</h3>
+<p>次の依頼例は、pstackの README にあるものです。この依頼では、エージェントが『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/prototype.md"><strong>Prototype</strong></a>』Playbookに入るので、プロトタイプを捨てる前提で作ります。</p>
+<pre><code>/poteto-mode build two prototypes of the markdown renderer so we can compare. spawn an agent for each.
+// 比べられるように、markdown レンダラーのプロトタイプを2つ作って。それぞれにエージェントを1つずつ立てて。
+</code></pre>
+<h2 id="build-the-lever">『Build the Lever』は、手作業ではなく作業をする道具を作る</h2>
+<p>原則『<strong>Build the Lever</strong>』（直訳すると「てこを作る」）は、作業が簡単でないなら、手でやらずに、<strong>その作業をする道具か、作業が正しいことを証明する道具を作る</strong>よう定めます。</p>
+<p>道具を作る利点は2つあります。</p>
+<p>1つ目は処理量です。codemod（コードを機械的に書き換えるスクリプト）やスクリプトは、何度実行しても、毎回同じやり方で作業します。そのため、エージェントは、対象のファイルが100個あっても、手作業のように1つずつ時間をかけずに済みます。</p>
+<p>途中でやり方を直したときや、対象のファイルが増えたときも、エージェントはスクリプトを実行し直すだけで、すべてのファイルを同じやり方で処理し直せます。</p>
+<p>2つ目は正確性です。レビューする人は、道具のコードを読み、実際に実行し直せば、作業が正しいかを自分で確かめられます。</p>
+<p>一方、手でやった変更には、どんな手順で書き換えたかが残りません。そのため、レビューする人が正しさを確かめ直すには、同じ作業を自分でもう一度やるしかありません。100個のファイルを手で書き換えた変更なら、レビューする人も100個を1つずつ見直すことになり、時間がかかるうえに、見落としも起きやすくなります。</p>
+<p>この原則は、2つ目の利点を、「決定的なスクリプトは「信じて」を「これを実行して」に変える」、とまとめています。</p>
+<p>!</p>
+<ul>
+<li><strong>決定的なスクリプト</strong>・・・ 同じ入力に対して、毎回同じ結果を出すスクリプトのこと</li>
+<li><strong>「信じて」を「これを実行して」に変える</strong>・・・ 手作業の結果はレビューする人に信じてもらうしかありませんが、スクリプトならレビューする人が自分で実行し直して結果を確かめられる、ということ</li>
+</ul>
+<h3 id="1">ルール：最初の1回を手でやって手順を学んでから道具を作る</h3>
+<h4 id="1_1">最初の1回は手でやり、それから道具を作る</h4>
+<p>たとえば、100個のファイルで古い関数名を新しい関数名に書き換えるなら、まず1つのファイルを手で書き換えて手順を確かめ、それから書き換えのスクリプトを作ります。</p>
+<p>次に、そのスクリプトを最初のファイルに対して実行し、手で書き換えた結果と一致するかを比べて、スクリプトが正しいことを証明します。道具は、何度実行し直しても安全なように作ります。</p>
+<h4 id="_40">作業に合った道具を選ぶ</h4>
+<p>編集にはcodemodかスクリプト、繰り返しの多いファイルにはジェネレータ、分析にはデータをSQLiteに書き出して調べるクエリ、検証には何度でも実行できるスクリプトを使います。</p>
+<h4 id="_41">スクリプトでできることはスクリプトで行い、複数のサブエージェントに分けて任せない</h4>
+<p>スクリプトが一度ですべての単位を処理できるなら、スクリプトを自分で実行します。サブエージェントに1つずつ手作業で行わせるより、同じ結果を毎回出すスクリプトのほうが確実だからです。</p>
+<h4 id="skill">サブエージェントに配るときは、手順書をSkillとして書く</h4>
+<p>作業をサブエージェントに配るときは、全員が読む手順書をSkillとして書き、作業の手順、確かめ方、触ってはいけない範囲を1つにまとめます。</p>
+<p>このSkillは、サブエージェントが書き換えられない場所に置き、サブエージェントが、決めた手順や確かめ方を黙って書き換えられないようにします。</p>
+<h4 id="_42">作るのはフレームワークではなく、最小のスクリプトにする</h4>
+<p>作業をする、または正しさを証明する最小のスクリプトだけを作ります（『<strong>Laziness Protocol</strong>』）。</p>
+<h4 id="_43">作業がセッションをまたいで続くなら、道具をコミットする</h4>
+<p>次のセッションでも同じ道具を使えるように残します。</p>
+<p>最初の1回から道具で全体を処理するまでの流れを図にすると、次のようになります。</p>
+<pre><code>1回目を手で行い、手順を学ぶ
+   ↓
+道具（codemod、スクリプトなど）を作る
+   ↓
+道具で1回目の再実行をし、手でやった版と出力を比べる
+   ↓ 一致したら
+道具を自分で実行し、残りのすべての単位を処理する
+（サブエージェントに1つずつ手作業で行わせない）
+</code></pre>
+<p><strong>エージェントがこの原則を適用すると、差分に道具のファイルが加わります</strong>。エージェントが原則を引用したのに、差分にcodemod、スクリプト、ジェネレータ、委任用のSkillのどれもなければ、エージェントはこの原則を適用していません。</p>
+<p>道具やスクリプトを作る点で、この原則と似た原則が2つあります。取り違えないよう、それぞれが何を対象にするかを示します。</p>
+<table>
+<thead>
+<tr>
+<th>原則</th>
+<th>対象</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>『<strong>Build the Lever</strong>』</td>
+<td>目の前の作業を、多く、確かめやすく処理する</td>
+</tr>
+<tr>
+<td>『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-encode-lessons-in-structure/SKILL.md"><strong>Encode Lessons in Structure</strong></a>』（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/dd2d9f">第21章</a>）</td>
+<td>繰り返し出てくる指示を、lintのルールや実行時のチェックなどの仕組みに組み込んで、長く続く防止策（ガードレール）にする</td>
+</tr>
+<tr>
+<td>『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-prove-it-works/SKILL.md"><strong>Prove It Works</strong></a>』（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/1fb019">第19章</a>）</td>
+<td>完了の前に、実際に動かして確かめる</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_44">発火条件</h3>
+<p>編集、移行、分析、チェックを問わず、簡単ではないすべての作業です。</p>
+<p>エージェントが道具を作らなくてよいのは、見ればすぐ分かる数か所の修正のような、簡単な作業だけです。</p>
+<p>また、道具を作るかどうかを、同じ作業を何回繰り返すかではなく、作業が簡単かどうかで決めます。ここでいう簡単な作業とは、変更する箇所が少なく、見ただけで正しいと分かる作業のことです。</p>
+<p>変更する箇所が多い作業や、正しいかを確かめる手順が多い作業は、1回きりでも簡単な作業ではありません。そのため、エージェントは、1回きりの作業でも、道具があれば正しさを確かめられるなら、道具を作ります。</p>
+<h3 id="_45">依頼の例：席を外している間に移行を任せる</h3>
+<p>pstackの README には、次の依頼例があります。README では <code>/figure-it-out</code> の例として挙がっていますが、振る舞いを変えない移行を任せるこの依頼は、道具が役立つ場面だと本書では考えます。</p>
+<pre><code>/poteto-mode i'm stepping away. migrate every caller from the synchronous store to the new async one, keeping behavior identical. i want to trust it was done right when i'm back.
+// 席を外す。すべての呼び出し元を、同期ストアから新しい非同期ストアへ移して。振る舞いは同じに保って。戻ったとき、正しくできたと信じられるようにしたい。
+</code></pre>
+<h2 id="_46">まとめ</h2>
+<ul>
+<li>Principleは、今の変更を入れるか、まだ完了ではないかを決める判断の基準です。人間は、依頼に原則の名前を書くことで、エージェントの作業の方向を修正できます。</li>
+<li>コードを減らす原則は、『<strong>Laziness Protocol</strong>』、『<strong>Subtract Before You Add</strong>』、『<strong>Minimize Reader Load</strong>』の3つです。</li>
+<li>設計の置き方は、『<strong>Foundational Thinking</strong>』（データの形と土台を先に決める）、『<strong>Redesign from First Principles</strong>』（要件が最初からあったつもりで設計し直す）、『<strong>Attack the Premise</strong>』（同じテストに落ち続ける修正の前提を疑う）、『<strong>Outcome-Oriented Execution</strong>』（壊してよい場所を宣言して最終形へ進む）の4つが決めます。</li>
+<li>何を目指すかは、『<strong>Experience First</strong>』（ユーザーの体験を選ぶ）と『<strong>Exhaust the Design Space</strong>』（前例のない設計では形の違う案を比べる）が決めます。</li>
+<li>『<strong>Build the Lever</strong>』は、作業を実行し直せる道具に変えます。エージェントが原則を引用しても、差分に道具がなければ、原則を適用したことになりません。</li>
+</ul>
+<p>次の<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/cdc49b">第18章</a>では、Architectureの6原則を扱います。どれも、「データや確認をコードのどこに置くか」を決める原則です。</p>
+  </div>
+  <footer class="article-footer">
+    <span>取得: 2026-10-06T23:37:30+09:00</span>
+    <a href="#article-top">↑ 先頭へ戻る</a>
+  </footer>
+</main>
+<script>
+(() => {
+  const progress = document.querySelector(".reading-progress > span");
+  const updateProgress = () => {
+    const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+    const ratio = scrollable > 0 ? window.scrollY / scrollable : 0;
+    if (progress) progress.style.width = `${Math.min(1, ratio) * 100}%`;
+  };
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  document.querySelectorAll("pre").forEach((block) => {
+    const button = document.createElement("button");
+    button.className = "copy-button";
+    button.type = "button";
+    button.textContent = "コピー";
+    button.addEventListener("click", async () => {
+      const text = block.querySelector("code")?.innerText || block.innerText;
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const textarea = document.createElement("textarea");
+          textarea.value = text;
+          textarea.style.position = "fixed";
+          textarea.style.opacity = "0";
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand("copy");
+          textarea.remove();
+        }
+        button.textContent = "コピー済み";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      } catch (error) {
+        button.textContent = "失敗";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      }
+    });
+    block.appendChild(button);
+  });
+
+  const links = new Map(
+    [...document.querySelectorAll(".toc a")].map((link) => [link.hash, link])
+  );
+  const headings = [...document.querySelectorAll(
+    ".article-body h2[id], .article-body h3[id], .article-body h4[id]"
+  )];
+  if ("IntersectionObserver" in window && headings.length) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        links.forEach((link) => link.classList.remove("is-active"));
+        links.get(`#${entry.target.id}`)?.classList.add("is-active");
+      });
+    }, { rootMargin: "-12% 0px -72% 0px" });
+    headings.forEach((heading) => observer.observe(heading));
+  }
+})();
+</script>
+</body>
+</html>

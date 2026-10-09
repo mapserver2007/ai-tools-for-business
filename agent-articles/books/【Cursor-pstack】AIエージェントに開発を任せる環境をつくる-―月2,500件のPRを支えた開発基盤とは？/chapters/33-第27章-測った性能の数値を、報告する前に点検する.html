@@ -1,0 +1,1198 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="title" content="第27章 測った性能の数値を、報告する前に点検する">
+<meta name="book_title" content="【Cursor pstack】AIエージェントに開発を任せる環境をつくる ―月2,500件のPRを支えた開発基盤とは？">
+<meta name="source_url" content="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/167c91">
+<meta name="author" content="kaito">
+<meta name="published_at" content="2026-10-02">
+<meta name="retrieved_at" content="2026-10-06T23:37:33+09:00">
+<meta name="site" content="zenn.dev">
+<meta name="content_type" content="article">
+<meta name="chapter_position" content="33">
+<title>第27章 測った性能の数値を、報告する前に点検する</title>
+<style>
+:root {
+  color-scheme: light;
+  --ink: #172033;
+  --muted: #64748b;
+  --line: #dbe4ef;
+  --accent: #2563eb;
+  --accent-dark: #1d4ed8;
+  --accent-soft: #eff6ff;
+  font-family: -apple-system, BlinkMacSystemFont, "Avenir Next",
+    "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 8% 0%, #dbeafe 0, transparent 32rem),
+    radial-gradient(circle at 100% 12%, #e0e7ff 0, transparent 28rem),
+    #f4f7fb;
+  color: var(--ink);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(120deg, transparent 0 48%, rgba(255, 255, 255, 0.4));
+}
+.article {
+  position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
+  max-width: 920px;
+  margin: clamp(1rem, 5vw, 4rem) auto;
+  padding: clamp(2rem, 6vw, 5rem) clamp(1.25rem, 7vw, 5.5rem);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  border-radius: 24px;
+  min-height: 100vh;
+  box-shadow:
+    0 24px 70px rgba(30, 64, 175, 0.1),
+    0 4px 16px rgba(15, 23, 42, 0.04);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 5px;
+  content: "";
+  background: linear-gradient(90deg, #2563eb, #7c3aed, #db2777);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin: 0 0 2.5rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.72rem;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+a {
+  color: var(--accent-dark);
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: #7c3aed;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--ink);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 18ch;
+  margin: 0 0 2.5rem;
+  font-size: clamp(2.15rem, 5vw, 3.65rem);
+  letter-spacing: -0.045em;
+}
+h2 {
+  position: relative;
+  margin: 3.8rem 0 1.25rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--line);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 4.2rem;
+  height: 3px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), #7c3aed);
+  border-radius: 999px;
+}
+h3 {
+  margin: 2.6rem 0 0.8rem;
+  color: var(--accent-dark);
+  font-size: 1.3rem;
+}
+h4, h5, h6 {
+  margin-top: 2rem;
+}
+p {
+  margin: 1.15rem 0;
+}
+ul, ol {
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.35rem 0;
+}
+li::marker {
+  color: var(--accent);
+  font-weight: 700;
+}
+strong {
+  color: #111827;
+}
+blockquote {
+  margin: 1.6rem 0;
+  padding: 0.8rem 1.25rem;
+  color: #475569;
+  background: linear-gradient(90deg, var(--accent-soft), #fff);
+  border-left: 4px solid var(--accent);
+  border-radius: 0 12px 12px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 3rem 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+img {
+  display: block;
+  max-width: 100%;
+  margin: 1.75rem auto;
+  height: auto;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+}
+pre {
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  padding: 1.15rem 1.25rem;
+  color: #e2e8f0;
+  background: #111827;
+  border: 1px solid #253047;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+}
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+:not(pre) > code {
+  padding: 0.15rem 0.4rem;
+  color: #9f1239;
+  background: #fff1f2;
+  border-radius: 5px;
+}
+table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  border-collapse: collapse;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
+  text-align: left;
+}
+th {
+  color: #1e3a8a;
+  background: #eff6ff;
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: #f8fafc;
+}
+@media (max-width: 600px) {
+  .article {
+    margin: 0;
+    padding: 2rem 1rem 4rem;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(2rem, 10vw, 2.75rem);
+  }
+  .metadata {
+    margin-bottom: 2rem;
+  }
+}
+@media print {
+  body {
+    background: #fff;
+  }
+  .article {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  a {
+    color: inherit;
+  }
+}
+</style>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0f1419;
+  --surface: #1a2332;
+  --surface-raised: #202c3f;
+  --surface-soft: rgba(26, 35, 50, 0.72);
+  --border: #2d3a4f;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #58a6ff;
+  --accent-strong: #79c0ff;
+  --green: #3fb950;
+  --purple: #bc8cff;
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+    "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  line-height: 1.75;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+  background: var(--bg);
+}
+body {
+  min-width: 320px;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 2rem 1.5rem 5rem;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(31, 111, 235, 0.18), transparent 32rem),
+    radial-gradient(circle at 100% 12%, rgba(137, 87, 229, 0.14), transparent 28rem),
+    var(--bg);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black, transparent 75%);
+}
+.reading-progress {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 20;
+  height: 3px;
+  background: rgba(45, 58, 79, 0.7);
+}
+.reading-progress > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  box-shadow: 0 0 14px rgba(88, 166, 255, 0.8);
+  transition: width 80ms linear;
+}
+.article {
+  position: relative;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  background: rgba(15, 20, 25, 0.76);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(88, 166, 255, 0.035) inset;
+  backdrop-filter: blur(16px);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  border-radius: 16px 16px 0 0;
+}
+.article-header {
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.eyebrow-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--green);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(63, 185, 80, 0.75);
+}
+.eyebrow-separator {
+  color: var(--border);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  background: rgba(32, 44, 63, 0.68);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+.source-link {
+  color: var(--text);
+  text-decoration: none;
+}
+.source-link:hover {
+  border-color: var(--accent);
+  background: rgba(88, 166, 255, 0.12);
+}
+a {
+  color: var(--accent);
+  overflow-wrap: anywhere;
+  text-decoration: none;
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 24ch;
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  background: linear-gradient(120deg, #fff 12%, #b9d8ff 58%, #bc8cff);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+h2 {
+  position: relative;
+  margin: 3.2rem 0 1.1rem;
+  padding: 0.75rem 0 0.65rem;
+  border-bottom: 1px solid var(--border);
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 3.8rem;
+  height: 2px;
+  content: "";
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(88, 166, 255, 0.7);
+}
+h3 {
+  margin: 2.25rem 0 0.7rem;
+  color: var(--accent-strong);
+  font-size: 1.2rem;
+}
+h4, h5, h6 {
+  margin-top: 1.75rem;
+}
+p {
+  margin: 0.9rem 0;
+}
+ul, ol {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.3rem 0;
+}
+li::marker {
+  color: var(--accent);
+}
+strong {
+  color: #fff;
+}
+blockquote {
+  margin: 1.4rem 0;
+  padding: 0.85rem 1.15rem;
+  color: #c9d1d9;
+  background: linear-gradient(100deg, rgba(88, 166, 255, 0.1), rgba(26, 35, 50, 0.55));
+  border: 1px solid rgba(88, 166, 255, 0.18);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 2.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+}
+pre {
+  position: relative;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  padding: 1rem 1.15rem;
+  color: #dbeafe;
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+pre code {
+  color: inherit;
+  background: transparent;
+}
+code {
+  font-family: "SF Mono", "Fira Code", ui-monospace, monospace;
+  font-size: 0.86em;
+}
+:not(pre) > code {
+  padding: 0.12em 0.38em;
+  color: #ffabbc;
+  background: rgba(248, 81, 73, 0.11);
+  border-radius: 4px;
+}
+.copy-button {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  padding: 0.25rem 0.55rem;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.72rem;
+  background: rgba(32, 44, 63, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.copy-button:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  border-spacing: 0;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.6rem 0.75rem;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+th {
+  color: var(--accent);
+  background: var(--surface);
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: rgba(26, 35, 50, 0.42);
+}
+tr:last-child td {
+  border-bottom: 0;
+}
+th:last-child, td:last-child {
+  border-right: 0;
+}
+.toc {
+  margin: 1.75rem 0 2.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.toc-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--border);
+}
+.toc-title {
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.toc-count {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.toc ol {
+  margin: 0.7rem 0 0;
+  padding-left: 1.25rem;
+}
+.toc ol ol {
+  margin: 0.2rem 0;
+}
+.toc li {
+  margin: 0.18rem 0;
+  font-size: 0.86rem;
+}
+.toc li::marker {
+  color: var(--muted);
+}
+.toc a {
+  display: inline-block;
+  max-width: 100%;
+  color: var(--muted);
+  transition: color 160ms ease, transform 160ms ease;
+}
+.toc a:hover, .toc a.is-active {
+  color: var(--accent-strong);
+  text-decoration: none;
+  transform: translateX(2px);
+}
+.article-body {
+  max-width: 78ch;
+  margin: 0 auto;
+}
+.article-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 1rem;
+  color: var(--muted);
+  font-size: 0.74rem;
+  border-top: 1px solid var(--border);
+}
+.article-footer a {
+  color: var(--muted);
+}
+@media (max-width: 720px) {
+  body {
+    padding: 0 0 3rem;
+  }
+  .article {
+    min-height: 100vh;
+    padding: 1.5rem 1rem 3rem;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+  .article::before {
+    border-radius: 0;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(1.9rem, 9vw, 2.6rem);
+  }
+  .article-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+@media print {
+  :root {
+    color-scheme: light;
+  }
+  body {
+    padding: 0;
+    color: #111;
+    background: #fff;
+  }
+  .reading-progress, .toc, .copy-button {
+    display: none;
+  }
+  .article {
+    max-width: none;
+    padding: 0;
+    background: #fff;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  h1, h2, h3, h4, h5, h6, strong {
+    color: #111;
+    -webkit-text-fill-color: initial;
+  }
+  a {
+    color: inherit;
+    text-decoration: underline;
+  }
+  pre {
+    color: #111;
+    background: #f4f4f4;
+    box-shadow: none;
+  }
+}
+</style>
+</head>
+<body>
+<div class="reading-progress" aria-hidden="true"><span></span></div>
+<main id="article-top" class="article">
+  <header class="article-header">
+    <div class="eyebrow">
+      <span class="eyebrow-dot"></span>
+      <span>ARTICLE</span>
+      <span class="eyebrow-separator">/</span>
+      <span>zenn.dev</span>
+    </div>
+    <div class="metadata" aria-label="記事メタデータ"><span class="metadata-item"><span class="metadata-label">著者</span>kaito</span><span class="metadata-item"><span class="metadata-label">公開日</span>2026-10-02</span><a class="metadata-item source-link" href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/167c91"><span class="metadata-label">原文</span>読む</a><span class="metadata-item"><span class="metadata-label">サイト</span>zenn.dev</span><span class="metadata-item"><span class="metadata-label">形式</span>ARTICLE</span></div>
+    <h1 id="27">第27章 測った性能の数値を、報告する前に点検する</h1>
+  </header>
+<nav class="toc" aria-label="目次">
+  <div class="toc-heading">
+    <span class="toc-title">目次</span>
+    <span class="toc-count">18 セクション</span>
+  </div>
+  <ol><li><a href="#_1">この章の構成</a></li><li><a href="#_2">役割：測った数値が、「本当に知りたかった処理の速さを表しているか」を確かめる</a></li><li><a href="#_3">使いどき：性能を測って数値を出したとき</a><ol><li><a href="#1">頼まれたのが大まかな見積もりなら、実行は1回でよい</a></li></ol></li><li><a href="#7">手順：測る前に準備し、7つの質問に答えてから、結論を先に報告する</a><ol><li><a href="#1_1">1. 測る前に、「報告したい結論」を書き出し、計測のスクリプトとマシンを確かめる</a></li><li><a href="#2-7">2. 7つの質問に、実際に動かして得た記録で答える</a><ol><li><a href="#1-2">質問1 なぜ2倍にならないのか：結果を頭打ちにしている原因を突き止める</a></li><li><a href="#2">質問2 調整したか：比較対象を、どれも本番と同じように動かす</a></li><li><a href="#3">質問3 限界を超えていないか：計算して確かめる</a></li><li><a href="#4">質問4 エラーが出ていないか：失敗を数え、出力が正しいかを確かめる</a></li><li><a href="#5-5">質問5 再現するか：比較対象を交互に5回以上測る</a></li><li><a href="#6">質問6 意味のある差か：処理全体の中での割合を出す</a></li><li><a href="#7_1">質問7 作業は本当に行われたか：時間を測っている間に、作業が行われたことを確かめる</a></li></ol></li><li><a href="#3_1">3. 結論を先に報告する</a></li></ol></li><li><a href="#benchmark-checklist-perf-issuehillclimb">/benchmark-checklist は、『Perf issue』と『Hillclimb』の数値を点検する</a></li><li><a href="#benchmark-checklist">依頼の書き方：/benchmark-checklist の後に、点検したい数値と、その数値をどこで使うかを書く</a></li><li><a href="#_4">まとめ</a></li></ol>
+</nav>
+  <div class="article-body">
+
+<p>この章では、<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/benchmark-checklist/SKILL.md"><code>/benchmark-checklist</code></a> を扱います。</p>
+<p><code>/benchmark-checklist</code> は、エージェントが性能を測って出した数値（例：「30%速くなった」）を、報告する前や、その数値をもとに作業する前に、7つの質問で点検するSkillです。</p>
+<p>前の<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/03ebca">第26章</a>の検証スキルは、アプリが正しく動くかを、実際に動かして確かめるものでした。この章の <code>/benchmark-checklist</code> が確かめるのは、動きではなく数値です。性能を測った数値が、報告で主張している内容を本当に表しているかを確かめます。</p>
+<p>poteto氏は、pstack の <code>0.15.9</code> を告知する<a href="https://x.com/poteto/status/2106542593656111276">ポスト</a>で、このSkillを、性能分析で知られる Brendan Gregg氏のベンチマークのチェックリスト（ブログ記事『<a href="https://www.brendangregg.com/blog/2018-06-30/benchmarking-checklist.html">Evaluating the Evaluation: A Benchmarking Checklist</a>』）をもとにしたSkillと紹介しています。</p>
+<p>この章では、<code>/benchmark-checklist</code> を、役割、使いどき、手順、依頼の書き方の4つの観点で解説し、あわせて、性能を扱うPlaybookとの関係を見ます。</p>
+<h2 id="_1">この章の構成</h2>
+<p>この章の構成は次のとおりです。</p>
+<ul>
+<li>役割：測った数値が、「本当に知りたかった処理の速さを表しているか」を確かめる</li>
+<li>使いどき：性能を測って数値を出したとき</li>
+<li>手順：測る前に準備し、7つの質問に答えてから、結論を先に報告する</li>
+<li><code>/benchmark-checklist</code> は、『Perf issue』と『Hillclimb』の数値を点検する</li>
+<li>依頼の書き方：<code>/benchmark-checklist</code> の後に、点検したい数値と、その数値をどこで使うかを書く</li>
+<li>まとめ</li>
+</ul>
+<h2 id="_2">役割：測った数値が、「本当に知りたかった処理の速さを表しているか」を確かめる</h2>
+<p><code>/benchmark-checklist</code> は、<strong>数値が出たかどうかではなく、その数値が、本当に知りたかった処理の速さを表しているかどうか</strong>を確かめます。</p>
+<p><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/1fb019">第19章</a>の原則『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-explain-the-number/SKILL.md"><strong>Explain the Number</strong></a>』は、このSkillが必要な理由を、次のように書いています。</p>
+<blockquote>
+<p>A run that went wrong still prints a plausible number. Requests that failed, a cache that skipped the work, code that never ran, a side left on default settings, and run-to-run noise all produce results that look fine.</p>
+<p>うまくいかなかった実行も、それらしい数値を出力する。リクエストが失敗した。キャッシュが本来の処理をスキップした。コードが一度も実行されなかった。比べる2つのうち、片方が既定の設定のまま動いていた。実行するたびに結果がばらついた。これらは、どれも問題がなさそうな結果を生む。</p>
+</blockquote>
+<p>たとえば、APIの応答時間を測って、「30%速くなった」という結果が出たとします。ところが、変更後のコードがリクエストの多くをエラーで返していたなら、速くなったのは、エラーの応答がすぐに返ってきたからかもしれません。この場合、数値が表しているのは、APIの処理の速さではなく、エラーが返ってくる速さです。数値だけを見ても、この違いは分かりません。</p>
+<p>そのため、<code>/benchmark-checklist</code> は、<strong>7つの質問のどれにも、コードを読んだうえでの推測ではなく、実際に動かして得た記録で答える</strong>よう求めています。</p>
+<p>なお、『Explain the Number』と、同じ第19章の原則『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-prove-it-works/SKILL.md"><strong>Prove It Works</strong></a>』は、確かめる対象が異なります。</p>
+<ul>
+<li>『Prove It Works』は、作業の結果（例：書き出されたファイル）が本物かを確かめる</li>
+<li>『Explain the Number』は、測った数値が、報告で主張している内容を本当に表しているかを確かめる</li>
+</ul>
+<h2 id="_3">使いどき：性能を測って数値を出したとき</h2>
+<p><code>/benchmark-checklist</code> を使うのは、エージェントが性能を測って数値を出す場面で、次の4つです。</p>
+<ul>
+<li>PRの変更前と変更後で、速さを比べたとき</li>
+<li>変更によって性能が落ちたと、エージェントが主張するとき</li>
+<li>『Hillclimb』Playbook（1つの指標を、変更と計測の繰り返しで改善するPlaybook。<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/6fcb42">第11章</a>）で、変更の効果を、毎回同じ条件で測るための仕組み（測定ハーネス）を作ったとき</li>
+<li>ライブラリや設定の選択肢のうち、どれを採用するかを、測った結果で決めるとき</li>
+<li>例：JSONを解析するライブラリAとBのどちらを使うか</li>
+<li>例：データベースへの同時接続の数を、10にするか50にするか</li>
+</ul>
+<p><code>/benchmark-checklist</code> は <code>disable-model-invocation: true</code> の設定を持つので（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/46bd1f">第25章</a>）、エージェントが会話の内容から自分でこのSkillを選ぶことはありません。このSkillを動かすのは、次の3つです。</p>
+<ul>
+<li><strong>利用者</strong>・・・ <code>/benchmark-checklist</code> と名前で呼びます。</li>
+<li><strong><code>/poteto-mode</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/4f8911">第38章</a>）</strong>・・・ 次のときに、このSkillを使うよう定めています。使うのは、数値を報告する前や、数値をもとに作業する前です。</li>
+<li>ベンチマーク（性能を測るためのプログラムや手順）を実行するとき</li>
+<li>自分で性能を測るとき</li>
+<li>自分で測った結果をもとに、性能について報告するとき（「速くなった」「遅くなった」など）</li>
+<li><strong>『Perf issue』と『Hillclimb』（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/6fcb42">第11章</a>）</strong>・・・ 遅さを測って直す『Perf issue』と、1つの指標をループで改善する『Hillclimb』は、手順の中でこのSkillを使います。詳しくは、この章の<a href="#%2Fbenchmark-checklist-%E3%81%AF%E3%80%81%E3%80%8Eperf-issue%E3%80%8F%E3%81%A8%E3%80%8Ehillclimb%E3%80%8F%E3%81%AE%E6%95%B0%E5%80%A4%E3%82%92%E7%82%B9%E6%A4%9C%E3%81%99%E3%82%8B">『/benchmark-checklist は、『Perf issue』と『Hillclimb』の数値を点検する』</a>で見ます。</li>
+</ul>
+<h3 id="1">頼まれたのが大まかな見積もりなら、実行は1回でよい</h3>
+<p>利用者が大まかな見積もりを手早く出すよう頼んだときは、実行は1回のみ行います。ただし、この場合もエージェントは、<a href="#2.-7%E3%81%A4%E3%81%AE%E8%B3%AA%E5%95%8F%E3%81%AB%E3%80%81%E5%AE%9F%E9%9A%9B%E3%81%AB%E5%8B%95%E3%81%8B%E3%81%97%E3%81%A6%E5%BE%97%E3%81%9F%E8%A8%98%E9%8C%B2%E3%81%A7%E7%AD%94%E3%81%88%E3%82%8B">手順2</a>で答える7つの質問のうち、<strong>次の2つは必ず確かめ</strong>、1回の実行の結果であることを報告に書きます。</p>
+<ul>
+<li>エラーが出ていないか</li>
+<li>作業は本当に行われたか</li>
+</ul>
+<p>残りの5つの質問は、その実行の結果に不審な点があるときだけ確かめます。</p>
+<p>一方で、<strong>ライブラリや設定の選択肢から1つを選ぶための計測（例：ライブラリAとBのどちらを使うかを決めるための計測）は、大まかな見積もりとして扱いません</strong>。選んだものが、そのまま採用されるからです。</p>
+<h2 id="7">手順：測る前に準備し、7つの質問に答えてから、結論を先に報告する</h2>
+<p>手順は次のとおりです。</p>
+<ol>
+<li>測る前に、「報告したい結論」を書き出し、計測のスクリプト（性能を測るために実行するプログラム）とマシン（計測に使うコンピューター）を確かめる</li>
+<li>7つの質問に、実際に動かして得た記録で答える</li>
+<li>結論を先に報告する</li>
+</ol>
+<p>ここからは、各手順を1つずつ見ていきます。</p>
+<h3 id="1_1">1. 測る前に、「報告したい結論」を書き出し、計測のスクリプトとマシンを確かめる</h3>
+<p>エージェントは、何かを実行する前に、次の3つをします。</p>
+<ul>
+<li><strong>「報告したい結論」を、報告で使う言葉のまま書き出す</strong>・・・ 「報告したい結論」とは、測り終えたときに、報告に書くつもりの1文です。たとえば、次のような1文です。<strong>この後の7つの質問は、この1文が正しいかを試すためのもの</strong>です。</li>
+</ul>
+<blockquote>
+<p>export is 30% faster at p50 on the 60k-row dataset</p>
+<p>6万行のデータセットで、エクスポートが p50（測った値を小さい順に並べたときの真ん中の値）で30%速い
+- <strong>計測のスクリプトを読む</strong>・・・ 計測のスクリプトが、何の時間を測り、何を数え、何を無視しているかを書き留めます。
+- <strong>計測に使うマシンの負荷を確かめる</strong>・・・ 計測に使うマシンで、ほかの処理が多く動いている（負荷が高い）と、測った数値がその影響を受けます。そこで、<code>uptime</code> でマシンの負荷の平均（load average）を、<code>nproc</code> でCPUのコア数を確かめます。負荷が高ければ、何が動いているかを調べます。その処理を止められないときは、比較対象（変更前と変更後のように、比べる2つのもの）を交互に実行して、どちらも同じ影響の中で測られるようにし、そのことを報告に書きます。</p>
+</blockquote>
+<p>!</p>
+<ul>
+<li><strong><code>uptime</code></strong>・・・ マシンがどれくらい混んでいるか（負荷の平均）を表示するコマンド</li>
+<li><strong>負荷の平均（load average）</strong>・・・ マシンで、同時に動こうとしている処理の数の平均。この数が、CPUのコア（CPUの中で、実際に計算をする部分。1つのコアは、一度に1つの処理しか実行できない）の数より大きければ、処理が順番待ちになっている。たとえば、コアが4つのマシンで負荷の平均が8なら、いつも4つの処理が順番を待っている</li>
+<li><strong><code>nproc</code></strong>・・・ マシンのCPUのコアの数を表示するコマンド</li>
+</ul>
+<h3 id="2-7">2. 7つの質問に、実際に動かして得た記録で答える</h3>
+<p>エージェントは、次の7つの質問に答えます。答えには、プロファイラ（処理の実行中に、どの関数にどれだけ時間がかかったかを記録する道具）の記録やエラーの数のような、実際に動かして得た記録を使います。</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>質問</th>
+<th>確かめること</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Why not double?（なぜ2倍にならないのか）</td>
+<td>結果を頭打ちにしている原因を挙げられるか</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Was it tuned?（調整したか）</td>
+<td>比較対象を、どれも本番と同じように動かしたか</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Did it break limits?（限界を超えていないか）</td>
+<td>結果が、ディスク、ネットワーク、CPUの限界の範囲に収まっているか</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Did it error?（エラーが出ていないか）</td>
+<td>失敗を数えたか。出力が正しいか</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Does it reproduce?（再現するか）</td>
+<td>何度測っても、同じ差が出るか（例：5回測って、5回とも変更後のほうが速いか）</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Does it matter?（意味のある差か）</td>
+<td>ユーザーが待つ時間全体で見ても、意味のある差か（例：関数が2倍速くなっても、ユーザーが画面で待つ時間がほとんど変わらないなら、意味は小さい）</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Did it even happen?（作業は本当に行われたか）</td>
+<td>時間を測っている間に、測りたかった処理が実際に行われたか（例：エクスポートなら、ファイルが本当に書き出されたか）</td>
+</tr>
+</tbody>
+</table>
+<p>!</p>
+<ul>
+<li><strong>CPU</strong>・・・ コンピューターの中で、計算をする装置</li>
+<li><strong>CPUのコア</strong>・・・ CPUの中で、実際に計算をする部分。1つのコアは、一度に1つの処理しか実行できない。コアが4つあれば、同時に4つの処理を実行できる</li>
+<li><strong>ディスク</strong>・・・ データを保存する装置。1秒あたりに読み書きできるデータの量に上限がある</li>
+<li><strong>ネットワーク</strong>・・・ 別のコンピューターとデータをやり取りする経路。1秒あたりに送れるデータの量に上限がある</li>
+</ul>
+<p>ここからは、手順1の結論「6万行のデータセットで、エクスポートが p50 で30%速い」を例に、各質問を1つずつ見ていきます。</p>
+<h4 id="1-2">質問1 なぜ2倍にならないのか：結果を頭打ちにしている原因を突き止める</h4>
+<p>「なぜ2倍にならないのか」は、「何が、これ以上の改善を止めているのか」を問う質問です。</p>
+<p>エージェントは、結果を頭打ちにしている原因を挙げます。このような原因を <strong>limiter</strong> と呼びます。limiter の例（CPUのコア、ロック、ディスクなど）は、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/1fb019">第19章</a>の原則『Explain the Number』の節で説明しています。</p>
+<p>limiter を探すときは、次の道具を使います。</p>
+<ul>
+<li><strong>プロセスごとのCPU使用率</strong>（<code>top</code>、<code>pidstat</code>）</li>
+<li><strong>実行環境ごとのプロファイラ</strong>（<code>node --cpu-prof</code>、<code>py-spy</code>、<code>perf</code>）</li>
+<li><strong>I/O待ち</strong></li>
+<li><strong>システムコールの回数</strong>（Linux の <code>strace -c</code>）</li>
+</ul>
+<p>!</p>
+<ul>
+<li><strong>プロセス</strong>・・・ 実行中のプログラム。1つのアプリが、複数のプロセスで動くこともある</li>
+<li><strong>I/O待ち</strong>・・・ CPUが、ディスク（データを保存する装置）やネットワーク（別のコンピューターとデータをやり取りする経路）の読み書きが終わるのを待っている時間</li>
+<li><strong>システムコール</strong>・・・ プログラムが、ファイルの読み書きなどをOSに頼むときの呼び出し</li>
+</ul>
+<p>ただし、プロファイラのような記録の道具は、処理そのものを遅くします。そのため、<strong>limiter を探すための実行は、報告に使う実行とは別扱いにします</strong>。</p>
+<p>エージェントは、見つけた時間のかかる箇所が、ソースコードのどこにあたるかまで突き止めます。</p>
+<p>負荷をかける側のツール（大量のリクエストを送る、性能測定のためのツール）も見ます。このツールが先に限界に達していれば、測ったのは、測りたかったシステムではなく、そのツールの性能になるからです。</p>
+<p>変更しても数値が動かなかったときも、limiter がその理由を説明します。そのため、エージェントは、limiter を見つける前に、<strong>その変更を「役に立たないもの」と決めつけません</strong>。</p>
+<p>エクスポートの例なら、エージェントは、「1コアでの JSON の解析が頭打ちになっている」のように、30%で止まっている理由を、プロファイラの記録から挙げます。</p>
+<h4 id="2">質問2 調整したか：比較対象を、どれも本番と同じように動かす</h4>
+<p>エージェントは、比較対象を、どれも本番と同じように動かします。たとえば、次の6つを本番とそろえます。</p>
+<ul>
+<li>ビルドの種類（本番と同じリリースビルドを使う）</li>
+<li>フラグと環境変数</li>
+<li>バッチとトランザクションの設定</li>
+<li>コネクションプール</li>
+<li>キャッシュの状態（本番と同じく、warm cache（データがすでにたまっているキャッシュ）で測るか、cold cache（データがまだ入っていない、空のキャッシュ）で測るか）</li>
+<li>使うソフトウェアのバージョンと、使うデータ</li>
+</ul>
+<p>!</p>
+<ul>
+<li><strong>リリースビルド</strong>・・・ 本番で動かすために作ったプログラム。開発中に使うデバッグ用のビルドより、速く動くように作られている</li>
+<li><strong>フラグ</strong>・・・ 機能のオンとオフなどを切り替える設定</li>
+<li><strong>環境変数</strong>・・・ プログラムの外から渡す設定の値（例：接続するデータベースの場所）</li>
+<li><strong>バッチ</strong>・・・ 複数の処理をまとめて実行する単位。たとえば、1行ずつ書き込むか、1000行ずつまとめて書き込むか</li>
+<li><strong>トランザクション</strong>・・・ 複数のデータベースの操作を、1つのまとまりとして確定する仕組み。どの単位で確定するかで、速さが大きく変わる</li>
+<li><strong>コネクションプール</strong>・・・ データベースへの接続を作っておき、使い回す仕組み。接続の数の上限が、速さに影響する</li>
+</ul>
+<p>比較対象の片方だけが、本番とは異なる設定で動いていたなら、<strong>比べたのは実装の違いではなく、設定の違い</strong>です。</p>
+<p>limiter が設定だった場合は、その設定で動いていた比較対象が、調整されていないということです。たとえば、次のようなものが limiter なら、その比較対象は調整されていません。</p>
+<ul>
+<li>1行書き込むたびに、データベースへの変更を確定する（コミットする）設定</li>
+<li>デバッグ用のビルド</li>
+<li>インデックス（データベースで、検索を速くするための索引）の付け忘れ</li>
+</ul>
+<p>エージェントは、調整されていなかった比較対象を調整し、測り直してから、どちらが優れているかを決めます。<strong>調整できないなら、その実行からは、どちらが優れているかを決めません</strong>。</p>
+<p>たとえば、データベースに6万行を書き込む処理で、ライブラリAとBを比べたとします。</p>
+<ul>
+<li><strong>調整できる場合</strong>・・・ 測ると、Bのほうが3倍遅かったとします。limiter を調べると、Bは1行書き込むたびにコミットしていました。これは、Bそのものの遅さではなく、Bの設定が原因です。エージェントは、Bを1000行ごとにまとめてコミットする設定に変えて測り直し、そのうえで、AとBのどちらが速いかを決めます。</li>
+<li><strong>調整できない場合</strong>・・・ Bに、まとめてコミットする設定がそもそも見つからないなどで、Bを調整できないとします。このときエージェントは、この実行の結果だけで「Aのほうが速い」とは決めません。報告の結論は「結論が出ない」とし、Bを調整できなかったことを書きます。</li>
+</ul>
+<p>このとき、「今の設定のままなら、Aのほうが速い」と、主張の範囲を狭めて報告しても、問題は解決しません。</p>
+<p>利用者が知りたいのは、AとBのどちらを採用するかです。利用者がBを採用すれば、Bの設定は、利用者が自由に調整できます。上の例なら、利用者は、Bを1000行ごとにコミットする設定にして使えます。そのため、調整していない今の設定でAとBを比べた結果は、どちらを採用するかを決める材料になりません。</p>
+<p>エクスポートの例なら、変更前のコードだけがデバッグ用のビルドで動いていた場合、30%の差は、変更の効果ではなく、ビルドの違いかもしれません。</p>
+<h4 id="3">質問3 限界を超えていないか：計算して確かめる</h4>
+<p>エージェントは、結果が、マシンの限界を超えていないかを、次の3つの式で確かめます。<strong>どれかの式が成り立たない結果は、ありえない結果</strong>です。</p>
+<p>!</p>
+<ul>
+<li><strong>スループット</strong>・・・ 1秒あたりに処理した量。読み書きなら、1秒あたりに読み書きしたデータの量（バイト数）。操作なら、1秒あたりにこなした操作の回数</li>
+<li><strong>帯域</strong>・・・ ディスクやネットワークが、1秒あたりに読み書きできるデータの量の上限</li>
+<li><strong>CPU時間</strong>・・・ CPUのコアが、実際にその処理の計算に使った時間</li>
+</ul>
+<p><strong>① 読み書きしたデータの量が、ディスクやネットワークの上限を超えていないか</strong></p>
+<pre><code>読み書きのスループット（バイト/秒） ≦ ディスクやネットワークの帯域（バイト/秒）
+</code></pre>
+<p>1秒あたりに読み書きしたデータの量は、ディスクやネットワークが1秒あたりに運べる量を超えられません。たとえば、帯域が 100 MB/秒 のディスクから、1秒で 500 MB を読んだという結果は、ありえません。</p>
+<p><strong>② 使ったCPUの時間が、コアの数を超えていないか</strong></p>
+<pre><code>操作のスループット（回/秒） × 1回の操作のCPU時間（秒） ≦ 使えるCPUのコアの数
+</code></pre>
+<p>左辺は、1秒の間に、いくつのコアが計算し続ける必要があるかを表します。たとえば、1秒に1万回の操作をこなし、1回の操作にCPU時間を0.5ミリ秒使うなら、左辺は 10000 × 0.0005 = 5 です。つまり、5つのコアが1秒間ずっと計算し続ける必要があります。コアが4つのマシンでこの結果が出たなら、その結果はありえません。</p>
+<p><strong>③ 短くなった時間が、変更した部分にかかっていた時間を超えていないか</strong></p>
+<pre><code>処理全体で短くなった時間 ≦ 変更した部分の、変更前の実行時間
+</code></pre>
+<p>変更した部分を丸ごと取り除いても、処理全体で短くなる時間は、その部分にかかっていた時間までです。たとえば、実行時間の10%を占める部分を丸ごと取り除くと、100かかっていた時間は90になります。速さは 100 ÷ 90 で、最大でも約1.11倍（約11%速い）にしかなりません。</p>
+<p><strong>限界を超えた結果は、測りたかった処理以外のものを測った印</strong>です。たとえば、次のようなものを測っていた可能性があります。</p>
+<ul>
+<li>キャッシュ</li>
+<li>何もしない処理</li>
+<li>不具合</li>
+</ul>
+<p>エクスポートの例なら、変更した部分がエクスポート全体の時間の10%しか使っていなかったのに、全体が30%速くなったなら、その結果は限界を超えています。</p>
+<h4 id="4">質問4 エラーが出ていないか：失敗を数え、出力が正しいかを確かめる</h4>
+<p>エージェントは、失敗の数と、成功以外の応答の数を数えます。<strong>出力についても、あるかどうかだけでなく、正しいかどうかを確かめます</strong>。</p>
+<p>エラーを数えるのは、エラーが成功とは違う動きをするからです。拒否の応答はたいてい速く返り、タイムアウトや再試行は遅くなります。そのため、エラーが混ざると、数値は実際より速くも遅くも見えます。</p>
+<p>計測のスクリプトがエラーを数えていなければ、エージェントは、エラーを数える処理を追加します。</p>
+<p>エクスポートの例なら、エージェントは、書き出したファイルに6万行がそろっているか、各行の中身が正しいかを確かめます。</p>
+<h4 id="5-5">質問5 再現するか：比較対象を交互に5回以上測る</h4>
+<p>エージェントは、それぞれの比較対象を少なくとも5回実行し、A、B、A、B のように交互に実行します。交互にするのは、次の4つが、片方の比較対象だけを有利にしないためです。</p>
+<ul>
+<li>ウォームアップ</li>
+<li>遅延初期化</li>
+<li>キャッシュ</li>
+<li>ドリフト</li>
+</ul>
+<p>!</p>
+<ul>
+<li><strong>ウォームアップ</strong>・・・ 最初の数回の実行が、準備が整っていない（例：使うデータが、まだメモリに読み込まれていない）せいで、遅くなること。Aを先にまとめて実行すると、Aだけがこの遅さの影響を受ける</li>
+<li><strong>遅延初期化</strong>・・・ 必要になるまで、準備を後回しにする仕組み。最初にその機能を使った実行だけが、準備の分だけ遅くなる</li>
+<li><strong>キャッシュ</strong>・・・ 一度使ったデータを手元に取っておき、次から速く返す仕組み。先に実行した側が作ったキャッシュを、後から実行した側が使えてしまう</li>
+<li><strong>ドリフト</strong>・・・ 時間とともにマシンの状態（例：ほかの処理の量、CPUの温度）が変わり、測る時刻によって速さが変わること。Aを午前に、Bを午後にまとめて測ると、AとBの差に、時刻による差が混ざる</li>
+</ul>
+<p>報告には、中央値と範囲（最小値から最大値まで）を書きます。</p>
+<p><strong>比較対象どうしの差が、同じ比較対象を何度か測ったときの揺れより小さければ、「測れるほどの差はない」とします</strong>。たとえば、変更前の5回が 40〜46 ms、変更後の5回が 39〜45 ms で、中央値の差が 1 ms だったとします。このとき、変更をしていなくても、同じコードを測るだけで、結果は 6 ms ほど上下しています。そのため、変更後のほうが 1 ms 速かったのが、変更の効果なのか、たまたま速い回が多かっただけなのかが分かりません。</p>
+<p>差があるかどうかの判断が際どいときは、順位和検定という統計の方法か、測定ハーネスが持つ統計の機能を使って判断します。何度も測った結果から、差がたまたまのものかを判断する機能を持つハーネスもあります。たとえば、ベンチマークのツール <a href="https://github.com/sharkdp/hyperfine">hyperfine</a> は、2つのコマンドを何度も実行し、「AはBより 1.23 ± 0.05 倍速い」のように、差を誤差の幅とともに示します。</p>
+<p>順位和検定とは</p>
+<p>変更前と変更後の値をすべてまとめて小さい順に並べ、どちらかの値が上位（速い側）に偏っているかを見て、差があるかを判断する方法です。</p>
+<p>たとえば、変更前の5回が 40、41、42、43、44 ms、変更後の5回が 33、34、35、36、37 ms なら、速い順の上位5つは、すべて変更後の値です。このように偏りが大きいほど、たまたまの揺れではない差だと判断できます。</p>
+<p>エクスポートの例なら、変更前と変更後を交互に5回ずつ実行し、30%の差が、5回の結果の揺れよりはっきり大きいかを確かめます。</p>
+<h4 id="6">質問6 意味のある差か：処理全体の中での割合を出す</h4>
+<p>エージェントは、関数1つのような小さな範囲を測った結果（マイクロベンチマークの結果）を出したら、あわせて、ユーザーが待つ処理全体（end-to-end）も測ります。</p>
+<p>処理全体は、本番に近い条件で測ります。</p>
+<ul>
+<li><strong>データの量</strong>・・・ 例：テスト用の10行ではなく、本番と同じ6万行</li>
+<li><strong>同時実行の数</strong>・・・ 例：同時に操作するユーザーが1人ではなく、本番と同じくらいの人数</li>
+</ul>
+<p>そして、<strong>小さな範囲の結果を、処理全体に占める割合として報告します</strong>。たとえば、リクエストの時間の1%を占める補助の関数は、どれだけ速くしても、リクエスト全体を最大1%しか速くできません。</p>
+<p>エクスポートの例なら、エクスポートの関数だけを測った結果に加えて、ユーザーがボタンを押してからファイルを受け取るまでの時間も測ります。そのうえで、30%の改善が、その時間の何%にあたるかを報告します。</p>
+<h4 id="7_1">質問7 作業は本当に行われたか：時間を測っている間に、作業が行われたことを確かめる</h4>
+<p>エージェントは、時間を測っている間に、作業が実際に行われたことを確かめます。たとえば、次の4つです。</p>
+<ul>
+<li>リクエストがサーバーに届いたか</li>
+<li>行が書き込まれたか</li>
+<li>データが読み込まれたか</li>
+<li>コードがその結果を使ったか</li>
+</ul>
+<p>作業が行われたことを確かめるのは、<strong>作業が行われていなくても、時間だけは測れてしまうコードがあるから</strong>です。</p>
+<p>たとえば、エクスポートの関数を変更して、行を1つずつ作るジェネレーター（値を1つずつ作り出す関数）を返すようにしたとします。ジェネレーターは、誰かが値を取り出すまで、中の処理を動かしません。計測のスクリプトが、この関数を呼ぶ時間だけを測ると、記録されるのは、ジェネレーターを返すまでのごく短い時間です。6万行を作る処理は、まだ1行も動いていません。</p>
+<p>図にすると、次のようになります。</p>
+<pre><code>変更前：時間を測る範囲の中で、6万行を作る
+
+  計測開始 ──[ 6万行を作る（500 ms） ]── 計測終了   → 記録：500 ms
+
+変更後：時間を測る範囲の中では、ジェネレーターを返すだけ
+
+  計測開始 ──[ ジェネレーターを返す（0.1 ms） ]── 計測終了   → 記録：0.1 ms
+                                                      │
+                                                      └→ 後で値を取り出したときに、
+                                                         はじめて6万行を作る（測っていない）
+</code></pre>
+<p>その結果、「変更前は 500 ms かかっていたエクスポートが、変更後は 0.1 ms になった」という数値が出ます。しかし、0.1 ms は、ジェネレーターを返すまでの時間で、エクスポートの時間ではありません。測りたかったエクスポートの作業が、時間を測っている間に行われていないからです。速くなったと報告すれば、嘘の報告になります。</p>
+<p>そのため、エージェントは、時間を測っている間に作業が行われたことを確かめます。行われていなければ、値をすべて取り出す、await する（処理が終わるのを待つ）などして、作業が時間を測る範囲の中で行われるようにしてから、測り直します。</p>
+<p>直した後の流れを図にすると、次のようになります。</p>
+<pre><code>直した後：値をすべて取り出すまでを、時間を測る範囲に入れる
+
+  計測開始 ──[ ジェネレーターを返す → 値をすべて取り出す（6万行を作る） ]── 計測終了
+                                                                              → 記録：エクスポートの時間
+</code></pre>
+<p>計測のスクリプトでは、たとえば次のように直します。</p>
+<pre><code> const start = performance.now();
+-const rows = exportRows(data); // ジェネレーターを返すだけで、6万行はまだ作られていない
++const rows = Array.from(exportRows(data)); // 値をすべて取り出すので、ここで6万行が作られる
+ const elapsed = performance.now() - start;
++
++// 作業が本当に行われたことを確かめる
++if (rows.length !== 60000) {
++  throw new Error(`行の数が合いません：${rows.length}`);
++}
+</code></pre>
+<p>Promise（後で終わる処理を表す値）を返す関数も同じです。await しなければ、処理が終わる前に、時間を測り終えてしまいます。</p>
+<pre><code> const start = performance.now();
+-exportToFile(data); // await していないので、書き出しが終わる前に次の行へ進む
++await exportToFile(data); // 書き出しが終わるのを待ってから、次の行へ進む
+ const elapsed = performance.now() - start;
+</code></pre>
+<p>こうした「作業が行われていなくても、時間だけは測れてしまうコード」の代表例が、遅延評価のコードです。たとえば、次の3つがあります。</p>
+<ul>
+<li>誰も値を取り出さないジェネレーター</li>
+<li>誰も await しない Promise</li>
+<li>JITが、使われないと判断して、計算ごと捨ててしまえる結果</li>
+</ul>
+<p>!</p>
+<ul>
+<li><strong>遅延評価</strong>・・・ 結果が必要になるまで、計算を後回しにする仕組み</li>
+<li><strong>ジェネレーター</strong>・・・ 値を1つずつ作り出す関数。値を取り出されたときに、はじめて次の値を作る</li>
+<li><strong>Promise と await</strong>・・・ Promise は、後で終わる処理を表す値。await は、その処理が終わるのを待つ書き方。await しなければ、処理が終わる前に次へ進む</li>
+<li><strong>JIT</strong>・・・ 実行中に、コードを機械語に変換する仕組み。結果が使われていない計算を、丸ごと省くことがある</li>
+</ul>
+<p>タイムアウトも同じです。処理が終わる前に打ち切られても、打ち切るまでの時間は記録されます。</p>
+<p>エクスポートの例なら、エージェントは、時間を測っている間に、ファイルが実際に書き出されたことを確かめます。</p>
+<h3 id="3_1">3. 結論を先に報告する</h3>
+<p>エージェントは、次の4つを守って報告します。</p>
+<ul>
+<li>
+<p><strong>結論を先に書く</strong>・・・ 結論は、次のいずれかです。</p>
+</li>
+<li>
+<p>速くなった</p>
+</li>
+<li>遅くなった</li>
+<li>測れるほどの差はない</li>
+<li>結論が出ない</li>
+<li><strong>数値には、単位、実行の回数、範囲、limiter を添える</strong>・・・ たとえば、次のように書きます。</li>
+</ul>
+<blockquote>
+<p>p50 41 ms → 33 ms, median of 7 runs per side, range 32 to 35 ms after, bound by JSON parsing on one core.</p>
+<p>p50 が 41 ms から 33 ms に。比較対象ごとに7回実行した中央値で、変更後の範囲は 32〜35 ms。1コアでの JSON の解析が頭打ちの原因。
+- <strong>確かめられなかったことがあれば、結論を「結論が出ない」とする</strong>・・・ 次のいずれかに当てはまるときは、結論を「結論が出ない（inconclusive）」とし、何が足りないかを書きます。</p>
+</blockquote>
+<ul>
+<li>差があると主張するのに、limiter を挙げられない</li>
+<li>比較対象の片方を、調整しないまま動かした</li>
+<li>「エラーが出ていないか」と「作業は本当に行われたか」の2つの質問を確かめられなかった</li>
+<li><strong>PRの本文に書く数値は1つにする</strong>・・・ 『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/opening-a-pr.md"><strong>Opening a PR</strong></a>』Playbook（PRの作り方を定めたPlaybook。<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/45a56e">第14章</a>）に従い、<strong>PRの本文には、主な数値を1つだけ書きます</strong>。各実行の結果、範囲、limiter の証拠は、リンクした成果物か、メモのファイルに置きます。</li>
+</ul>
+<h2 id="benchmark-checklist-perf-issuehillclimb"><code>/benchmark-checklist</code> は、『Perf issue』と『Hillclimb』の数値を点検する</h2>
+<p><code>/benchmark-checklist</code> は、性能を扱う2つのPlaybook（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/6fcb42">第11章</a>）の中で、数値を点検する役を受け持ちます。</p>
+<table>
+<thead>
+<tr>
+<th>Playbook</th>
+<th>Playbookがすること</th>
+<th><code>/benchmark-checklist</code> の役割</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/perf-issue.md"><strong>Perf issue</strong></a>』</td>
+<td>遅さの原因を見つけて直す</td>
+<td>Playbookが修正を計画する前に、基準となる計測結果（ベースライン）を点検する。その後に出る数値も、すべて点検する</td>
+</tr>
+<tr>
+<td>『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/hillclimb.md"><strong>Hillclimb</strong></a>』</td>
+<td>1つの指標を良くするために、1つの変更と1回の計測を繰り返す</td>
+<td>測定ハーネス（変更の効果を、毎回同じ条件で測るための仕組み）を固定する前に、その測定ハーネスを点検する</td>
+</tr>
+</tbody>
+</table>
+<p>『Perf issue』では、直し方の候補を、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/6fcb42#%E6%89%8B%E9%A0%86%EF%BC%9A%E3%83%99%E3%83%BC%E3%82%B9%E3%83%A9%E3%82%A4%E3%83%B3%E3%81%AE%E3%83%88%E3%83%AC%E3%83%BC%E3%82%B9%E3%81%AB%E5%A7%8B%E3%81%BE%E3%82%8B6%E3%81%A4%E3%81%AE%E6%89%8B%E9%A0%86">2つ目の手順</a>（<code>/how</code> でコードの仕組みを調べ、仮説の根拠にする）で使う performance mantras（直し方の候補を、安いものから順に並べた7つの指針）から考えます。</p>
+<p>『Hillclimb』では、変更と計測を何度も繰り返し、そのたびに変更を残すか戻すかを決めます。そのたびに、エラーが出ていないかと、作業が行われたかを別に調べるのは手間がかかります。</p>
+<p>そこで、固定する測定ハーネスに、計測の結果と一緒に、エラーの数と、行った作業の数（例：書き出した行の数）も出力させます。そうすれば、変更を残すか戻すかを決めるたびに、追加の手間なしで、質問4「エラーが出ていないか」と質問7「作業は本当に行われたか」を確かめられます。</p>
+<h2 id="benchmark-checklist">依頼の書き方：<code>/benchmark-checklist</code> の後に、点検したい数値と、その数値をどこで使うかを書く</h2>
+<p>同梱ガイドの<a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/06-verify-and-ship.md"><code>06-verify-and-ship.md</code></a>は、<strong>数値を報告したり、その数値をもとに作業したりする前に</strong>、次のように入力するよう勧めています。</p>
+<pre><code>/benchmark-checklist vet the export speedup before it goes in the pr
+// PRに書く前に、エクスポートが速くなったという数値を点検して
+</code></pre>
+<p>同ページでは、<strong>利用者が自分でこのSkillを実行するのは、次の2つのとき</strong>だと説明しています。<code>/poteto-mode</code> は、『Perf issue』と『Hillclimb』の手順の中では、このSkillを自分で実行するからです。</p>
+<ul>
+<li>『Perf issue』や『Hillclimb』を使わずに、何かを測ったとき</li>
+<li>ほかの人が出した数値が、信じられないほど良く見えるとき</li>
+</ul>
+<p>同梱ガイドの<a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/10-recipes-and-pitfalls.md"><code>10-recipes-and-pitfalls.md</code></a>も、次の例を挙げています。</p>
+<pre><code>/benchmark-checklist vet this 40% speedup before it goes in the pr description
+// PRの説明に書く前に、この40%の高速化を点検して
+</code></pre>
+<p>どちらの依頼でも、返ってくるのは、「速くなった」「遅くなった」「測れるほどの差はない」「結論が出ない」のいずれかの結論と、実行の回数、範囲、limiter です。</p>
+<h2 id="_4">まとめ</h2>
+<ul>
+<li><strong>役割</strong>・・・ 測った性能の数値が、本当に知りたかった処理の速さを表しているかを、7つの質問で点検します。答えには、コードを読んだうえでの推測ではなく、実際に動かして得た記録を使います。</li>
+<li>
+<p><strong>使いどき</strong>・・・ 次の4つのときに使います。</p>
+</li>
+<li>
+<p>PRの変更前後で、速さを比べたとき</p>
+</li>
+<li>変更によって性能が落ちたと、エージェントが主張するとき</li>
+<li>『Hillclimb』で測定ハーネスを作ったとき</li>
+<li>ライブラリや設定のうち、どれを採用するかを、測った結果で決めるとき</li>
+</ul>
+<p>大まかな見積もりなら、実行は1回のみ行います。ただし、選択肢から1つを選ぶための計測は、大まかな見積もりとして扱いません。
+- <strong>手順</strong>・・・ 測る前に、報告に書くつもりの結論（例：「エクスポートが p50 で30%速い」）を書き出します。そのうえで、7つの質問に答え、結論を先に報告します。limiter を挙げられないときなどは、結論を「結論が出ない」とします。
+- <strong>依頼の書き方</strong>・・・ <code>/benchmark-checklist</code> の後に、点検したい数値と、その数値をどこで使うか（例：PRの説明）を書きます。</p>
+<p>次の<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/997880">第28章</a>では、書き終えた変更が壊しうるものと、差分の弱点を確かめる2つのSkillを扱います。見ていくのは、<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/blast-radius/SKILL.md"><code>/blast-radius</code></a>、<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/interrogate/SKILL.md"><code>/interrogate</code></a>です。</p>
+  </div>
+  <footer class="article-footer">
+    <span>取得: 2026-10-06T23:37:33+09:00</span>
+    <a href="#article-top">↑ 先頭へ戻る</a>
+  </footer>
+</main>
+<script>
+(() => {
+  const progress = document.querySelector(".reading-progress > span");
+  const updateProgress = () => {
+    const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+    const ratio = scrollable > 0 ? window.scrollY / scrollable : 0;
+    if (progress) progress.style.width = `${Math.min(1, ratio) * 100}%`;
+  };
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  document.querySelectorAll("pre").forEach((block) => {
+    const button = document.createElement("button");
+    button.className = "copy-button";
+    button.type = "button";
+    button.textContent = "コピー";
+    button.addEventListener("click", async () => {
+      const text = block.querySelector("code")?.innerText || block.innerText;
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const textarea = document.createElement("textarea");
+          textarea.value = text;
+          textarea.style.position = "fixed";
+          textarea.style.opacity = "0";
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand("copy");
+          textarea.remove();
+        }
+        button.textContent = "コピー済み";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      } catch (error) {
+        button.textContent = "失敗";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      }
+    });
+    block.appendChild(button);
+  });
+
+  const links = new Map(
+    [...document.querySelectorAll(".toc a")].map((link) => [link.hash, link])
+  );
+  const headings = [...document.querySelectorAll(
+    ".article-body h2[id], .article-body h3[id], .article-body h4[id]"
+  )];
+  if ("IntersectionObserver" in window && headings.length) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        links.forEach((link) => link.classList.remove("is-active"));
+        links.get(`#${entry.target.id}`)?.classList.add("is-active");
+      });
+    }, { rootMargin: "-12% 0px -72% 0px" });
+    headings.forEach((heading) => observer.observe(heading));
+  }
+})();
+</script>
+</body>
+</html>

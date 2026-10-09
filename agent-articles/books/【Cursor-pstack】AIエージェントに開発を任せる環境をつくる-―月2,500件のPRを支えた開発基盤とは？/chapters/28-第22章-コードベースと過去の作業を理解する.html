@@ -1,0 +1,1181 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="title" content="第22章 コードベースと過去の作業を理解する">
+<meta name="book_title" content="【Cursor pstack】AIエージェントに開発を任せる環境をつくる ―月2,500件のPRを支えた開発基盤とは？">
+<meta name="source_url" content="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/788746">
+<meta name="author" content="kaito">
+<meta name="published_at" content="2026-10-02">
+<meta name="retrieved_at" content="2026-10-06T23:37:31+09:00">
+<meta name="site" content="zenn.dev">
+<meta name="content_type" content="article">
+<meta name="chapter_position" content="28">
+<title>第22章 コードベースと過去の作業を理解する</title>
+<style>
+:root {
+  color-scheme: light;
+  --ink: #172033;
+  --muted: #64748b;
+  --line: #dbe4ef;
+  --accent: #2563eb;
+  --accent-dark: #1d4ed8;
+  --accent-soft: #eff6ff;
+  font-family: -apple-system, BlinkMacSystemFont, "Avenir Next",
+    "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 8% 0%, #dbeafe 0, transparent 32rem),
+    radial-gradient(circle at 100% 12%, #e0e7ff 0, transparent 28rem),
+    #f4f7fb;
+  color: var(--ink);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(120deg, transparent 0 48%, rgba(255, 255, 255, 0.4));
+}
+.article {
+  position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
+  max-width: 920px;
+  margin: clamp(1rem, 5vw, 4rem) auto;
+  padding: clamp(2rem, 6vw, 5rem) clamp(1.25rem, 7vw, 5.5rem);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  border-radius: 24px;
+  min-height: 100vh;
+  box-shadow:
+    0 24px 70px rgba(30, 64, 175, 0.1),
+    0 4px 16px rgba(15, 23, 42, 0.04);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 5px;
+  content: "";
+  background: linear-gradient(90deg, #2563eb, #7c3aed, #db2777);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin: 0 0 2.5rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.72rem;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+a {
+  color: var(--accent-dark);
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: #7c3aed;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--ink);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 18ch;
+  margin: 0 0 2.5rem;
+  font-size: clamp(2.15rem, 5vw, 3.65rem);
+  letter-spacing: -0.045em;
+}
+h2 {
+  position: relative;
+  margin: 3.8rem 0 1.25rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--line);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 4.2rem;
+  height: 3px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), #7c3aed);
+  border-radius: 999px;
+}
+h3 {
+  margin: 2.6rem 0 0.8rem;
+  color: var(--accent-dark);
+  font-size: 1.3rem;
+}
+h4, h5, h6 {
+  margin-top: 2rem;
+}
+p {
+  margin: 1.15rem 0;
+}
+ul, ol {
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.35rem 0;
+}
+li::marker {
+  color: var(--accent);
+  font-weight: 700;
+}
+strong {
+  color: #111827;
+}
+blockquote {
+  margin: 1.6rem 0;
+  padding: 0.8rem 1.25rem;
+  color: #475569;
+  background: linear-gradient(90deg, var(--accent-soft), #fff);
+  border-left: 4px solid var(--accent);
+  border-radius: 0 12px 12px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 3rem 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+img {
+  display: block;
+  max-width: 100%;
+  margin: 1.75rem auto;
+  height: auto;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+}
+pre {
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  padding: 1.15rem 1.25rem;
+  color: #e2e8f0;
+  background: #111827;
+  border: 1px solid #253047;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+}
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+:not(pre) > code {
+  padding: 0.15rem 0.4rem;
+  color: #9f1239;
+  background: #fff1f2;
+  border-radius: 5px;
+}
+table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  border-collapse: collapse;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
+  text-align: left;
+}
+th {
+  color: #1e3a8a;
+  background: #eff6ff;
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: #f8fafc;
+}
+@media (max-width: 600px) {
+  .article {
+    margin: 0;
+    padding: 2rem 1rem 4rem;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(2rem, 10vw, 2.75rem);
+  }
+  .metadata {
+    margin-bottom: 2rem;
+  }
+}
+@media print {
+  body {
+    background: #fff;
+  }
+  .article {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  a {
+    color: inherit;
+  }
+}
+</style>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0f1419;
+  --surface: #1a2332;
+  --surface-raised: #202c3f;
+  --surface-soft: rgba(26, 35, 50, 0.72);
+  --border: #2d3a4f;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #58a6ff;
+  --accent-strong: #79c0ff;
+  --green: #3fb950;
+  --purple: #bc8cff;
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+    "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  line-height: 1.75;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+  background: var(--bg);
+}
+body {
+  min-width: 320px;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 2rem 1.5rem 5rem;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(31, 111, 235, 0.18), transparent 32rem),
+    radial-gradient(circle at 100% 12%, rgba(137, 87, 229, 0.14), transparent 28rem),
+    var(--bg);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black, transparent 75%);
+}
+.reading-progress {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 20;
+  height: 3px;
+  background: rgba(45, 58, 79, 0.7);
+}
+.reading-progress > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  box-shadow: 0 0 14px rgba(88, 166, 255, 0.8);
+  transition: width 80ms linear;
+}
+.article {
+  position: relative;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  background: rgba(15, 20, 25, 0.76);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(88, 166, 255, 0.035) inset;
+  backdrop-filter: blur(16px);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  border-radius: 16px 16px 0 0;
+}
+.article-header {
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.eyebrow-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--green);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(63, 185, 80, 0.75);
+}
+.eyebrow-separator {
+  color: var(--border);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  background: rgba(32, 44, 63, 0.68);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+.source-link {
+  color: var(--text);
+  text-decoration: none;
+}
+.source-link:hover {
+  border-color: var(--accent);
+  background: rgba(88, 166, 255, 0.12);
+}
+a {
+  color: var(--accent);
+  overflow-wrap: anywhere;
+  text-decoration: none;
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 24ch;
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  background: linear-gradient(120deg, #fff 12%, #b9d8ff 58%, #bc8cff);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+h2 {
+  position: relative;
+  margin: 3.2rem 0 1.1rem;
+  padding: 0.75rem 0 0.65rem;
+  border-bottom: 1px solid var(--border);
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 3.8rem;
+  height: 2px;
+  content: "";
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(88, 166, 255, 0.7);
+}
+h3 {
+  margin: 2.25rem 0 0.7rem;
+  color: var(--accent-strong);
+  font-size: 1.2rem;
+}
+h4, h5, h6 {
+  margin-top: 1.75rem;
+}
+p {
+  margin: 0.9rem 0;
+}
+ul, ol {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.3rem 0;
+}
+li::marker {
+  color: var(--accent);
+}
+strong {
+  color: #fff;
+}
+blockquote {
+  margin: 1.4rem 0;
+  padding: 0.85rem 1.15rem;
+  color: #c9d1d9;
+  background: linear-gradient(100deg, rgba(88, 166, 255, 0.1), rgba(26, 35, 50, 0.55));
+  border: 1px solid rgba(88, 166, 255, 0.18);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 2.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+}
+pre {
+  position: relative;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  padding: 1rem 1.15rem;
+  color: #dbeafe;
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+pre code {
+  color: inherit;
+  background: transparent;
+}
+code {
+  font-family: "SF Mono", "Fira Code", ui-monospace, monospace;
+  font-size: 0.86em;
+}
+:not(pre) > code {
+  padding: 0.12em 0.38em;
+  color: #ffabbc;
+  background: rgba(248, 81, 73, 0.11);
+  border-radius: 4px;
+}
+.copy-button {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  padding: 0.25rem 0.55rem;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.72rem;
+  background: rgba(32, 44, 63, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.copy-button:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  border-spacing: 0;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.6rem 0.75rem;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+th {
+  color: var(--accent);
+  background: var(--surface);
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: rgba(26, 35, 50, 0.42);
+}
+tr:last-child td {
+  border-bottom: 0;
+}
+th:last-child, td:last-child {
+  border-right: 0;
+}
+.toc {
+  margin: 1.75rem 0 2.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.toc-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--border);
+}
+.toc-title {
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.toc-count {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.toc ol {
+  margin: 0.7rem 0 0;
+  padding-left: 1.25rem;
+}
+.toc ol ol {
+  margin: 0.2rem 0;
+}
+.toc li {
+  margin: 0.18rem 0;
+  font-size: 0.86rem;
+}
+.toc li::marker {
+  color: var(--muted);
+}
+.toc a {
+  display: inline-block;
+  max-width: 100%;
+  color: var(--muted);
+  transition: color 160ms ease, transform 160ms ease;
+}
+.toc a:hover, .toc a.is-active {
+  color: var(--accent-strong);
+  text-decoration: none;
+  transform: translateX(2px);
+}
+.article-body {
+  max-width: 78ch;
+  margin: 0 auto;
+}
+.article-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 1rem;
+  color: var(--muted);
+  font-size: 0.74rem;
+  border-top: 1px solid var(--border);
+}
+.article-footer a {
+  color: var(--muted);
+}
+@media (max-width: 720px) {
+  body {
+    padding: 0 0 3rem;
+  }
+  .article {
+    min-height: 100vh;
+    padding: 1.5rem 1rem 3rem;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+  .article::before {
+    border-radius: 0;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(1.9rem, 9vw, 2.6rem);
+  }
+  .article-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+@media print {
+  :root {
+    color-scheme: light;
+  }
+  body {
+    padding: 0;
+    color: #111;
+    background: #fff;
+  }
+  .reading-progress, .toc, .copy-button {
+    display: none;
+  }
+  .article {
+    max-width: none;
+    padding: 0;
+    background: #fff;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  h1, h2, h3, h4, h5, h6, strong {
+    color: #111;
+    -webkit-text-fill-color: initial;
+  }
+  a {
+    color: inherit;
+    text-decoration: underline;
+  }
+  pre {
+    color: #111;
+    background: #f4f4f4;
+    box-shadow: none;
+  }
+}
+</style>
+</head>
+<body>
+<div class="reading-progress" aria-hidden="true"><span></span></div>
+<main id="article-top" class="article">
+  <header class="article-header">
+    <div class="eyebrow">
+      <span class="eyebrow-dot"></span>
+      <span>ARTICLE</span>
+      <span class="eyebrow-separator">/</span>
+      <span>zenn.dev</span>
+    </div>
+    <div class="metadata" aria-label="記事メタデータ"><span class="metadata-item"><span class="metadata-label">著者</span>kaito</span><span class="metadata-item"><span class="metadata-label">公開日</span>2026-10-02</span><a class="metadata-item source-link" href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/788746"><span class="metadata-label">原文</span>読む</a><span class="metadata-item"><span class="metadata-label">サイト</span>zenn.dev</span><span class="metadata-item"><span class="metadata-label">形式</span>ARTICLE</span></div>
+    <h1 id="22">第22章 コードベースと過去の作業を理解する</h1>
+  </header>
+<nav class="toc" aria-label="目次">
+  <div class="toc-heading">
+    <span class="toc-title">目次</span>
+    <span class="toc-count">29 セクション</span>
+  </div>
+  <ol><li><a href="#_1">この章の構成</a></li><li><a href="#4skill">4つのSkillの一覧</a></li><li><a href="#how">/how は、変更の前に、コードの挙動を頭の中でたどれるように説明する</a><ol><li><a href="#_2">使いどき：コードの挙動の説明と、どこに置くかの問い</a></li><li><a href="#_3">手順：事実を集める役と、説明を書く役を分ける</a></li><li><a href="#overview-gotchas-5">出力：Overview から Gotchas までの5つの見出しで書く</a></li><li><a href="#_4">依頼の例：実際に持っている問いをそのまま聞く</a></li></ol></li><li><a href="#why">/why は、コードが今の形になった理由を、記録で裏づけられるものと推測に分けて答える</a><ol><li><a href="#_5">使いどき：設計の理由、リグレッション、しきい値の由来を問うとき</a></li><li><a href="#1">手順：証拠の置き場所ごとに調査役を1体ずつ置き、並列に調べる</a></li><li><a href="#direct-unknown-5">出力：すべての主張を、Direct から Unknown までの確かさの5段階に分ける</a></li><li><a href="#_6">依頼の例：「誰も理由を書き残していない」も一つの答えになる</a></li></ol></li><li><a href="#teach">/teach は、コードの仕組みと理由を、人が納得できるまで平易に説明する</a><ol><li><a href="#_7">使いどき：要約ではなく、本当に理解したいとき</a></li><li><a href="#how-why-1">手順：/how と /why を呼び出し、その結果を1つの説明にまとめる</a><ol><li><a href="#how-why">調査はやり直さず、/how と /why の結果をまとめる</a></li><li><a href="#why_1">/why には、既定で調べる範囲を絞るよう頼む</a></li><li><a href="#_8">持ち帰るべき少数の点を決め、平易な定義から目の前のコードへつなぐ</a></li><li><a href="#12">1〜2文で答えたら止まり、相手の反応を待つ</a></li><li><a href="#1_1">図は1枚に全部を描かず、組み上がる順に描き直す</a></li></ol></li><li><a href="#_9">出力：説明そのものを、要点から平易に返す</a></li><li><a href="#_10">依頼の例：「納得させて」と頼む</a></li></ol></li><li><a href="#recall">/recall は、最近の作業の経緯を集め、前回の失敗地点から再開できるようにする</a><ol><li><a href="#_11">使いどき：「どこまでやったか」を聞くとき</a></li><li><a href="#_12">手順：チャット履歴と共有の記録を並列に調べる</a></li><li><a href="#capsulethreadsproblemsnext-move-4">出力：Capsule、Threads、Problems、Next move の4つ</a></li><li><a href="#_13">依頼の例：作業の始めに自分で呼ぶ</a></li></ol></li><li><a href="#howwhyteachrecall-session-pickup">/how・/why・/teach・/recall と『Session pickup』は、今持っている問いで選ぶ</a></li><li><a href="#_14">まとめ</a></li></ol>
+</nav>
+  <div class="article-body">
+
+<p>この章では、次の4つのSkillを扱います。</p>
+<ol>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/how/SKILL.md"><code>/how</code></a></li>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/why/SKILL.md"><code>/why</code></a></li>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/teach/SKILL.md"><code>/teach</code></a></li>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/recall/SKILL.md"><code>/recall</code></a></li>
+</ol>
+<p>4つとも、今のコードと過去の作業を調べるためのSkillです。どのSkillを使うかは、<strong>知りたいことで決まります</strong>。</p>
+<p>選び方は次のとおりです。</p>
+<ul>
+<li><strong>今どう動いているか</strong>（例：実行のキャンセルは、どの関数を通って、どうデータベースを変えるか）・・・ <code>/how</code></li>
+<li><strong>なぜその形になったか</strong>（例：リトライの上限はなぜ5なのか）・・・ <code>/why</code></li>
+<li><strong>その両方を人に分かる説明にしてほしい</strong>（例：このPRがリトライをどう変えるのかを、納得できるまで知りたい）・・・ <code>/teach</code></li>
+<li><strong>前回の作業の続きから始める</strong>（例：先週のエクスポートの作業はどこまで進み、何が差し戻されたか）・・・ <code>/recall</code></li>
+</ul>
+<p>書き終えた変更が壊しうるものや、差分の弱点を調べるSkillは、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/997880">第28章</a>で扱います。</p>
+<p>この章では、4つのSkillを一覧にしたうえで、1つずつ、使いどき、手順、出力の3つの観点で解説します。原文に依頼例があるSkillには依頼例も示します。</p>
+<p>最後に、似ているSkillとPlaybookの使い分けをまとめます。</p>
+<h2 id="_1">この章の構成</h2>
+<p>この章の構成は次のとおりです。</p>
+<ul>
+<li>4つのSkillの一覧</li>
+<li><code>/how</code> は、変更の前に、コードの挙動を頭の中でたどれるように説明する</li>
+<li><code>/why</code> は、コードが今の形になった理由を、記録で裏づけられるものと推測に分けて答える</li>
+<li><code>/teach</code> は、コードの仕組みと理由を、人が納得できるまで平易に説明する</li>
+<li><code>/recall</code> は、最近の作業の経緯を集め、前回の失敗地点から再開できるようにする</li>
+<li>/how・/why・/teach・/recall と『Session pickup』は、今持っている問いで選ぶ</li>
+<li>まとめ</li>
+</ul>
+<h2 id="4skill">4つのSkillの一覧</h2>
+<table>
+<thead>
+<tr>
+<th>Skill</th>
+<th>一言でいうと</th>
+<th>主な問い</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/how</code></td>
+<td>今のコードの挙動（処理のきっかけ、通る関数、データの流れ）を説明する</td>
+<td>X はどう動いているか。これはどこに置くべきか</td>
+</tr>
+<tr>
+<td><code>/why</code></td>
+<td>コードがその形になった理由を、コミット、PR、チケットなどの記録から調べ、理由ごとに確かさの段階を付けて答える</td>
+<td>なぜこうなっているのか。なぜYを選んだのか</td>
+</tr>
+<tr>
+<td><code>/teach</code></td>
+<td><code>/how</code> と <code>/why</code> を呼び、その結果を、平易な定義から始める1つの説明にまとめる</td>
+<td>これを本当に理解したい</td>
+</tr>
+<tr>
+<td><code>/recall</code></td>
+<td>自分のチャット履歴と共有の記録（PR、チケット、本番のエラーなど）から、最近の作業がどこまで進み、何がうまくいかなかったかをまとめ直す</td>
+<td>どこまでやったか。何が起きていたか</td>
+</tr>
+</tbody>
+</table>
+<p>4つは、どれも<strong>名前で呼ばれたときだけ動くSkill</strong>です。</p>
+<p>4つの <code>SKILL.md</code> はどれも、エージェントが会話の内容から自分で選んで動かすことを止める設定（<code>disable-model-invocation: true</code>）を持っています。そのため、4つが動くのは、利用者が名前で呼んだときか、<code>/poteto-mode</code> やほかのSkillが手順の中で名前を指定して呼んだときだけです。</p>
+<p>4つを誰が呼ぶかは、次のように分かれます。</p>
+<ul>
+<li><strong><code>/how</code>、<code>/why</code></strong>・・・ <code>/poteto-mode</code> が、Playbookの手順に従って呼びます。<code>/how</code> は、節『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/SKILL.md#non-negotiables">Non-negotiables</a>』の規則に従っても呼びます。ほかのSkillも、各Skillの手順の中で呼びます（<code>/how</code> は <code>/teach</code>、<code>/architect</code>、<code>/no-comments</code> が、<code>/why</code> は <code>/teach</code>、<code>/recall</code>、<code>/architect</code>、<code>/no-comments</code> が呼ぶ）。利用者が名前で直接呼ぶこともできます。</li>
+<li><strong><code>/teach</code>、<code>/recall</code></strong>・・・ <code>/poteto-mode</code> の『Non-negotiables』の規則にも、Playbookの手順にも、ほかのSkillの手順にも出てこないので、利用者が名前で呼んだときだけ動きます。</li>
+</ul>
+<h2 id="how"><code>/how</code> は、変更の前に、コードの挙動を頭の中でたどれるように説明する</h2>
+<p><code>/how</code> は、コードの挙動を、サブシステムに新しく加わった上級エンジニアが<strong>頭の中で再現できる水準</strong>で説明するSkillです。</p>
+<p>!</p>
+<p><strong>サブシステム</strong>・・・ アプリの中で、1つのまとまった機能を受け持つ部分のことです（例：実行のキャンセル、ログイン、決済）。多くの場合、複数のファイルやモジュールにまたがっています。</p>
+<p>頭の中で再現できるとは、読んだ人が、処理が何をきっかけに始まり、どのファイルのどの関数を通って、データがどこへ流れるかを、コードを開かずにたどれることです。</p>
+<p>説明の目的は、読んだ人が流れをつかむことなので、ソースコードに1行ずつ注釈を付けたような、細かすぎる説明にはしません。</p>
+<p>たとえば、実行のキャンセルの仕組みなら、次のような流れを、コードを開かずに説明できる状態です（ファイル名と関数名は説明のための例です）。</p>
+<h3 id="_2">使いどき：コードの挙動の説明と、どこに置くかの問い</h3>
+<p>コードを変える前に、サブシステムの挙動（例：実行のキャンセルが、どの関数を順に通るか）を知りたいとき、または「これはどこに置くべきか」「このレイヤー（例：画面、API、データベースへの読み書きのように、役割ごとに分けたコードの層）で正しいか」のような、コードの置き場所を問うときです。</p>
+<p>「なぜその形にしたのか」という動機を問うときは、<code>/how</code> ではなく <code>/why</code> を使います。</p>
+<h3 id="_3">手順：事実を集める役と、説明を書く役を分ける</h3>
+<p>問いが単純なら（例：「関数 X はどう動くか」のように、1つのモジュールで閉じる問い）、<strong>explainer</strong>（説明役）が1回で調べて説明します。</p>
+<p>複数のファイルやサービスにまたがる問いなら（例：サブシステム全体の構成）、エージェントは、問いを2〜4の切り口に分けて<strong>explorer</strong>（探索役）を<strong>並列に起動</strong>し、explainer がその結果を統合します。</p>
+<p>切り口とは、同じサブシステムを分けて調べるときの、互いに重ならない部分のことです。たとえば、実行のキャンセルの仕組みなら、「キャンセルの受け付け」「実行の停止」「データベースの更新」のように分けます。</p>
+<p>問いが単純か複雑か迷ったら、エージェントは単純な問いとして扱い、explorer を起動せずに explainer だけで調べます。</p>
+<p>どちらの道でも、利用者が読む説明を書くのは explainer です。explorer は、説明の材料になる事実を集めるだけです。</p>
+<p>explorer は、文章ではなく事実の一覧（見つけたコンポーネント、処理の流れ、読んだファイル、ほかの部分との境界、意外な点）を返します。</p>
+<p>人が読む説明は explainer が別に書くので、explorer は読みやすさを気にせず、調べる深さと正確さを優先します。</p>
+<p>explorer は、不明点やたどれなかった箇所を作り話で埋めず、「X が Y にどうつながるかは分からなかった」のように、分からなかったことをそのまま書きます。</p>
+<p><code>/how</code> は説明するだけなので、<code>/how</code> のサブエージェントはすべて、ファイルを書き換えない読み取り専用のモードで動きます。</p>
+<h3 id="overview-gotchas-5">出力：Overview から Gotchas までの5つの見出しで書く</h3>
+<p>説明の目的は、その領域を知らない人間が、読んだあとに自信を持って作業を始められることです。</p>
+<p>そのため explainer は、全体像から細部、作業の入口へと進む次の5つの見出しで書き、該当しない見出しは省きます。例は、「実行のキャンセルの仕組み」を問われた場合です。</p>
+<ul>
+<li><strong>Overview（概要）</strong>・・・ その仕組みが何で、何をし、なぜあるのかを書きます。読み手がここだけ読んで、続きを読むかを決められるようにします（例：キャンセルの仕組みが、利用者の操作から実行の停止までを受け持つこと）。</li>
+<li><strong>Key Concepts（主要な概念）</strong>・・・ 続きを読むのに必要な型やサービスです（例：実行を表す型と、キャンセルを受け付けるサービス）。</li>
+<li><strong>How It Works（仕組み）</strong>・・・ 最も長い部分で、きっかけ、進み方、データの流れを書きます（例：キャンセルの依頼が、どの関数を順に通って、データベースの状態を変えるか）。</li>
+<li><strong>Where Things Live（置き場所）</strong>・・・ どのファイルやディレクトリに何があるかを、短く一覧にします。載せるのは、その領域で作業を始める人が開く必要のあるものだけです（例：キャンセルを受け付ける <code>api/runs.ts</code> と、実行を止める <code>services/runner.ts</code>）。</li>
+<li><strong>Gotchas（落とし穴）</strong>・・・ コードを読んだだけでは気づきにくい点、意外な挙動、今の形になった経緯、間違えやすい点です（例：キャンセルしても、実行中の処理はすぐには止まらず、今の段階を終えてから止まる。そのため、画面に「キャンセル済み」と出た後も、数秒間は処理が続く）。</li>
+</ul>
+<p>処理が複数のコンポーネントにまたがるときは、explainer は図も入れます。ただし、図は流れを分かりやすくするためのもので、文章だけで流れが伝わるなら図は省きます。</p>
+<h3 id="_4">依頼の例：実際に持っている問いをそのまま聞く</h3>
+<p><code>/how</code> は、多くのPlaybookが手順の中で呼びます。代表的なものは次のとおりです。</p>
+<ul>
+<li>『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/bug-fix.md"><strong>Bug fix</strong></a>』（不具合の修正）</li>
+<li>『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/feature.md"><strong>Feature</strong></a>』（機能の追加）</li>
+<li>『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/refactoring.md"><strong>Refactoring</strong></a>』（振る舞いを変えない構造の整理）</li>
+</ul>
+<p>また、<code>/poteto-mode</code> の『Non-negotiables』は、自明でない変更や設計の判断をするとき、「本当に大丈夫か」を確かめるときに、<code>/how</code> を使うと定めています。</p>
+<p>Playbookのほかに、<code>/teach</code>、設計を決める <code>/architect</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/2ad346">第24章</a>）、差分のコメントを審査させる <code>/no-comments</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/8960d3">第32章</a>）も、手順の中で <code>/how</code> を呼びます。</p>
+<p>直接呼ぶときは、実際に持っている問いをそのまま聞きます。<a href="https://github.com/cursor/plugins/blob/main/pstack/README.md">README</a>の例は次のとおりです。</p>
+<pre><code>/how do we cancel runs? do we have an n+1 when we look up every run to cancel?
+// 実行のキャンセルはどう動いてる？キャンセル対象の実行を1件ずつ引いていて、N+1になっていない？
+</code></pre>
+<p>!</p>
+<p><strong>N+1</strong>・・・ 一覧を取る1回の問い合わせの後に、項目ごとに1回ずつ問い合わせを追加で行う書き方</p>
+<p>たとえば、キャンセルする実行が100件あるとき、アプリはデータベースに、次のように、101回問い合わせます。問い合わせのたびに待ち時間が生じるので、件数が増えるほど処理が遅くなります。</p>
+<p>N+1をなくすには、アプリは、IDごとに1回ずつ問い合わせるのをやめ、2回目の問い合わせで100件分のIDをまとめて渡します。データベースは100件分の情報を一度に返すので、問い合わせは次のように合わせて2回で済みます。</p>
+<p>同梱ガイドの <a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/03-understand.md"><code>03-understand.md</code></a> は、利用者が「どうせエージェントがコードを読むから」と考えて、そのページで扱うSkill（<code>/how</code>、<code>/why</code>、<code>/teach</code>、<code>/recall</code>）を飛ばさないよう注意しています。</p>
+<p>ガイドがこう注意するのは、<strong>コードの挙動をたどらないまま編集を始めたエージェントは、最初に見つけたもっともらしい箇所で、根本原因ではなく症状だけを直す対症療法をしがちになる</strong>からです。症状だけを直せば、根本原因が残って次の不具合が出ます（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/1fb019">第19章</a>）。</p>
+<p>また、同じページは、先に <code>/how</code> を使うほうが、その次の不具合に対処するより安く済むと書いています。</p>
+<h2 id="why"><code>/why</code> は、コードが今の形になった理由を、記録で裏づけられるものと推測に分けて答える</h2>
+<p><code>/why</code> は、コードがなぜ今の形になったのかを、<strong>記録で裏づけられる理由と推測を分けて答えるSkill</strong>です。</p>
+<p><code>/how</code> が「どう動くか」に答えるのに対し、<code>/why</code> は「どんな事情や判断がその形を作ったか」に答えます。</p>
+<p><code>/why</code> は、調べても理由が見つからなければ、推測で埋めずに「分からない」と答えます。<strong>推測を自信ありげに書くと、利用者はその推測を事実だと思い、その推測に基づいて判断してしまう</strong>からです。</p>
+<h3 id="_5">使いどき：設計の理由、リグレッション、しきい値の由来を問うとき</h3>
+<p>「なぜこう動くのか」「なぜYを選んだのか」のように設計の理由を問うときや、リグレッション（以前は動いていた機能が、変更によって動かなくなること）やポストモーテム（障害の後に、原因と再発防止策をまとめる振り返り）、しきい値の由来（例：リトライの上限がなぜ5なのか）を調べるときです。</p>
+<p>実行時の挙動（今どう動いているか）を問うなら、<code>/why</code> ではなく <code>/how</code> を使います。</p>
+<h3 id="1">手順：証拠の置き場所ごとに調査役を1体ずつ置き、並列に調べる</h3>
+<p><code>/why</code> は、理由の証拠が残っていそうな場所を、次の表の7つのカテゴリに分けます。</p>
+<table>
+<thead>
+<tr>
+<th>カテゴリ</th>
+<th>MCPの例</th>
+<th>特に分かる「なぜ」</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ソース管理の履歴</td>
+<td>git、<code>gh</code>（GitHubのPRやIssueをターミナルから操作する、GitHub公式のCLI）</td>
+<td>レビューの中で書かれた、実装時の理由（例：PRの説明）。どの環境でも必ず使える唯一の置き場所なので、常に調べる</td>
+</tr>
+<tr>
+<td>課題・チケット管理</td>
+<td>Linear、Jira</td>
+<td>プロダクトやビジネス上の動機（例：顧客の要望で追加した）</td>
+</tr>
+<tr>
+<td>長文ドキュメント</td>
+<td>Notion、Google Docs</td>
+<td>コードになる前に書かれた設計の理由（例：案Aと案Bを比べた設計書）</td>
+</tr>
+<tr>
+<td>リアルタイムのチャット</td>
+<td>Slack</td>
+<td>文書に残らなかった議論</td>
+</tr>
+<tr>
+<td>インフラの観測</td>
+<td>Datadog</td>
+<td>タイムアウトやリトライを生んだ実行環境の事情</td>
+</tr>
+<tr>
+<td>エラー追跡</td>
+<td>Sentry</td>
+<td>防御的なコード（例：nullの確認、リトライ）を生んだ例外</td>
+</tr>
+<tr>
+<td>プロダクト分析</td>
+<td>BigQuery</td>
+<td>コードの形を決めたプロダクトやデータの事情（例：しきい値の数字がどこから来たか）</td>
+</tr>
+</tbody>
+</table>
+<p>エージェントは、まず、利用者のCursorにつながっているMCP（Model Context Protocol。エージェントを外部のツールやデータにつなぐ仕組み）を調べ、それぞれのMCPがどのカテゴリの証拠を読めるかを振り分けます。</p>
+<p>たとえば、LinearのMCPがつながっていれば「課題・チケット管理」に、SlackのMCPがつながっていれば「リアルタイムのチャット」に振り分けます。</p>
+<p>そのうえで、MCPがつながっているカテゴリごとに、<strong>調査役</strong>（investigator）を1体ずつ並列に起動します。ソース管理の履歴だけは、MCPがなくても git と <code>gh</code> で読めるので、常に調べます。</p>
+<p>エージェントは、調査役を起動する前に、次のようなコマンドで、対象のファイルの行、コミット、PRを集めます。集めた手がかりを全員に渡し、調査役がそれぞれ具体的なコードから調べ始められるようにするためです。</p>
+<pre><code># 対象の行を最後に変えたコミットを表示する
+git blame -L &lt;start&gt;,&lt;end&gt; &lt;file&gt;
+
+# PRの説明と議論を表示する
+gh pr view &lt;number&gt; --json title,body,author,createdAt,mergedAt,labels,closingIssuesReferences,comments,reviews
+</code></pre>
+<p>調査役の結果は、<strong>synthesizer</strong>（統合役）がまとめます。流れは次のとおりです。</p>
+<p>調査役は並列で同時に調べ、何も見つからなかった場合は、「見つからなかった」という結果を synthesizer に返します。</p>
+<p>synthesizer は、調べなかったカテゴリや、調べても何も見つからなかったカテゴリも、理由付きで記録に残します。<strong>「探したが見つからなかった」ことも調査の結果の一つで、記録がなければ、調べていないのか、調べて何もなかったのかを利用者が区別できないから</strong>です。</p>
+<h3 id="direct-unknown-5">出力：すべての主張を、Direct から Unknown までの確かさの5段階に分ける</h3>
+<p>コードからは、何をしているかは読めても、なぜあるのかは読めません。理由は、コミットやPR、チケット、チャットのような、不完全な記録の中にしかないからです。</p>
+<p>そこで <code>/why</code> は、すべての主張を、どれだけ確かかによって次の5段階に分けて示します。</p>
+<p>たとえば、これは、「リトライの上限がなぜ5なのか」を調べた場合です。</p>
+<table>
+<thead>
+<tr>
+<th>段階</th>
+<th>意味</th>
+<th>例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Direct（直接）</td>
+<td>作者が理由を明示的に書いた記録がある</td>
+<td>コードのコメントに「上流のAPIが6回目以降の再試行を拒むため、5回で止める」と書いてある</td>
+</tr>
+<tr>
+<td>Supported（裏づけあり）</td>
+<td>明言はないが、複数の間接証拠が一致する</td>
+<td>上限を5にしたPRと同じ週のPRやチケットが、どれも同じ障害に触れている</td>
+</tr>
+<tr>
+<td>Inferred（推論）</td>
+<td>文脈からの妥当な読み。明示的な裏づけはない</td>
+<td>コードベースのほかの場所でも上限が5なので、チームの慣習に合わせたと思われる</td>
+</tr>
+<tr>
+<td>Speculative（推測）</td>
+<td>証拠が薄く、ほかの説明も同じくらい成り立つ</td>
+<td>SLA（約束した応答時間）に合わせた可能性はあるが、SLAの文書には5という値が出てこない</td>
+</tr>
+<tr>
+<td>Unknown（不明）</td>
+<td>調べたが判明しなかった。何をどこで検索したかを書く</td>
+<td>チケットを「retry」で検索し、このファイルを変えたPRを6件読んだが、理由は見つからなかった</td>
+</tr>
+</tbody>
+</table>
+<p>synthesizer は、「だからXだ」のような言い切りを、<strong>DirectとSupportedの主張にだけ使います</strong>。言い切りの形は、証拠のある因果関係を主張していると読まれるからです。</p>
+<p>たとえば、Direct の主張は「この上限は、上流のAPIが6回目以降の再試行を拒むためにある」と言い切り、出典を添えます。</p>
+<p>一方、Inferred の主張は「この上限は、チームの慣習に合わせたものと思われる」のように、推論であることが分かる言い方にします。</p>
+<p>利用者が「性能のためだと思うけど」のように問いに仮説を入れていても、<code>/why</code> はその仮説をそのまま認めず、候補の一つとして証拠を独立に確かめます。</p>
+<p>poteto氏は『The Complete Guide to pstack』<a href="https://x.com/poteto/status/2097732320606507506">Part 2</a>で、<strong>エージェントに頼むときに自分の仮説を先に述べないほうが、間違った方向へ導かずに済む</strong>、と書いています。</p>
+<p>利用者がこの問いの後にコードを変えるつもりなら、<code>/why</code> は、<strong>調べた結果を Preserve / Change / Avoid / Risk（守る、変える、避ける、危険）の制約に変え、変更の計画に渡せるようにします</strong>。</p>
+<p>たとえば、リトライの上限を変えるつもりで理由を調べた場合、制約は次のようになります。</p>
+<pre><code>Preserve: 上流のAPIが拒む回数を超えない（上限の理由として記録がある）
+Change:   上限の値をコードに直接書かず、上流のAPIの制限と同じ場所で決める
+Avoid:    上限をなくして、成功するまで再試行し続ける
+Risk:     上流のAPIの制限が変わっていれば、今の5という値は合わなくなる
+</code></pre>
+<p>このように、調べた結果を4つの制約に分けておけば、変更を計画するときに、守るべき理由を知らずに消してしまうことを防げます。</p>
+<h3 id="_6">依頼の例：「誰も理由を書き残していない」も一つの答えになる</h3>
+<p><code>/why</code> は、『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/investigation.md"><strong>Investigation</strong></a>』（コードや履歴を読んで答えられる質問に、引用つきで答える）や『<strong>Bug fix</strong>』のPlaybookから呼ばれます。また、<code>/recall</code>、<code>/teach</code>、<code>/architect</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/2ad346">第24章</a>）、<code>/no-comments</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/8960d3">第32章</a>）も、手順の中で <code>/why</code> を呼びます。</p>
+<p><code>03-understand.md</code> には、次の依頼例があります。</p>
+<pre><code>/why was the retry limit set to five? does the reason still hold?
+// リトライ上限はなぜ5にしたの？その理由は今も成り立つ？
+</code></pre>
+<p>同じページは、「誰も理由を書き残していない」という結果も、それ自体が答えだとしています。</p>
+<p>理由がどこにも書かれていないと分かれば、利用者は、元の作者に聞くか、これ以上調べないかを決められます。そのため、<code>/why</code> は、理由が見つからなかったという結果も報告します。</p>
+<h2 id="teach"><code>/teach</code> は、コードの仕組みと理由を、人が納得できるまで平易に説明する</h2>
+<p><code>/teach</code> は、あるコードや変更が何で、どう動き、なぜそう作られているかを、<strong>一つの平易な説明にまとめるSkill</strong>です。目的は何かを変えることではなく、相手が理解することです。</p>
+<p>ちなみに、poteto氏は『The Complete Guide to pstack』Part 2で、自分より賢い相手（エージェント）と働くには、相手に自分に分かる形で言い直してもらうことが大切で、それが <code>/teach</code> の着想になったと書いています。</p>
+<h3 id="_7">使いどき：要約ではなく、本当に理解したいとき</h3>
+<p>要約では足りず、変更やサブシステムを本当に理解したいときです。</p>
+<h3 id="how-why-1">手順：/how と /why を呼び出し、その結果を1つの説明にまとめる</h3>
+<h4 id="how-why">調査はやり直さず、/how と /why の結果をまとめる</h4>
+<p><code>/teach</code> は、何をどこから説明するかの見当をつけるためにコードを自分で読みますが、調査そのものはやり直さず、<strong><code>/how</code> と <code>/why</code> を実際に呼び出し、その結果を1つの説明にまとめます</strong>。</p>
+<p>サブシステム全体なら両方を呼び、小さな変更なら、<code>/how</code>・<code>/why</code>のどちらか一方で、足りることもあります。</p>
+<h4 id="why_1">/why には、既定で調べる範囲を絞るよう頼む</h4>
+<p><code>/teach</code> は、<code>/why</code> を呼ぶとき、既定では調べる範囲を絞るよう頼みます（例：gitと、ほかに1〜2の置き場所だけを調べる）。<code>/why</code> がすべてのカテゴリを調べると時間がかかるので、理由そのものが相手の知りたいことである場合に限って、範囲を広げます。</p>
+<h4 id="_8">持ち帰るべき少数の点を決め、平易な定義から目の前のコードへつなぐ</h4>
+<p>説明するときは、相手が持ち帰るべき少数の点を決め、平易な定義から始めて、目の前のコードに結びつけます。持ち帰るべき点は、相手がなぜ聞いているのか（これから変更するのか、レビューするのか、不具合を調べているのか、など）と、相手がすでに知っていることを、会話から読み取って決めます。</p>
+<p>たとえば、「仮想スクロールは、画面に見えている行だけを描画する仕組みです」と一般的な言葉で定義してから、「このアプリでは、長いチャットを開いたときに仮想スクロールを使っています」と目の前のコードにつなぎます。</p>
+<h4 id="12">1〜2文で答えたら止まり、相手の反応を待つ</h4>
+<p><code>/teach</code> は、講義ではなく会話にします。小テストを出したり、言い直しを求めたりはせず、1〜2文の最小限の答えを返したら止まって、相手の反応を待ちます。相手が望めば、さらに掘り下げます。</p>
+<h4 id="1_1">図は1枚に全部を描かず、組み上がる順に描き直す</h4>
+<p>仕組みの図は、部品を1つずつ追加して描き直します。すべての部品を1枚に描いた図は参照用の資料にはなっても、読み手が仕組みの組み上がる様子を追えないからです。</p>
+<p>たとえば、画面からAPI、APIからデータベースへ進む流れなら、次の3枚を順に描きます。</p>
+<p>1枚目は、画面からAPIまでです。</p>
+<p>2枚目は、1枚目を描き直してデータベースを追加します。</p>
+<p>3枚目は、2枚目を描き直して戻りの矢印を追加します。</p>
+<p>このように、図を1枚ごとに部品1つだけ増やして描き直せば、読み手は仕組みが組み上がる順番をそのままたどれます。</p>
+<h3 id="_9">出力：説明そのものを、要点から平易に返す</h3>
+<p>返答は作業の報告ではなく、説明そのものです。要点から始め、さらに <code>/how</code> や <code>/why</code> で掘り下げる価値のある論点を添えます。</p>
+<p><code>/teach</code> は、説明のために言い回しを自由に変えてよいのですが、<code>/why</code> の確かさを表す言葉（Direct や Inferred などの段階）は残します。</p>
+<p>「〜と思われる」のような断り書きは、言い換えてよい飾りではなく、「記録では裏づけられなかった」という調べて分かったことの一部であるため、<code>/teach</code> は確かさを表す言葉を言い換えずに残します。</p>
+<h3 id="_10">依頼の例：「納得させて」と頼む</h3>
+<p><code>/teach</code> は利用者が名前で呼ぶSkillです。<code>03-understand.md</code> には、次の依頼例があります。</p>
+<pre><code>/teach me how this PR changes retries. convince me it fixes the cause and not the symptom.
+// このPRがリトライをどう変えるか教えて。症状ではなく原因を直していると納得させて。
+</code></pre>
+<p>ガイドは「納得させて」（convince me）という頼み方を勧めています。説明が一方的な解説ではなく、反論しながら確かめられる論証になるからです。</p>
+<p>実践での使い方は、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/b4b9a1">第40章</a>で扱います。</p>
+<h2 id="recall"><code>/recall</code> は、最近の作業の経緯を集め、前回の失敗地点から再開できるようにする</h2>
+<p><code>/recall</code> は、作業の開始前や再開前に、最近の作業の経緯（何をして、何を決め、何がうまくいかなかったか）を集め直し、<strong>前回の失敗地点から作業を再開できるようにするSkill</strong>です。作業が今どこまで進んでいて、次に何をすべきかを短く返します。</p>
+<h3 id="_11">使いどき：「どこまでやったか」を聞くとき</h3>
+<p>作業を始める前や再開する前に、「X での作業を思い出して」「どこまでやったっけ」と聞きたいときです。</p>
+<h3 id="_12">手順：チャット履歴と共有の記録を並列に調べる</h3>
+<p><strong>作業の経緯は2つの記録に分かれて残っているので、<code>/recall</code> は両方を読みます</strong>。</p>
+<ul>
+<li><strong>自分のチャット履歴</strong>・・・ 何をして、何を決めたかが残っています。</li>
+<li><strong>共有の記録</strong>・・・ 同じコードの周りで起きたことが残っています。たとえば、ユーザーが報告し続けている症状、リリースした後に差し戻された修正、本番で出続けているエラーです。</li>
+</ul>
+<p><code>/recall</code> は、共有の記録を <code>/why</code> の調査役に調べさせます。不具合が長く続いた機能ほど、経緯の大半は自分の履歴ではなく共有の記録に残っているからです。</p>
+<p>このとき <code>/recall</code> は、調査役に「なぜこう作られたか」ではなく、「今どういう状態か、何を試してうまくいかなかったか、ユーザーが何を報告し続けているか」を調べさせます。</p>
+<p>主エージェントは、検索の前に、期間（既定は直近7日）、話題、ワークスペース（既定は今開いているもの）を決め、その範囲を利用者に述べてから進めます。利用者が思っていた範囲と違えば、その場で直せるようにするためです。</p>
+<p>頼まれない限り、主エージェントはほかのプロジェクトの履歴を読みません。</p>
+<p>主エージェントは、対象のチャットが1〜2件なら自分で直接探し、それより多ければ、履歴をサブエージェントに並列で読ませます。実際の履歴はサブエージェントの中にとどめ、主エージェントには見つかったことだけを返させます。長い履歴で主エージェントのコンテキストを埋めないためです（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/c155cc">第20章</a>）。</p>
+<p>主エージェントは、見つかったPRやブランチの実際の状態を、<code>git</code> と <code>gh</code> で確かめます。チャットに残っているのは当時の状態で、その後にマージや差し戻しが起きているかもしれないからです。</p>
+<p>利用者が特定の1つのチャットを再開したいだけなら、<code>/recall</code> はその依頼を『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/session-pickup.md"><strong>Session pickup</strong></a>』Playbookに回します。</p>
+<h3 id="capsulethreadsproblemsnext-move-4">出力：Capsule、Threads、Problems、Next move の4つ</h3>
+<p>出力は、読み手が「作業が全体としてどこまで進んでいて、次に何をするか」をすぐにつかめるように、全体の要約から次の一手へと進む4つの部分で書きます。</p>
+<ul>
+<li><strong>Capsule（要約）</strong>・・・ 最大5項目で、この作業が何で、全体としてどこまで進んでいるか（例：ジョブへの移行はマージ済みで、再試行の問題だけが残っている）を書きます。</li>
+<li><strong>Threads（作業の単位ごとの状態）</strong>・・・ その話題の中で進めてきた作業の単位（例：PR 1本、ブランチ1本）を1行に1つずつ書き、次の表の状態タグを必ず1つ付けます。</li>
+<li><strong>Problems（繰り返す問題）</strong>・・・ 最大5項目で、繰り返し起きている問題を書きます。差し戻された修正も含め、次の試みが前回の失敗地点から始められるようにします。</li>
+<li><strong>Next move（次の一手）</strong>・・・ 最も役立つ次の一手を1つ書きます。</li>
+</ul>
+<p>Threads の状態タグは次の6つです。</p>
+<table>
+<thead>
+<tr>
+<th>タグ</th>
+<th>意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>[merged #N]</code></td>
+<td>PR #N がマージ済み</td>
+</tr>
+<tr>
+<td><code>[open PR #N]</code></td>
+<td>PR #N がレビュー待ちなどで開いている</td>
+</tr>
+<tr>
+<td><code>[in flight &lt;branch&gt;]</code></td>
+<td>ブランチ上で作業中</td>
+</tr>
+<tr>
+<td><code>[verified, uncommitted]</code></td>
+<td>確かめ済みだが、まだコミットしていない</td>
+</tr>
+<tr>
+<td><code>[reverted #N]</code></td>
+<td>PR #N が差し戻された</td>
+</tr>
+<tr>
+<td><code>[planned, not started]</code></td>
+<td>計画したが、まだ始めていない</td>
+</tr>
+</tbody>
+</table>
+<p>たとえば、先週のエクスポートの作業について、4つの部分と6つのタグをすべて含む出力は、次のようになります。</p>
+<pre><code>Capsule
+- CSVエクスポートを、画面の処理から非同期のジョブに移す作業
+- ジョブへの移行はマージ済みで、再試行すると同じ行がもう一度書き出される問題が残っている
+Threads
+- [merged #412] エクスポートをジョブに移す
+- [reverted #418] 再試行を追加する（同じ行がもう一度書き出されたため差し戻し）
+- [open PR #421] 行のキーで書き込みを冪等にする
+- [in flight export-progress] 進み具合を画面に表示する
+- [verified, uncommitted] 大きなファイルでのタイムアウトを延ばす
+- [planned, not started] 古い同期のエクスポートを消す
+Problems
+- 再試行すると、1回目の試行で書いた行の後ろに、同じ行がもう一度書き出される。#418 はこれで差し戻された
+Next move
+- #421 のレビューの指摘に答え、マージする
+</code></pre>
+<p>このように、差し戻された修正とその理由が Problems に残っていれば、次の試みは前回の失敗地点から始められます。</p>
+<h3 id="_13">依頼の例：作業の始めに自分で呼ぶ</h3>
+<p><code>/recall</code> は、作業を始めるときや再開するときに利用者が名前で呼びます。<code>03-understand.md</code> には、次の依頼例があります。</p>
+<pre><code>/recall catch me up on the export work from last week
+// 先週のエクスポートの作業について、状況を教えて
+</code></pre>
+<p>新しい作業への引き継ぎ方は<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/b4b9a1">第40章</a>で扱います。</p>
+<h2 id="howwhyteachrecall-session-pickup">/how・/why・/teach・/recall と『Session pickup』は、今持っている問いで選ぶ</h2>
+<p>それぞれが答える問いは次のとおりです。</p>
+<ul>
+<li><strong><code>/how</code></strong>・・・ 「今どう動いているか」</li>
+<li><strong><code>/why</code></strong>・・・ 「なぜこの形なのか」</li>
+<li><strong><code>/teach</code></strong>・・・ 「本当に理解したい」</li>
+<li><strong><code>/recall</code></strong>・・・ 「自分はどこまでやったか」</li>
+</ul>
+<p>特定の1つのチャットを続きから進めたいなら『<strong>Session pickup</strong>』、複数のチャットにまたがるコンテキストを読み込みたいなら <code>/recall</code> を使います。</p>
+<h2 id="_14">まとめ</h2>
+<ul>
+<li><strong>4つのSkill</strong>・・・ どれも名前で呼ばれたときだけ動きます。<code>/how</code>、<code>/why</code> は、<code>/poteto-mode</code> がPlaybookの手順に従っても呼びます。</li>
+<li><strong><code>/how</code></strong>・・・ 事実を集める役（explorer）と説明を書く役（explainer）を分け、今の挙動を Overview から Gotchas までの5つの見出しで説明します。</li>
+<li><strong><code>/why</code></strong>・・・ git、チケット、チャットなど証拠の置き場所ごとに並列に調べ、主張を Direct から Unknown までの5段階に分けます。「だからXだ」と言い切るのは、記録で裏づけられた主張だけです。</li>
+<li><strong><code>/teach</code></strong>・・・ <code>/how</code> と <code>/why</code> の結果を束ね、平易な定義から始めて、図を部品1つずつ描き足しながら説明します。</li>
+<li><strong><code>/recall</code></strong>・・・ チャット履歴と共有の記録から、Capsule、Threads、Problems、Next move の4つで作業の状況をまとめ、差し戻された修正とその理由を Problems に残します。</li>
+<li><strong>使い分け</strong>・・・ 今持っている問いで選びます。特定の1つのチャットを続きから進めたいなら『<strong>Session pickup</strong>』を使います。</li>
+</ul>
+<p>次の<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/3ce2b2">第23章</a>では、依頼に合うPlaybookがない作業のために、Playbookそのものを設計する <a href="https://github.com/cursor/plugins/blob/main/pstack/skills/figure-it-out/SKILL.md"><code>/figure-it-out</code></a> を扱います。</p>
+  </div>
+  <footer class="article-footer">
+    <span>取得: 2026-10-06T23:37:31+09:00</span>
+    <a href="#article-top">↑ 先頭へ戻る</a>
+  </footer>
+</main>
+<script>
+(() => {
+  const progress = document.querySelector(".reading-progress > span");
+  const updateProgress = () => {
+    const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+    const ratio = scrollable > 0 ? window.scrollY / scrollable : 0;
+    if (progress) progress.style.width = `${Math.min(1, ratio) * 100}%`;
+  };
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  document.querySelectorAll("pre").forEach((block) => {
+    const button = document.createElement("button");
+    button.className = "copy-button";
+    button.type = "button";
+    button.textContent = "コピー";
+    button.addEventListener("click", async () => {
+      const text = block.querySelector("code")?.innerText || block.innerText;
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const textarea = document.createElement("textarea");
+          textarea.value = text;
+          textarea.style.position = "fixed";
+          textarea.style.opacity = "0";
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand("copy");
+          textarea.remove();
+        }
+        button.textContent = "コピー済み";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      } catch (error) {
+        button.textContent = "失敗";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      }
+    });
+    block.appendChild(button);
+  });
+
+  const links = new Map(
+    [...document.querySelectorAll(".toc a")].map((link) => [link.hash, link])
+  );
+  const headings = [...document.querySelectorAll(
+    ".article-body h2[id], .article-body h3[id], .article-body h4[id]"
+  )];
+  if ("IntersectionObserver" in window && headings.length) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        links.forEach((link) => link.classList.remove("is-active"));
+        links.get(`#${entry.target.id}`)?.classList.add("is-active");
+      });
+    }, { rootMargin: "-12% 0px -72% 0px" });
+    headings.forEach((heading) => observer.observe(heading));
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1398 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="title" content="第33章 文章の品質を保つ">
+<meta name="book_title" content="【Cursor pstack】AIエージェントに開発を任せる環境をつくる ―月2,500件のPRを支えた開発基盤とは？">
+<meta name="source_url" content="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/44857b">
+<meta name="author" content="kaito">
+<meta name="published_at" content="2026-10-02">
+<meta name="retrieved_at" content="2026-10-06T23:37:34+09:00">
+<meta name="site" content="zenn.dev">
+<meta name="content_type" content="article">
+<meta name="chapter_position" content="39">
+<title>第33章 文章の品質を保つ</title>
+<style>
+:root {
+  color-scheme: light;
+  --ink: #172033;
+  --muted: #64748b;
+  --line: #dbe4ef;
+  --accent: #2563eb;
+  --accent-dark: #1d4ed8;
+  --accent-soft: #eff6ff;
+  font-family: -apple-system, BlinkMacSystemFont, "Avenir Next",
+    "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 8% 0%, #dbeafe 0, transparent 32rem),
+    radial-gradient(circle at 100% 12%, #e0e7ff 0, transparent 28rem),
+    #f4f7fb;
+  color: var(--ink);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(120deg, transparent 0 48%, rgba(255, 255, 255, 0.4));
+}
+.article {
+  position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
+  max-width: 920px;
+  margin: clamp(1rem, 5vw, 4rem) auto;
+  padding: clamp(2rem, 6vw, 5rem) clamp(1.25rem, 7vw, 5.5rem);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  border-radius: 24px;
+  min-height: 100vh;
+  box-shadow:
+    0 24px 70px rgba(30, 64, 175, 0.1),
+    0 4px 16px rgba(15, 23, 42, 0.04);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 5px;
+  content: "";
+  background: linear-gradient(90deg, #2563eb, #7c3aed, #db2777);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin: 0 0 2.5rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.72rem;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+a {
+  color: var(--accent-dark);
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: #7c3aed;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--ink);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 18ch;
+  margin: 0 0 2.5rem;
+  font-size: clamp(2.15rem, 5vw, 3.65rem);
+  letter-spacing: -0.045em;
+}
+h2 {
+  position: relative;
+  margin: 3.8rem 0 1.25rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--line);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 4.2rem;
+  height: 3px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), #7c3aed);
+  border-radius: 999px;
+}
+h3 {
+  margin: 2.6rem 0 0.8rem;
+  color: var(--accent-dark);
+  font-size: 1.3rem;
+}
+h4, h5, h6 {
+  margin-top: 2rem;
+}
+p {
+  margin: 1.15rem 0;
+}
+ul, ol {
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.35rem 0;
+}
+li::marker {
+  color: var(--accent);
+  font-weight: 700;
+}
+strong {
+  color: #111827;
+}
+blockquote {
+  margin: 1.6rem 0;
+  padding: 0.8rem 1.25rem;
+  color: #475569;
+  background: linear-gradient(90deg, var(--accent-soft), #fff);
+  border-left: 4px solid var(--accent);
+  border-radius: 0 12px 12px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 3rem 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+img {
+  display: block;
+  max-width: 100%;
+  margin: 1.75rem auto;
+  height: auto;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+}
+pre {
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  padding: 1.15rem 1.25rem;
+  color: #e2e8f0;
+  background: #111827;
+  border: 1px solid #253047;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+}
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+:not(pre) > code {
+  padding: 0.15rem 0.4rem;
+  color: #9f1239;
+  background: #fff1f2;
+  border-radius: 5px;
+}
+table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  border-collapse: collapse;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
+  text-align: left;
+}
+th {
+  color: #1e3a8a;
+  background: #eff6ff;
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: #f8fafc;
+}
+@media (max-width: 600px) {
+  .article {
+    margin: 0;
+    padding: 2rem 1rem 4rem;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(2rem, 10vw, 2.75rem);
+  }
+  .metadata {
+    margin-bottom: 2rem;
+  }
+}
+@media print {
+  body {
+    background: #fff;
+  }
+  .article {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  a {
+    color: inherit;
+  }
+}
+</style>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0f1419;
+  --surface: #1a2332;
+  --surface-raised: #202c3f;
+  --surface-soft: rgba(26, 35, 50, 0.72);
+  --border: #2d3a4f;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #58a6ff;
+  --accent-strong: #79c0ff;
+  --green: #3fb950;
+  --purple: #bc8cff;
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+    "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  line-height: 1.75;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+  background: var(--bg);
+}
+body {
+  min-width: 320px;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 2rem 1.5rem 5rem;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(31, 111, 235, 0.18), transparent 32rem),
+    radial-gradient(circle at 100% 12%, rgba(137, 87, 229, 0.14), transparent 28rem),
+    var(--bg);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black, transparent 75%);
+}
+.reading-progress {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 20;
+  height: 3px;
+  background: rgba(45, 58, 79, 0.7);
+}
+.reading-progress > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  box-shadow: 0 0 14px rgba(88, 166, 255, 0.8);
+  transition: width 80ms linear;
+}
+.article {
+  position: relative;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  background: rgba(15, 20, 25, 0.76);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(88, 166, 255, 0.035) inset;
+  backdrop-filter: blur(16px);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  border-radius: 16px 16px 0 0;
+}
+.article-header {
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.eyebrow-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--green);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(63, 185, 80, 0.75);
+}
+.eyebrow-separator {
+  color: var(--border);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  background: rgba(32, 44, 63, 0.68);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+.source-link {
+  color: var(--text);
+  text-decoration: none;
+}
+.source-link:hover {
+  border-color: var(--accent);
+  background: rgba(88, 166, 255, 0.12);
+}
+a {
+  color: var(--accent);
+  overflow-wrap: anywhere;
+  text-decoration: none;
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 24ch;
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  background: linear-gradient(120deg, #fff 12%, #b9d8ff 58%, #bc8cff);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+h2 {
+  position: relative;
+  margin: 3.2rem 0 1.1rem;
+  padding: 0.75rem 0 0.65rem;
+  border-bottom: 1px solid var(--border);
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 3.8rem;
+  height: 2px;
+  content: "";
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(88, 166, 255, 0.7);
+}
+h3 {
+  margin: 2.25rem 0 0.7rem;
+  color: var(--accent-strong);
+  font-size: 1.2rem;
+}
+h4, h5, h6 {
+  margin-top: 1.75rem;
+}
+p {
+  margin: 0.9rem 0;
+}
+ul, ol {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.3rem 0;
+}
+li::marker {
+  color: var(--accent);
+}
+strong {
+  color: #fff;
+}
+blockquote {
+  margin: 1.4rem 0;
+  padding: 0.85rem 1.15rem;
+  color: #c9d1d9;
+  background: linear-gradient(100deg, rgba(88, 166, 255, 0.1), rgba(26, 35, 50, 0.55));
+  border: 1px solid rgba(88, 166, 255, 0.18);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 2.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+}
+pre {
+  position: relative;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  padding: 1rem 1.15rem;
+  color: #dbeafe;
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+pre code {
+  color: inherit;
+  background: transparent;
+}
+code {
+  font-family: "SF Mono", "Fira Code", ui-monospace, monospace;
+  font-size: 0.86em;
+}
+:not(pre) > code {
+  padding: 0.12em 0.38em;
+  color: #ffabbc;
+  background: rgba(248, 81, 73, 0.11);
+  border-radius: 4px;
+}
+.copy-button {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  padding: 0.25rem 0.55rem;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.72rem;
+  background: rgba(32, 44, 63, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.copy-button:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  border-spacing: 0;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.6rem 0.75rem;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+th {
+  color: var(--accent);
+  background: var(--surface);
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: rgba(26, 35, 50, 0.42);
+}
+tr:last-child td {
+  border-bottom: 0;
+}
+th:last-child, td:last-child {
+  border-right: 0;
+}
+.toc {
+  margin: 1.75rem 0 2.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.toc-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--border);
+}
+.toc-title {
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.toc-count {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.toc ol {
+  margin: 0.7rem 0 0;
+  padding-left: 1.25rem;
+}
+.toc ol ol {
+  margin: 0.2rem 0;
+}
+.toc li {
+  margin: 0.18rem 0;
+  font-size: 0.86rem;
+}
+.toc li::marker {
+  color: var(--muted);
+}
+.toc a {
+  display: inline-block;
+  max-width: 100%;
+  color: var(--muted);
+  transition: color 160ms ease, transform 160ms ease;
+}
+.toc a:hover, .toc a.is-active {
+  color: var(--accent-strong);
+  text-decoration: none;
+  transform: translateX(2px);
+}
+.article-body {
+  max-width: 78ch;
+  margin: 0 auto;
+}
+.article-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 1rem;
+  color: var(--muted);
+  font-size: 0.74rem;
+  border-top: 1px solid var(--border);
+}
+.article-footer a {
+  color: var(--muted);
+}
+@media (max-width: 720px) {
+  body {
+    padding: 0 0 3rem;
+  }
+  .article {
+    min-height: 100vh;
+    padding: 1.5rem 1rem 3rem;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+  .article::before {
+    border-radius: 0;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(1.9rem, 9vw, 2.6rem);
+  }
+  .article-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+@media print {
+  :root {
+    color-scheme: light;
+  }
+  body {
+    padding: 0;
+    color: #111;
+    background: #fff;
+  }
+  .reading-progress, .toc, .copy-button {
+    display: none;
+  }
+  .article {
+    max-width: none;
+    padding: 0;
+    background: #fff;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  h1, h2, h3, h4, h5, h6, strong {
+    color: #111;
+    -webkit-text-fill-color: initial;
+  }
+  a {
+    color: inherit;
+    text-decoration: underline;
+  }
+  pre {
+    color: #111;
+    background: #f4f4f4;
+    box-shadow: none;
+  }
+}
+</style>
+</head>
+<body>
+<div class="reading-progress" aria-hidden="true"><span></span></div>
+<main id="article-top" class="article">
+  <header class="article-header">
+    <div class="eyebrow">
+      <span class="eyebrow-dot"></span>
+      <span>ARTICLE</span>
+      <span class="eyebrow-separator">/</span>
+      <span>zenn.dev</span>
+    </div>
+    <div class="metadata" aria-label="記事メタデータ"><span class="metadata-item"><span class="metadata-label">著者</span>kaito</span><span class="metadata-item"><span class="metadata-label">公開日</span>2026-10-02</span><a class="metadata-item source-link" href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/44857b"><span class="metadata-label">原文</span>読む</a><span class="metadata-item"><span class="metadata-label">サイト</span>zenn.dev</span><span class="metadata-item"><span class="metadata-label">形式</span>ARTICLE</span></div>
+    <h1 id="33">第33章 文章の品質を保つ</h1>
+  </header>
+<nav class="toc" aria-label="目次">
+  <div class="toc-heading">
+    <span class="toc-title">目次</span>
+    <span class="toc-count">43 セクション</span>
+  </div>
+  <ol><li><a href="#_1">この章の構成</a></li><li><a href="#3skill">3つのSkillは、対象と、誰が直すかが異なる</a><ol><li><a href="#3">3つは、名前で呼ばれたときだけ動く</a></li></ol></li><li><a href="#unslop-ai">/unslop は、AIらしい文章の癖を番号付きの規則で取り除く</a><ol><li><a href="#ai">役割：AIらしい文章の癖を規則で取り除く</a></li><li><a href="#_2">使いどき：どんな文章にも常に適用する</a><ol><li><a href="#unslop-skillplaybook">/unslop は、文章を書くほかのSkillやPlaybookからも使われる</a><ol><li><a href="#technical-writingaiunslop">/technical-writing：AIらしい癖の一覧を、/unslop に任せる</a></li><li><a href="#opening-a-prmulti-phase-or-multi-pr-planplaybooktechnical-writing-unslop">『Opening a PR』『Multi-phase or multi-PR plan』Playbook：/technical-writing で書いた後に、/unslop を適用する</a></li><li><a href="#teachshow-me-your-work">/teach、/show-me-your-work：同僚に話すような言葉で書く</a></li><li><a href="#recallblast-radius">/recall、/blast-radius：利用者に渡す報告を書く</a></li><li><a href="#automate-meskillunslop">/automate-me：利用者専用のSkillの文章を、/unslop で直す</a></li><li><a href="#investigationplaybook">『Investigation』Playbook：調べた結果の返答が、そのまま成果物になる</a></li></ol></li></ol></li><li><a href="#ai7">規則：AIらしい癖を、7つの分類と固定の番号で示す</a><ol><li><a href="#content">Content（内容）</a></li><li><a href="#language">Language（語彙）</a></li><li><a href="#style">Style（体裁）</a></li><li><a href="#communication-artifacts">Communication artifacts（チャットの名残）</a></li><li><a href="#filler">Filler（埋め草）</a></li><li><a href="#jargon">Jargon（専門用語もどき）</a></li><li><a href="#plain-speech">Plain speech（平易な言葉）</a></li></ol></li><li><a href="#_3">依頼の書き方：直す文章と追加の規則を添えて呼ぶ</a></li></ol></li><li><a href="#bro">/bro は、分かりにくい返答を、専門用語なしで言い直す</a><ol><li><a href="#_4">役割：直前の返答を、専門用語なしで言い直す</a></li><li><a href="#_5">使いどき：返答が詳しいのに、何を言っているのか分からないとき</a></li><li><a href="#3_1">手順：本文の3文が、そのまま指示になる</a></li><li><a href="#bro_1">依頼の書き方：「/bro」だけで足りる</a></li></ol></li><li><a href="#technical-writing">/technical-writing は、文書の種類を先に決めてから書かせる</a><ol><li><a href="#_6">役割：技術文書を、層に分けた規範でエージェントに書かせる</a></li><li><a href="#_7">使いどき：文書を書くときとレビューするとき</a></li><li><a href="#4">規則：4つの層と、層の外の規則</a><ol><li><a href="#43">4つの層より優先する3つの規則</a></li><li><a href="#_8">名前は、コードベースの名前をそのまま使い、新しい専門用語を作らない</a></li><li><a href="#_9">文の長さを混ぜ、具体的に書く</a></li><li><a href="#pr1">PR説明は、1分以内に読める長さにする</a></li><li><a href="#4_1">4つの層は、文書全体から一文へと細かく見ていく</a></li><li><a href="#diataxis">Diátaxis：文書の種類を先に決める</a></li><li><a href="#google-developer-style">Google developer style：読み手に語りかける</a></li><li><a href="#ste">STE：一文には、伝えたいことを一つだけ書く</a></li><li><a href="#global-english">Global English：二通りに読める文をなくす</a></li><li><a href="#1">例）1段落を、規則に沿って書き直す</a></li></ol></li><li><a href="#skill">依頼の書き方：Skillの名前を添えて頼む</a></li></ol></li><li><a href="#_10">まとめ</a></li></ol>
+</nav>
+  <div class="article-body">
+
+<p>この章では、次の3つのSkillを扱います。</p>
+<ol>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/unslop/SKILL.md"><code>/unslop</code></a></li>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/bro/SKILL.md"><code>/bro</code></a></li>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/technical-writing/SKILL.md"><code>/technical-writing</code></a></li>
+</ol>
+<p>3つとも、エージェントが書いた文章の品質を保つためのSkillです。3つは、それぞれ次の仕事を受け持ちます。</p>
+<ul>
+<li><strong><code>/unslop</code></strong>・・・ エージェントが、自分の書いた文章から、「I hope this helps!（お役に立てば幸いです）」のような決まり文句など、AIらしい癖を取り除きます。</li>
+<li><strong><code>/bro</code></strong>・・・ エージェントが、直前の返答を、専門用語を使わずに短く言い直します。</li>
+<li><strong><code>/technical-writing</code></strong>・・・ エージェントが、文書の種類（チュートリアルかリファレンスかなど）を先に決めてから、技術文書を書きます。</li>
+</ul>
+<p>この章では、まず3つのSkillの対象、誰が直すか、何をきっかけに動くかの違いを確かめます。そのうえで、1つずつ、役割、使いどき、規則や手順、依頼の書き方の4つの観点で解説します。</p>
+<h2 id="_1">この章の構成</h2>
+<p>この章の構成は次のとおりです。</p>
+<ul>
+<li>3つのSkillは、対象と、誰が直すかが異なる</li>
+<li><code>/unslop</code> は、AIらしい文章の癖を番号付きの規則で取り除く</li>
+<li><code>/bro</code> は、分かりにくい返答を、専門用語なしで言い直す</li>
+<li><code>/technical-writing</code> は、文書の種類を先に決めてから書かせる</li>
+<li>まとめ</li>
+</ul>
+<h2 id="3skill">3つのSkillは、対象と、誰が直すかが異なる</h2>
+<p>3つのSkillの対象と、誰が直すかを表にまとめると、次のようになります。</p>
+<table>
+<thead>
+<tr>
+<th>Skill</th>
+<th>対象</th>
+<th>誰が直すか</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/unslop</code></td>
+<td>エージェントの返答を含む、あらゆる文章</td>
+<td>書いたエージェント自身が、規則に沿って直す</td>
+</tr>
+<tr>
+<td><code>/bro</code></td>
+<td>エージェントの直前の返答</td>
+<td>利用者が、返答が分かりにくいと感じたときに呼び、エージェントが言い直す</td>
+</tr>
+<tr>
+<td><code>/technical-writing</code></td>
+<td>ドキュメント、RFC（設計を提案する文書）、README、PR説明、コミットメッセージ</td>
+<td>書いたエージェント自身が、4つの層の規範に沿って書き、直す</td>
+</tr>
+</tbody>
+</table>
+<h3 id="3">3つは、名前で呼ばれたときだけ動く</h3>
+<p>3つの <code>SKILL.md</code> は、どれも <code>disable-model-invocation: true</code> の設定を持っています（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/46bd1f">第25章</a>）。この設定があるSkillを、エージェントが会話の内容から自分で選んで動かすことはありません。そのため、3つが動くのは、利用者が名前で呼んだときか、<code>/poteto-mode</code>、Playbook、ほかのSkillが手順の中で名前を指定して呼んだときだけです。</p>
+<p><code>/poteto-mode</code> の節『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/SKILL.md#non-negotiables">Non-negotiables</a>』（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/096f3d">第8章</a>）は、このうち2つのSkillを呼ぶ場面を決めています。あらゆる文章を書くときは <code>/unslop</code>、ドキュメント、RFC（設計を提案する文書）、README、PR説明、コミットメッセージを書くときは <code>/technical-writing</code> を呼びます。</p>
+<p>そのため、<code>/poteto-mode</code> で作業していれば、利用者がこの2つを名前で呼ばなくても、エージェントが『Non-negotiables』の規則に従って、この2つを呼びます。</p>
+<h2 id="unslop-ai"><code>/unslop</code> は、AIらしい文章の癖を番号付きの規則で取り除く</h2>
+<h3 id="ai">役割：AIらしい文章の癖を規則で取り除く</h3>
+<p><code>/unslop</code> は、<strong>エージェントが、自分の書いた文章から、AIらしい癖を、規則に沿って削るSkill</strong>です。</p>
+<p>AIらしい癖とは、AIが書いた文章によく現れ、読み手に「機械が書いた」と気づかせる言い回しや書式のことです。</p>
+<p>原文は、この癖を AI tells や AI patterns と呼びます。たとえば、返答の最後に付く決まり文句や、em dash（英文で使う長いダッシュ記号 <code>—</code>）の多用などが該当します。</p>
+<p>規則とその例は、どれも英語の文章を対象に書かれていますが、言語に関係なく、共通して文章に適用してほしい規則が大半なので、日本語では使えない、ということはないです。</p>
+<p>もちろん、英語で最も効果を発揮するので、やはり英語は "The hottest programming language is English" と言えるでしょう。</p>
+<h3 id="_2">使いどき：どんな文章にも常に適用する</h3>
+<p><code>/poteto-mode</code> の『Non-negotiables』は、<strong>エージェントの返答を含むあらゆる文章</strong>にこのSkillを適用するよう定めています。</p>
+<p><code>SKILL.md</code> の説明（description）も、「Must always apply（常に適用すること）」と書いています。ただし、<code>/unslop</code> は <code>disable-model-invocation: true</code> の設定を持つので、エージェントがこの説明を読んで、自分で <code>/unslop</code> を呼ぶことはありません。常に適用されるのは、『Non-negotiables』の規則と、次に見るほかのSkillやPlaybookの手順が、<code>/unslop</code> を呼ぶからです。</p>
+<h4 id="unslop-skillplaybook"><code>/unslop</code> は、文章を書くほかのSkillやPlaybookからも使われる</h4>
+<p>ほかのSkillやPlaybookも、各手順の中で、自分が書く文章に <code>/unslop</code> を適用するよう定めています。呼ぶ側と、<code>/unslop</code> を適用する文章をまとめると、次のようになります。</p>
+<table>
+<thead>
+<tr>
+<th>呼ぶ側</th>
+<th><code>/unslop</code> を適用する文章</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/technical-writing</code></td>
+<td>書いたりレビューしたりするすべての文書</td>
+</tr>
+<tr>
+<td>『Opening a PR』『Multi-phase or multi-PR plan』Playbook</td>
+<td>PRのタイトル、PR説明、コミットの本文、計画書</td>
+</tr>
+<tr>
+<td><code>/teach</code>、<code>/show-me-your-work</code></td>
+<td>説明の返答と、判断の記録</td>
+</tr>
+<tr>
+<td><code>/recall</code>、<code>/blast-radius</code></td>
+<td>利用者に渡す報告</td>
+</tr>
+<tr>
+<td><code>/automate-me</code></td>
+<td>利用者専用のSkillの下書き</td>
+</tr>
+<tr>
+<td>『Investigation』Playbook</td>
+<td>調べた結果の返答</td>
+</tr>
+</tbody>
+</table>
+<p>呼ぶ側ごとの詳細は、次のとおりです。</p>
+<h5 id="technical-writingaiunslop"><code>/technical-writing</code>：AIらしい癖の一覧を、<code>/unslop</code> に任せる</h5>
+<p><code>/technical-writing</code> は、AIらしい語彙や埋め草（意味のない語句）などの癖の一覧を自分では持たず、<code>/unslop</code> に任せています。そのため、自分が書いたりレビューしたりするすべての文書に <code>/unslop</code> を適用します。</p>
+<h5 id="opening-a-prmulti-phase-or-multi-pr-planplaybooktechnical-writing-unslop">『Opening a PR』『Multi-phase or multi-PR plan』Playbook：<code>/technical-writing</code> で書いた後に、<code>/unslop</code> を適用する</h5>
+<p>PRを作る『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/opening-a-pr.md"><strong>Opening a PR</strong></a>』Playbook（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/45a56e">第14章</a>）は、PRのタイトル、PR説明、コミットの本文を <code>/technical-writing</code> で書いた後に、<code>/unslop</code> を適用するよう定めています。</p>
+<p>複数のフェーズやPRにまたがる計画書を書く『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/multi-phase-plan.md"><strong>Multi-phase or multi-PR plan</strong></a>』Playbook（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/8a8dd5">第16章</a>）も、計画書を <code>/technical-writing</code> で書いた後に、<code>/unslop</code> を適用するよう定めています。</p>
+<h5 id="teachshow-me-your-work"><code>/teach</code>、<code>/show-me-your-work</code>：同僚に話すような言葉で書く</h5>
+<p><code>/teach</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/788746">第22章</a>）は、作業の内容を、人が本当に理解できるよう平易に説明するSkillです。<code>/teach</code> は、すべての返答を、同僚に説明するときのような平易な話し言葉で書くよう定め、その返答に <code>/unslop</code> を適用します。</p>
+<p><code>/show-me-your-work</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/724887">第29章</a>）は、エージェントの判断とその根拠を、1行に1つずつファイルに記録するSkillです。<code>/show-me-your-work</code> は、判断の記録の各行を、自分のしたことをチームメイトに話すように、AIらしい言い回しや抽象的な専門用語を使わずに書くよう定めています。そのうえで、判断の記録の文にも <code>/unslop</code> を適用するとしています。</p>
+<h5 id="recallblast-radius"><code>/recall</code>、<code>/blast-radius</code>：利用者に渡す報告を書く</h5>
+<p><code>/recall</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/788746">第22章</a>）は、チャットの履歴などから、利用者の最近の作業の状況を組み立て直すSkillです。<code>/blast-radius</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/997880">第28章</a>）は、変更がほかの場所で壊しうるものを、リリース前に探すSkillです。</p>
+<p>2つとも、利用者に渡す報告を、<code>/unslop</code> を通して書きます。<code>/recall</code> の報告は、作業が今どこまで進み、次に何をするかを伝えます。<code>/blast-radius</code> の報告は、変更が壊しうるものと、マージの前に何を確かめるかを伝えます。</p>
+<h5 id="automate-meskillunslop"><code>/automate-me</code>：利用者専用のSkillの文章を、<code>/unslop</code> で直す</h5>
+<p><code>/automate-me</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/46bd1f">第25章</a>）は、利用者の最近のトランスクリプト（エージェントとの会話の記録）から作業の好みを読み取り、利用者専用のSkill（<code>&lt;利用者の名前&gt;-mode</code>）の下書きを作るSkillです。<code>/automate-me</code> は、その下書きの各行に、<code>/unslop</code> を適用します。</p>
+<h5 id="investigationplaybook">『Investigation』Playbook：調べた結果の返答が、そのまま成果物になる</h5>
+<p>『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/investigation.md"><strong>Investigation</strong></a>』（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/ea525d">第10章</a>）は、コードを変えずに、問いを調べて答えるPlaybookです。このPlaybookは、コードの変更ではなく、出典付きの説明か推奨を返し、<strong>その返答を調査の成果物と定めています</strong>。</p>
+<p>このPlaybookは、手順の最後で、その返答に <code>/unslop</code> を適用します。</p>
+<h3 id="ai7">規則：AIらしい癖を、7つの分類と固定の番号で示す</h3>
+<p><code>SKILL.md</code> の手順は、次の2つだけです。残りの大半は、規則が占めています。</p>
+<ol>
+<li>規則に当てはまる箇所を探す</li>
+<li>意味を保ち、書き手が意図した調子（文調）に合わせて書き直す</li>
+</ol>
+<p>規則には番号が付いていて、その番号は、ほかのSkillが規則を指すときに使う固定のIDです。たとえば、<code>/poteto-mode</code> は、「文の途中のつなぎにコロンを使わない」という規則を、「unslop rule 14」のように番号で指しています。</p>
+<p><code>SKILL.md</code> は、規則を消したら、その番号を空けたままにすると定めています。pstack version <code>0.15.15</code> の <code>SKILL.md</code> では、1、2、4、6、21の番号が空いています。</p>
+<p>!</p>
+<p>規則の欠番は、GitHubの<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/unslop/SKILL.md?plain=1">ソースの表示</a>（Markdown を整形せずに表示する画面）で確かめられます。</p>
+<p>規則は28あり、次の7つに分類されています。</p>
+<table>
+<thead>
+<tr>
+<th>分類</th>
+<th>何を直すか</th>
+<th>規則の番号</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="#content%EF%BC%88%E5%86%85%E5%AE%B9%EF%BC%89">Content（内容）</a></td>
+<td>評価だけを付け足す句と、出典の分からない主張</td>
+<td>3、5</td>
+</tr>
+<tr>
+<td><a href="#language%EF%BC%88%E8%AA%9E%E5%BD%99%EF%BC%89">Language（語彙）</a></td>
+<td>AIがよく使う語と、決まった型の言い回し</td>
+<td>7〜12</td>
+</tr>
+<tr>
+<td><a href="#style%EF%BC%88%E4%BD%93%E8%A3%81%EF%BC%89">Style（体裁）</a></td>
+<td>記号、太字、見出し、絵文字の使い方</td>
+<td>13〜19</td>
+</tr>
+<tr>
+<td><a href="#communication-artifacts%EF%BC%88%E3%83%81%E3%83%A3%E3%83%83%E3%83%88%E3%81%AE%E5%90%8D%E6%AE%8B%EF%BC%89">Communication artifacts（チャットの名残）</a></td>
+<td>チャットで返答するときの決まり文句と、へつらう調子</td>
+<td>20、22</td>
+</tr>
+<tr>
+<td><a href="#filler%EF%BC%88%E5%9F%8B%E3%82%81%E8%8D%89%EF%BC%89">Filler（埋め草）</a></td>
+<td>意味のない語句、過剰な予防線、中身のない結び</td>
+<td>23〜25</td>
+</tr>
+<tr>
+<td><a href="#jargon%EF%BC%88%E5%B0%82%E9%96%80%E7%94%A8%E8%AA%9E%E3%82%82%E3%81%A9%E3%81%8D%EF%BC%89">Jargon（専門用語もどき）</a></td>
+<td>専門的に聞こえるだけの比喩の名詞</td>
+<td>26</td>
+</tr>
+<tr>
+<td><a href="#plain-speech%EF%BC%88%E5%B9%B3%E6%98%93%E3%81%AA%E8%A8%80%E8%91%89%EF%BC%89">Plain speech（平易な言葉）</a></td>
+<td>感じ（印象）だけを書く文、読み返さないと分からない文、凝った語</td>
+<td>27〜33</td>
+</tr>
+</tbody>
+</table>
+<p>次に、分類ごとに、すべての規則を挙げます。</p>
+<p>前述した通り、原文の規則とその例は、どれも英語の文章を対象にしています。しかし、英語の書式に特有の4つの規則（13、14、17、19）を除けば、ほかの規則は日本語の文章にも当てはまると、本書では考えます。そこで、日本語にも当てはまる規則は、本書で例を日本語に置き換えて示します。英語に特有の4つの規則は、原文の英語の例のまま示します。</p>
+<h4 id="content">Content（内容）</h4>
+<table>
+<thead>
+<tr>
+<th>番号</th>
+<th>規則</th>
+<th>直し方</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>3</td>
+<td>表面的な句</td>
+<td>「〜を実現しました」「〜を可能にします」のような、評価だけを付け足す句を、消すか、実際の出典で中身を補う</td>
+</tr>
+<tr>
+<td>5</td>
+<td>あいまいな出典</td>
+<td>「専門家によると」「一般的に言われているように」のような、誰が言ったか分からない書き方をやめ、出典を名指しするか、消す</td>
+</tr>
+</tbody>
+</table>
+<h4 id="language">Language（語彙）</h4>
+<table>
+<thead>
+<tr>
+<th>番号</th>
+<th>規則</th>
+<th>直し方</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>7</td>
+<td>AIらしい語彙</td>
+<td>「重要な」「包括的な」「さらに」「〜を活用する」などを多用せず、平易な語に替える</td>
+</tr>
+<tr>
+<td>8</td>
+<td>「である」の凝った言い方</td>
+<td>「〜としての役割を果たす」「〜を誇る」を、「〜である」「〜がある」にする</td>
+</tr>
+<tr>
+<td>9</td>
+<td>「〜だけでなく、〜も」</td>
+<td>「〜だけでなく、〜も」という言い方をやめ、要点をそのまま書く</td>
+</tr>
+<tr>
+<td>10</td>
+<td>無理に3つ並べる書き方</td>
+<td>考えを3つの組に押し込まず、実際の数だけ書く</td>
+</tr>
+<tr>
+<td>11</td>
+<td>同じものの言い換え</td>
+<td>1段落の中で「主人公」「主役」「中心人物」と呼び分けず、1つの語を繰り返す</td>
+</tr>
+<tr>
+<td>12</td>
+<td>見せかけの範囲</td>
+<td>「ドキュメントからテストまで」のように、同じ尺度に乗らないものを「〜から〜まで」でつながず、話題をそのまま並べる</td>
+</tr>
+</tbody>
+</table>
+<h4 id="style">Style（体裁）</h4>
+<table>
+<thead>
+<tr>
+<th>番号</th>
+<th>規則</th>
+<th>直し方</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>13</td>
+<td>em dash の多用</td>
+<td>em dash を使わず、ピリオドかカンマにする。括弧、en dash、ハイフンでの代用もしない</td>
+</tr>
+<tr>
+<td>14</td>
+<td>コロンの多用</td>
+<td>コロンは、一覧や例の前にだけ使い、文の途中のつなぎには使わない</td>
+</tr>
+<tr>
+<td>15</td>
+<td>太字の多用</td>
+<td>固有名詞や略語のたびに太字にしない</td>
+</tr>
+<tr>
+<td>16</td>
+<td>見出し付きの箇条書き</td>
+<td>「<strong>性能：</strong> 性能が向上しました」のように、太字の見出しが同じ行の中身を繰り返す箇条書きを、文章に直す</td>
+</tr>
+<tr>
+<td>17</td>
+<td>Title Case の見出し</td>
+<td>見出しを sentence case で書く</td>
+</tr>
+<tr>
+<td>18</td>
+<td>飾りの絵文字</td>
+<td>見出しや箇条書きから、絵文字を消す</td>
+</tr>
+<tr>
+<td>19</td>
+<td>曲がった引用符</td>
+<td>曲がった引用符を、まっすぐな引用符にする</td>
+</tr>
+</tbody>
+</table>
+<p>!</p>
+<ul>
+<li><strong>em dash</strong>・・・ 英文で、挿入句や文の区切りに使う長いダッシュ記号（<code>—</code>）</li>
+<li><strong>en dash</strong>・・・ em dash より短いダッシュ記号。英文で、「1–5」のような範囲を示すのに使う</li>
+<li><strong>Title Case</strong>・・・ 見出しの主な語の頭文字を、すべて大文字にする書き方。例：「Pick The Mode First」</li>
+<li><strong>sentence case</strong>・・・ 見出しを、文と同じく最初の語の頭文字だけ大文字にする書き方。例：「Pick the mode first」</li>
+<li><strong>曲がった引用符</strong>・・・ 左右で形の異なる引用符（“ ”）。まっすぐな引用符は、左右が同じ形の「"」</li>
+</ul>
+<h4 id="communication-artifacts">Communication artifacts（チャットの名残）</h4>
+<table>
+<thead>
+<tr>
+<th>番号</th>
+<th>規則</th>
+<th>直し方</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>20</td>
+<td>チャットボットの決まり文句</td>
+<td>「お役に立てば幸いです」「ほかにもあれば、お知らせください」「承知しました！」のような文を消す</td>
+</tr>
+<tr>
+<td>22</td>
+<td>へつらう調子</td>
+<td>「素晴らしい質問ですね！おっしゃるとおりです！」のような前置きをやめ、直接答える</td>
+</tr>
+</tbody>
+</table>
+<h4 id="filler">Filler（埋め草）</h4>
+<table>
+<thead>
+<tr>
+<th>番号</th>
+<th>規則</th>
+<th>直し方</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>23</td>
+<td>埋め草（意味のない語句）の句</td>
+<td>「〜という事実があるため」を「〜ため」にする。「〜ということに注意することが重要です」は消す</td>
+</tr>
+<tr>
+<td>24</td>
+<td>過剰な予防線</td>
+<td>「〜という可能性も考えられなくはないかもしれません」を「〜かもしれません」にする</td>
+</tr>
+<tr>
+<td>25</td>
+<td>中身のない結び</td>
+<td>「今後の発展が期待されます。」のような結びをやめ、具体的な計画か事実を書く</td>
+</tr>
+</tbody>
+</table>
+<h4 id="jargon">Jargon（専門用語もどき）</h4>
+<table>
+<thead>
+<tr>
+<th>番号</th>
+<th>規則</th>
+<th>直し方</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>26</td>
+<td>抽象的な比喩の名詞</td>
+<td>「土台」「北極星」「フライホイール」のような比喩を、具体的な語にする。たとえば、「北極星となる指標」を「最も重視する指標」にする</td>
+</tr>
+</tbody>
+</table>
+<h4 id="plain-speech">Plain speech（平易な言葉）</h4>
+<table>
+<thead>
+<tr>
+<th>番号</th>
+<th>規則</th>
+<th>直し方</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>27</td>
+<td>感じ（印象）ではなく、何をするかを書く</td>
+<td>「読みやすいSQL」「スキーマに沿う型」のような、使ったときの印象を語る言い方を、「<code>.toSQL()</code> は、データベースに送る文字列そのものを返す」「列の名前を変えると、ビルドが失敗する」のような、仕組みか数値を示す文にする</td>
+</tr>
+<tr>
+<td>28</td>
+<td>詰まった文を短くするか、分ける</td>
+<td>読み手が読み返さないと分からない文を、2つに分けるか、文の一部を削る</td>
+</tr>
+<tr>
+<td>29</td>
+<td>能動態で書く</td>
+<td>「クエリは検証されます」を「コンパイラがクエリを検証します」にする</td>
+</tr>
+<tr>
+<td>30</td>
+<td>副詞を削るか、強い動詞にする</td>
+<td>「すばやく動く」を「速い」か、実際の数値にする。「大幅に改善する」は、測った差を書く</td>
+</tr>
+<tr>
+<td>31</td>
+<td>平易な語を選ぶ</td>
+<td>「活用する」「利用する」を「使う」に、「促進する」を「助ける」にする</td>
+</tr>
+<tr>
+<td>32</td>
+<td>凝った文体をやめる</td>
+<td>比喩や飾った言い回しを、文字どおりの言葉にする。たとえば、「回す価値のあるダイヤル」を「変えてみる価値のあるパラメータ」にする</td>
+</tr>
+<tr>
+<td>33</td>
+<td>詰め込みすぎた文をやめる</td>
+<td>動詞を省き、矢印や略語で書いた文を、完全な文に直す。たとえば、「パーサが不正な日付を拒否 → exit 2、書き込みなし」を「パーサは不正な日付を拒否し、終了コード2で終わり、何も書き込まない。」にする</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_3">依頼の書き方：直す文章と追加の規則を添えて呼ぶ</h3>
+<p>同梱ガイドの <a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/05-build-and-clean.md"><code>docs/guide/05-build-and-clean.md</code></a> は、直す文章と、追加の規則を添えて呼ぶ次の例を挙げています。</p>
+<pre><code>/unslop the readme changes, no emdashes
+// READMEの変更を unslop して。em dash は使わないで
+</code></pre>
+<p>この依頼では、「the readme changes」が直す文章で、「no emdashes」が追加の規則です。</p>
+<p>同じページは、次のような短い依頼でも、エージェントは依頼の意図を読み取り、このSkillで文章を直せると説明しています。</p>
+<pre><code>unslop that, tighten it
+// それを unslop して、引き締めて
+</code></pre>
+<p>「that」は、直前に書いた文章を指します。</p>
+<h2 id="bro"><code>/bro</code> は、分かりにくい返答を、専門用語なしで言い直す</h2>
+<h3 id="_4">役割：直前の返答を、専門用語なしで言い直す</h3>
+<p><code>/bro</code> は、<strong>エージェントが直前の返答を専門用語なしで言い直すためのSkill</strong>です。本文は3文だけで、pstack で最も短いSkillです。</p>
+<p><code>/unslop</code> との違いは、直す単位です。<code>/unslop</code> は、決まり文句のような、規則に当てはまる箇所だけを直します。一方、<code>/bro</code> は、規則を使わず、直前の返答全体を、平易な言葉で言い直します。</p>
+<p><code>/unslop</code> や <code>/technical-writing</code> と異なり、<code>/poteto-mode</code> も、Playbookも、他のSkillも、手順の中で <code>/bro</code> を呼びません。そのため、<code>/bro</code> は、利用者が名前で呼んだときだけ動きます。</p>
+<h3 id="_5">使いどき：返答が詳しいのに、何を言っているのか分からないとき</h3>
+<p>利用者は、エージェントの返答が技術的には詳しく書かれているのに、何を言っているのか分からないときに、このSkillを使います。</p>
+<h3 id="3_1">手順：本文の3文が、そのまま指示になる</h3>
+<p><code>/bro</code> の本文は、次の3文だけです。</p>
+<blockquote>
+<p>Restate your last message. Stop using jargon and speak coherently. State it more simply and concisely, like one human talking to another.</p>
+<p>直前のメッセージを言い直せ。専門用語を使うのをやめ、筋の通った話し方をせよ。人が人に話すように、もっと簡単に、短く言え。</p>
+</blockquote>
+<p><code>SKILL.md</code> には手順の節がなく、エージェントは、この3文をそのまま指示として受け取ります。</p>
+<h3 id="bro_1">依頼の書き方：「/bro」だけで足りる</h3>
+<p>同梱ガイドの <a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/10-recipes-and-pitfalls.md"><code>10-recipes-and-pitfalls.md</code></a> は、次の一語だけをプロンプトとして載せています。</p>
+<pre><code>/bro
+</code></pre>
+<p>本文の3文がそのまま指示になるので、利用者が言い直し方を書き添える必要はありません。</p>
+<h2 id="technical-writing"><code>/technical-writing</code> は、文書の種類を先に決めてから書かせる</h2>
+<h3 id="_6">役割：技術文書を、層に分けた規範でエージェントに書かせる</h3>
+<p><code>/technical-writing</code> は、エージェントが技術文書を書くときに従う規範を、文書全体の種類から一文の書き方までの4つの層に分けて示すSkillです。<strong>目標は、疲れたエンジニアが一度読んで理解できる文章です</strong>。</p>
+<p>poteto氏は『The Complete Guide to pstack』<a href="https://x.com/poteto/status/2097732320606507506">Part 2</a>で、このSkillを作ったきっかけを説明しています。</p>
+<p>きっかけは、Cursor社内のデスクトップアプリ用フレームワーク Dune のREADMEを、このSkillなしでエージェントに書かせたことでした。できたREADMEは、チュートリアル、ハウツー、設計の解説、APIリファレンスが一つに混ざり、AIらしい癖のある凝った文章で書かれていて、読みにくいものだったそうです。</p>
+<h3 id="_7">使いどき：文書を書くときとレビューするとき</h3>
+<p><code>SKILL.md</code> の説明（description）は、ドキュメント、RFC（設計を提案する文書）、README、PR説明、コミットメッセージを書くときと、それらをレビューするときを、使いどきとして挙げています。</p>
+<p>ただし、<code>/technical-writing</code> も <code>disable-model-invocation: true</code> の設定を持つので、エージェントがこの説明を読んで、自分で <code>/technical-writing</code> を呼ぶことはありません。こうした場面でこのSkillが使われるのは、『Non-negotiables』の規則が、こうした文書を書くときにはこのSkillを使うよう定めているからです。</p>
+<p>Playbookでは、PRを作る『Opening a PR』が、PRのタイトル、PR説明、コミットの本文をこのSkillで書くよう定めています。計画書を作る『Multi-phase or multi-PR plan』も、計画書をこのSkillで書くよう定めています。</p>
+<h3 id="4">規則：4つの層と、層の外の規則</h3>
+<p><code>SKILL.md</code> は、4つの層の規範のほかに、層の外の規則も定めています。先に層の外の規則を見てから、4つの層を1つずつ見ていきます。</p>
+<h4 id="43">4つの層より優先する3つの規則</h4>
+<p>エージェントは、4つの層とは別に、どの層よりも優先して、次の3つの規則を守ります。</p>
+<ul>
+<li>取り除いても文の意味が変わらない語は、すべて削ります。たとえば、「In order to」は「to」にします。</li>
+<li>短く日常的な語を使います。たとえば、「utilize」ではなく「use」と書きます。</li>
+<li>規則を守ると文が悪くなるなら、別の方法で直すか、そのままにします。規則は読み手のためにあり、規則をすべて守っても機械が書いたように読める文は失敗だからです。</li>
+</ul>
+<h4 id="_8">名前は、コードベースの名前をそのまま使い、新しい専門用語を作らない</h4>
+<p>エージェントは、コードベースに実在するシンボル（関数名、型名、変数名など、コードの中で名前を付けたもの）、ファイル、フラグ、コマンドの名前を、言い換えずにそのまま書きます。</p>
+<p>また、エージェントは、新しい専門用語も作らず、開発者が口語で使う言葉を使います。たとえば、コードを別の場所に移すことを、「evacuate（避難させる）」ではなく「move（移す）」と書きます。</p>
+<p>一方で、「Strangler Fig パターン」のように、決まった設計や進め方に付いていて、すでに広く使われている名前は、エージェントもその名前で書きます。</p>
+<p>ただし、エージェントは、その名前が文書で最初に出てきたところに、意味を書き添えます。たとえば、「Strangler Fig パターン（古い仕組みを、少しずつ新しい仕組みに置き換えていく進め方）で移行する」と書きます。</p>
+<p>evacuate のような言い換えるべき語は、<code>/unslop</code> の規則26（抽象的な比喩の名詞）が一覧にしています。一覧にない語を見つけたら、エージェントは、<code>/unslop</code> を自分で書き換えず、「その一覧にない語」と「言い換えた語」を一覧に追加する案を、差分つきで返答に書きます。</p>
+<h4 id="_9">文の長さを混ぜ、具体的に書く</h4>
+<p>このSkillは、文の長さと具体性について、次の4つを求めています。</p>
+<ul>
+<li><strong>文の長さを意図的に混ぜる</strong>・・・ 短い文で要点を示し、長い文で事実をその条件や結果とともに書きます。</li>
+<li><strong>文を分けるかどうかは、長さではなく、伝えたいことの数で決める</strong>・・・ 「一文に一つのこと」は、「どの文も短くする」という意味ではありません。伝えたいことが二つある文は分けますが、一つだけの文は、長くてもそのまま残します。</li>
+<li><strong>解説では、書き手の評価も書く</strong>・・・ explanation（解説）では、長所と短所を並べるだけで終わらせず、書き手がそれをどう評価するかも書きます。一方、reference（リファレンス）には評価を書かず、事実だけを書きます。</li>
+<li><strong>ぼかさず、具体的に書く</strong>・・・ 「スキーマの変更は問題を起こしうる」のような当たり障りのない書き方ではなく、「列の名前を変えると、ビルドが失敗する」のように、何が起きるかを書きます。</li>
+</ul>
+<p><strong>4つの層の規範をすべて守っても、短く切った文ばかりが並び、具体的なことが何も書かれていなければ、機械が書いたように読める</strong>からです。</p>
+<h4 id="pr1">PR説明は、1分以内に読める長さにする</h4>
+<p>エージェントは、PR説明を、レビューする人が1分以内に読める長さにします。そのため、<code>/swarm</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/2ad346">第24章</a>）の実行ログ、コミットのSHA（コミットごとに付く、コミットを一意に指す識別子）の一覧、指標の表は、本文に貼らずにリンクします。</p>
+<h4 id="4_1">4つの層は、文書全体から一文へと細かく見ていく</h4>
+<p>4つの層は、文書全体から一文の中身へと、順に細かく見ていくための段階です。層ごとに、次の問いを1つずつ受け持ちます。</p>
+<table>
+<thead>
+<tr>
+<th>層</th>
+<th>問い</th>
+<th>要点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://diataxis.fr/">Diátaxis</a></td>
+<td>どんな種類の文書か</td>
+<td>tutorial（チュートリアル）、how-to（ハウツー）、reference（リファレンス）、explanation（解説）のどれか一つにし、混ぜずに分けてリンクする</td>
+</tr>
+<tr>
+<td><a href="https://developers.google.com/style">Google developer style</a></td>
+<td>文が読み手にどう語りかけるか</td>
+<td>読み手を「you」と呼び、現在形と命令形で書く。見出しには、何についての節かだけでなく、要点まで書く</td>
+</tr>
+<tr>
+<td><a href="https://www.asd-ste100.org/">STE</a></td>
+<td>一文にどれだけ書くか</td>
+<td>一文には、伝えたいことを一つだけ書く。同じ動作は、文書の中でずっと同じ語で書く</td>
+</tr>
+<tr>
+<td>Global English</td>
+<td>二通りに読める文がないか</td>
+<td>「it」や「this」が何を指すか、読み手が迷わないように書く。同じものは、文書の中でずっと同じ名前で呼ぶ</td>
+</tr>
+</tbody>
+</table>
+<p>!</p>
+<ul>
+<li><strong>Diátaxis</strong>・・・ 技術文書を、tutorial（チュートリアル）、how-to（ハウツー）、reference（リファレンス）、explanation（解説）の4つの種類に分けて書く考え方</li>
+<li><strong>Google developer style</strong>・・・ Googleの開発者向け文書のスタイルガイド</li>
+<li><strong>STE</strong>・・・ Simplified Technical English。使う語と文の形を制限した、技術文書のための英語の規格</li>
+<li><strong>Global English</strong>・・・ Kohl の『The Global English Style Guide』が示す、英語を母語としない読み手や翻訳者、エージェントにも一通りに読める英文の書き方</li>
+</ul>
+<p>表の各層を、原文の例で1つずつ見ていきます。</p>
+<h4 id="diataxis">Diátaxis：文書の種類を先に決める</h4>
+<p><strong>最初の層（Diátaxis）で、文書の種類を先に決めます</strong>。種類が混ざった文書は、この章の<a href="#%E5%BD%B9%E5%89%B2%EF%BC%9A%E6%8A%80%E8%A1%93%E6%96%87%E6%9B%B8%E3%82%92%E3%80%81%E5%B1%A4%E3%81%AB%E5%88%86%E3%81%91%E3%81%9F%E8%A6%8F%E7%AF%84%E3%81%A7%E3%82%A8%E3%83%BC%E3%82%B8%E3%82%A7%E3%83%B3%E3%83%88%E3%81%AB%E6%9B%B8%E3%81%8B%E3%81%9B%E3%82%8B">『役割：技術文書を、層に分けた規範でエージェントに書かせる』</a>で見た Dune のREADMEのように読みにくくなるからです。</p>
+<p>種類は、「行動のための文書か、理解のための文書か」と「学習のための文書か、仕事のための文書か」の2つの問いで決まります。</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>学習のため</th>
+<th>仕事のため</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>行動のため</td>
+<td>tutorial</td>
+<td>how-to</td>
+</tr>
+<tr>
+<td>理解のため</td>
+<td>explanation</td>
+<td>reference</td>
+</tr>
+</tbody>
+</table>
+<p><code>SKILL.md</code> は、4つの種類を次のように説明しています。</p>
+<ul>
+<li><strong>tutorial（チュートリアル）</strong>・・・ 初めて使う人が、ハンズオン（手を動かして）で、実際に何かを作りながら覚えるための文書です。最初に完成するものを示し、手順ごとに、「画面や出力に何が表示されるはずか」を書きます。</li>
+<li><strong>how-to（ハウツー）</strong>・・・ すでに使い慣れた人が、目の前の問題を解決するための手順書です。基本の説明は省き、やることだけを順に書きます。</li>
+<li><strong>reference（リファレンス）</strong>・・・ 必要なときに引いて、正確な事実を確かめるための文書です。仕様や設定項目を並べ、手順や書き手の意見は入れません。</li>
+<li><strong>explanation（解説）</strong>・・・ 仕組みや設計が「なぜそうなっているのか」を理解するための文書です。設計の判断、経緯、制約、他の案を書きます。書き手の意見を書くのは、この文書だけです。</li>
+</ul>
+<p>Dune のREADMEのように4つの種類を一つに混ぜた文書なら、エージェントは4つの文書に分け、互いにリンクします。</p>
+<p>ただし、PR説明とコミットメッセージには、エージェントはこの層を適用せず、残りの3つの層だけを適用します。</p>
+<p>!</p>
+<p>残りの3つの層（Google developer style、STE、Global English）は、英語の文章の書き方を主に扱います。英語以外で文書を書く読者は、次の3つの節を読み飛ばすことを推奨します。</p>
+<h4 id="google-developer-style">Google developer style：読み手に語りかける</h4>
+<p>エージェントは、読み手を「you」と呼び、指示は「Click Submit.」のような命令形で書きます。</p>
+<p>また、エージェントは、条件を指示の前に置き、「To delete the document, click Delete.」（ドキュメントを削除するには、Delete をクリックする）のように書きます。条件が先にあれば、読み手は自分に関係のない指示を読み飛ばせるからです。</p>
+<p>さらに、エージェントは、見出しに、「何についての節か」だけでなく、「その節の要点」まで書きます。</p>
+<p>たとえば、「Modes（モード）」のように「何についての節か」だけを示す見出しではなく、「Pick the mode first（最初にモードを選ぶ）」のように、読み手が「何をすればよいか」まで分かる見出しにします。<br />
+ここでのモードは、Diátaxis の文書の種類のことです。</p>
+<h4 id="ste">STE：一文には、伝えたいことを一つだけ書く</h4>
+<p>エージェントは、一文に一つの指示だけを書きます。ここでの指示とは、「Install the component.（部品をインストールする）」のように、読み手に何かをさせる文です。</p>
+<p>また、エージェントは、長い文を2つに分けます。目安は、指示なら約20語、それ以外の文なら約25語です。この語の数は、英語の単語の数です。</p>
+<p>文章を書く時、エージェントは、英語の冠詞「the」や「a」を省きません。たとえば、「Remove backup file」は二通りに読めますが、「Remove the backup file（そのバックアップファイルを消す）」なら一通りにしか読めません。</p>
+<p>!</p>
+<ul>
+<li><strong>冠詞</strong>・・・ 英語で、名詞の前に付ける「the」「a」などの語。日本語にはない</li>
+<li><strong>「Remove backup file」が二通りに読める理由</strong>・・・ 原文は、どの二通りかまでは書いていない。本書では、次のように読めると考える。冠詞がないと、「backup file」を1つの名詞（バックアップファイル）として読み、「バックアップファイルを消す」と取ることも、backup（バックアップ）と file を切り離し、file を動詞（保管する）として「バックアップを消して、保管する」と取ることもできる。「the」があれば、「the backup file」がひとまとまりの名詞だと決まる</li>
+</ul>
+<p>さらに、エージェントは、同じ動作を、文書の中でずっと同じ語で書きます。ある箇所で「start（始める）」と書いたなら、別の箇所で「initiate（開始する）」と言い換えません。</p>
+<h4 id="global-english">Global English：二通りに読める文をなくす</h4>
+<p>エージェントは、「only」や「not」を、それが修飾する語のすぐ隣に置きます。「only fails on growth（増えたときに、失敗するだけ）」と「fails only on growth（増えたときだけ、失敗する）」のように、置く場所で意味が変わるからです。</p>
+<p>また、エージェントは、一つのものを、どこでも一つの名前で呼びます。一つの仕組みを「the gate」「the ratchet」「the budget check」と呼び分ける文書は、読み手に3つのものがあると思わせてしまいます。</p>
+<h4 id="1">例）1段落を、規則に沿って書き直す</h4>
+<p><code>SKILL.md</code> は、書き直しの例を1つ載せています。直す前の段落は、次のとおりです。</p>
+<blockquote>
+<p>Configuration of the proto import ratchet budget script parameters is performed via budget.json. Note that it's important to remember that running with --write, which updates the committed budget to reflect the current count, should only be done when lowering it. If exceeded, CI fails.</p>
+<p>proto import ratchet budget script のパラメータの設定は、budget.json を介して行われる。--write を付けて実行すること（コミットされた予算を現在の数に合わせて更新する）は、予算を下げるときにだけ行うべきだと覚えておくことが重要である点に注意。超えると、CI が失敗する。</p>
+</blockquote>
+<p>直した後の段落は、次のとおりです。</p>
+<blockquote>
+<p><code>budget.mjs</code> reads the committed budget from <code>budget.json</code> and counts the files that import protos. If the count exceeds the budget, CI fails. Run <code>budget.mjs --write</code> only to lower the budget.</p>
+<p><code>budget.mjs</code> は、コミットされた予算を <code>budget.json</code> から読み、protoをインポートしているファイルを数える。数が予算を超えると、CI が失敗する。<code>budget.mjs --write</code> は、予算を下げるときにだけ実行する。</p>
+</blockquote>
+<p>2つの段落を比べると、次の点が変わっています。</p>
+<ul>
+<li>「proto import ratchet budget script」という名詞の連なりをやめ、実在するファイル名 <code>budget.mjs</code> と <code>budget.json</code> で書いている</li>
+<li>「is performed via」という受け身をやめ、<code>budget.mjs</code> を主語にして、何をするかを書いている</li>
+<li>「Note that it's important to remember that」のような、意味のない語句を削っている</li>
+<li>比喩の「ratchet」を使っていない。ratchet は一方向にしか回らない歯車のことで、ここでは「減ることしかない上限」の比喩として使われていた</li>
+<li>「should only be done」という受け身の注意を、「Run <code>budget.mjs --write</code> only to lower the budget.」という命令形の指示にしている</li>
+</ul>
+<h3 id="skill">依頼の書き方：Skillの名前を添えて頼む</h3>
+<p>同梱ガイドの <a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/09-make-it-yours.md"><code>docs/guide/09-make-it-yours.md</code></a> は、次の依頼例を挙げています。</p>
+<pre><code>/technical-writing review the readme changes
+// READMEの変更をレビューして
+</code></pre>
+<p>同じページは、利用者が、自分やエージェントが書き終えた文書のレビューにこのSkillを使うほか、エージェントに文書を頼むときに、依頼の最初にSkillの名前を入れて使ってもよいと説明しています。</p>
+<h2 id="_10">まとめ</h2>
+<ul>
+<li><strong>3つの違い</strong>・・・ <code>/unslop</code> と <code>/technical-writing</code> は書いたエージェント自身が規則で直し、<code>/bro</code> は利用者が呼んだときにエージェントが言い直します。</li>
+<li><strong><code>/unslop</code></strong>・・・ 番号を変えない28の規則で、あらゆる文章からAIらしい癖を取り除きます。</li>
+<li><strong><code>/bro</code></strong>・・・ 直前の返答を、専門用語なしで、短く言い直します。</li>
+<li><strong><code>/technical-writing</code></strong>・・・ 文書の種類を先に1つに決め、疲れたエンジニアが一度読んで理解できる文書にします。</li>
+</ul>
+<p>次の<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/f70847">第34章</a>では、作業の学びを振り返り、既存のSkillに反映する <a href="https://github.com/cursor/plugins/blob/main/pstack/skills/reflect/SKILL.md"><code>/reflect</code></a> を扱います。</p>
+  </div>
+  <footer class="article-footer">
+    <span>取得: 2026-10-06T23:37:34+09:00</span>
+    <a href="#article-top">↑ 先頭へ戻る</a>
+  </footer>
+</main>
+<script>
+(() => {
+  const progress = document.querySelector(".reading-progress > span");
+  const updateProgress = () => {
+    const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+    const ratio = scrollable > 0 ? window.scrollY / scrollable : 0;
+    if (progress) progress.style.width = `${Math.min(1, ratio) * 100}%`;
+  };
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  document.querySelectorAll("pre").forEach((block) => {
+    const button = document.createElement("button");
+    button.className = "copy-button";
+    button.type = "button";
+    button.textContent = "コピー";
+    button.addEventListener("click", async () => {
+      const text = block.querySelector("code")?.innerText || block.innerText;
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const textarea = document.createElement("textarea");
+          textarea.value = text;
+          textarea.style.position = "fixed";
+          textarea.style.opacity = "0";
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand("copy");
+          textarea.remove();
+        }
+        button.textContent = "コピー済み";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      } catch (error) {
+        button.textContent = "失敗";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      }
+    });
+    block.appendChild(button);
+  });
+
+  const links = new Map(
+    [...document.querySelectorAll(".toc a")].map((link) => [link.hash, link])
+  );
+  const headings = [...document.querySelectorAll(
+    ".article-body h2[id], .article-body h3[id], .article-body h4[id]"
+  )];
+  if ("IntersectionObserver" in window && headings.length) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        links.forEach((link) => link.classList.remove("is-active"));
+        links.get(`#${entry.target.id}`)?.classList.add("is-active");
+      });
+    }, { rootMargin: "-12% 0px -72% 0px" });
+    headings.forEach((heading) => observer.observe(heading));
+  }
+})();
+</script>
+</body>
+</html>

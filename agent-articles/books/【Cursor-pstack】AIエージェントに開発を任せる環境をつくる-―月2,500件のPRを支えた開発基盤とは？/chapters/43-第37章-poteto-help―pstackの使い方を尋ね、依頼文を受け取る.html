@@ -1,0 +1,1443 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="title" content="第37章  /poteto-help―pstackの使い方を尋ね、依頼文を受け取る">
+<meta name="book_title" content="【Cursor pstack】AIエージェントに開発を任せる環境をつくる ―月2,500件のPRを支えた開発基盤とは？">
+<meta name="source_url" content="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/77207a">
+<meta name="author" content="kaito">
+<meta name="published_at" content="2026-10-02">
+<meta name="retrieved_at" content="2026-10-06T23:37:35+09:00">
+<meta name="site" content="zenn.dev">
+<meta name="content_type" content="article">
+<meta name="chapter_position" content="43">
+<title>第37章  /poteto-help―pstackの使い方を尋ね、依頼文を受け取る</title>
+<style>
+:root {
+  color-scheme: light;
+  --ink: #172033;
+  --muted: #64748b;
+  --line: #dbe4ef;
+  --accent: #2563eb;
+  --accent-dark: #1d4ed8;
+  --accent-soft: #eff6ff;
+  font-family: -apple-system, BlinkMacSystemFont, "Avenir Next",
+    "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 8% 0%, #dbeafe 0, transparent 32rem),
+    radial-gradient(circle at 100% 12%, #e0e7ff 0, transparent 28rem),
+    #f4f7fb;
+  color: var(--ink);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(120deg, transparent 0 48%, rgba(255, 255, 255, 0.4));
+}
+.article {
+  position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
+  max-width: 920px;
+  margin: clamp(1rem, 5vw, 4rem) auto;
+  padding: clamp(2rem, 6vw, 5rem) clamp(1.25rem, 7vw, 5.5rem);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  border-radius: 24px;
+  min-height: 100vh;
+  box-shadow:
+    0 24px 70px rgba(30, 64, 175, 0.1),
+    0 4px 16px rgba(15, 23, 42, 0.04);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 5px;
+  content: "";
+  background: linear-gradient(90deg, #2563eb, #7c3aed, #db2777);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin: 0 0 2.5rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.72rem;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+a {
+  color: var(--accent-dark);
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: #7c3aed;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--ink);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 18ch;
+  margin: 0 0 2.5rem;
+  font-size: clamp(2.15rem, 5vw, 3.65rem);
+  letter-spacing: -0.045em;
+}
+h2 {
+  position: relative;
+  margin: 3.8rem 0 1.25rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--line);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 4.2rem;
+  height: 3px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), #7c3aed);
+  border-radius: 999px;
+}
+h3 {
+  margin: 2.6rem 0 0.8rem;
+  color: var(--accent-dark);
+  font-size: 1.3rem;
+}
+h4, h5, h6 {
+  margin-top: 2rem;
+}
+p {
+  margin: 1.15rem 0;
+}
+ul, ol {
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.35rem 0;
+}
+li::marker {
+  color: var(--accent);
+  font-weight: 700;
+}
+strong {
+  color: #111827;
+}
+blockquote {
+  margin: 1.6rem 0;
+  padding: 0.8rem 1.25rem;
+  color: #475569;
+  background: linear-gradient(90deg, var(--accent-soft), #fff);
+  border-left: 4px solid var(--accent);
+  border-radius: 0 12px 12px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 3rem 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+img {
+  display: block;
+  max-width: 100%;
+  margin: 1.75rem auto;
+  height: auto;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+}
+pre {
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  padding: 1.15rem 1.25rem;
+  color: #e2e8f0;
+  background: #111827;
+  border: 1px solid #253047;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+}
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+:not(pre) > code {
+  padding: 0.15rem 0.4rem;
+  color: #9f1239;
+  background: #fff1f2;
+  border-radius: 5px;
+}
+table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  border-collapse: collapse;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
+  text-align: left;
+}
+th {
+  color: #1e3a8a;
+  background: #eff6ff;
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: #f8fafc;
+}
+@media (max-width: 600px) {
+  .article {
+    margin: 0;
+    padding: 2rem 1rem 4rem;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(2rem, 10vw, 2.75rem);
+  }
+  .metadata {
+    margin-bottom: 2rem;
+  }
+}
+@media print {
+  body {
+    background: #fff;
+  }
+  .article {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  a {
+    color: inherit;
+  }
+}
+</style>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0f1419;
+  --surface: #1a2332;
+  --surface-raised: #202c3f;
+  --surface-soft: rgba(26, 35, 50, 0.72);
+  --border: #2d3a4f;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #58a6ff;
+  --accent-strong: #79c0ff;
+  --green: #3fb950;
+  --purple: #bc8cff;
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+    "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  line-height: 1.75;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+  background: var(--bg);
+}
+body {
+  min-width: 320px;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 2rem 1.5rem 5rem;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(31, 111, 235, 0.18), transparent 32rem),
+    radial-gradient(circle at 100% 12%, rgba(137, 87, 229, 0.14), transparent 28rem),
+    var(--bg);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black, transparent 75%);
+}
+.reading-progress {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 20;
+  height: 3px;
+  background: rgba(45, 58, 79, 0.7);
+}
+.reading-progress > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  box-shadow: 0 0 14px rgba(88, 166, 255, 0.8);
+  transition: width 80ms linear;
+}
+.article {
+  position: relative;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  background: rgba(15, 20, 25, 0.76);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(88, 166, 255, 0.035) inset;
+  backdrop-filter: blur(16px);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  border-radius: 16px 16px 0 0;
+}
+.article-header {
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.eyebrow-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--green);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(63, 185, 80, 0.75);
+}
+.eyebrow-separator {
+  color: var(--border);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  background: rgba(32, 44, 63, 0.68);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+.source-link {
+  color: var(--text);
+  text-decoration: none;
+}
+.source-link:hover {
+  border-color: var(--accent);
+  background: rgba(88, 166, 255, 0.12);
+}
+a {
+  color: var(--accent);
+  overflow-wrap: anywhere;
+  text-decoration: none;
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 24ch;
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  background: linear-gradient(120deg, #fff 12%, #b9d8ff 58%, #bc8cff);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+h2 {
+  position: relative;
+  margin: 3.2rem 0 1.1rem;
+  padding: 0.75rem 0 0.65rem;
+  border-bottom: 1px solid var(--border);
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 3.8rem;
+  height: 2px;
+  content: "";
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(88, 166, 255, 0.7);
+}
+h3 {
+  margin: 2.25rem 0 0.7rem;
+  color: var(--accent-strong);
+  font-size: 1.2rem;
+}
+h4, h5, h6 {
+  margin-top: 1.75rem;
+}
+p {
+  margin: 0.9rem 0;
+}
+ul, ol {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.3rem 0;
+}
+li::marker {
+  color: var(--accent);
+}
+strong {
+  color: #fff;
+}
+blockquote {
+  margin: 1.4rem 0;
+  padding: 0.85rem 1.15rem;
+  color: #c9d1d9;
+  background: linear-gradient(100deg, rgba(88, 166, 255, 0.1), rgba(26, 35, 50, 0.55));
+  border: 1px solid rgba(88, 166, 255, 0.18);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 2.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+}
+pre {
+  position: relative;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  padding: 1rem 1.15rem;
+  color: #dbeafe;
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+pre code {
+  color: inherit;
+  background: transparent;
+}
+code {
+  font-family: "SF Mono", "Fira Code", ui-monospace, monospace;
+  font-size: 0.86em;
+}
+:not(pre) > code {
+  padding: 0.12em 0.38em;
+  color: #ffabbc;
+  background: rgba(248, 81, 73, 0.11);
+  border-radius: 4px;
+}
+.copy-button {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  padding: 0.25rem 0.55rem;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.72rem;
+  background: rgba(32, 44, 63, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.copy-button:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  border-spacing: 0;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.6rem 0.75rem;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+th {
+  color: var(--accent);
+  background: var(--surface);
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: rgba(26, 35, 50, 0.42);
+}
+tr:last-child td {
+  border-bottom: 0;
+}
+th:last-child, td:last-child {
+  border-right: 0;
+}
+.toc {
+  margin: 1.75rem 0 2.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.toc-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--border);
+}
+.toc-title {
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.toc-count {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.toc ol {
+  margin: 0.7rem 0 0;
+  padding-left: 1.25rem;
+}
+.toc ol ol {
+  margin: 0.2rem 0;
+}
+.toc li {
+  margin: 0.18rem 0;
+  font-size: 0.86rem;
+}
+.toc li::marker {
+  color: var(--muted);
+}
+.toc a {
+  display: inline-block;
+  max-width: 100%;
+  color: var(--muted);
+  transition: color 160ms ease, transform 160ms ease;
+}
+.toc a:hover, .toc a.is-active {
+  color: var(--accent-strong);
+  text-decoration: none;
+  transform: translateX(2px);
+}
+.article-body {
+  max-width: 78ch;
+  margin: 0 auto;
+}
+.article-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 1rem;
+  color: var(--muted);
+  font-size: 0.74rem;
+  border-top: 1px solid var(--border);
+}
+.article-footer a {
+  color: var(--muted);
+}
+@media (max-width: 720px) {
+  body {
+    padding: 0 0 3rem;
+  }
+  .article {
+    min-height: 100vh;
+    padding: 1.5rem 1rem 3rem;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+  .article::before {
+    border-radius: 0;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(1.9rem, 9vw, 2.6rem);
+  }
+  .article-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+@media print {
+  :root {
+    color-scheme: light;
+  }
+  body {
+    padding: 0;
+    color: #111;
+    background: #fff;
+  }
+  .reading-progress, .toc, .copy-button {
+    display: none;
+  }
+  .article {
+    max-width: none;
+    padding: 0;
+    background: #fff;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  h1, h2, h3, h4, h5, h6, strong {
+    color: #111;
+    -webkit-text-fill-color: initial;
+  }
+  a {
+    color: inherit;
+    text-decoration: underline;
+  }
+  pre {
+    color: #111;
+    background: #f4f4f4;
+    box-shadow: none;
+  }
+}
+</style>
+</head>
+<body>
+<div class="reading-progress" aria-hidden="true"><span></span></div>
+<main id="article-top" class="article">
+  <header class="article-header">
+    <div class="eyebrow">
+      <span class="eyebrow-dot"></span>
+      <span>ARTICLE</span>
+      <span class="eyebrow-separator">/</span>
+      <span>zenn.dev</span>
+    </div>
+    <div class="metadata" aria-label="記事メタデータ"><span class="metadata-item"><span class="metadata-label">著者</span>kaito</span><span class="metadata-item"><span class="metadata-label">公開日</span>2026-10-02</span><a class="metadata-item source-link" href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/77207a"><span class="metadata-label">原文</span>読む</a><span class="metadata-item"><span class="metadata-label">サイト</span>zenn.dev</span><span class="metadata-item"><span class="metadata-label">形式</span>ARTICLE</span></div>
+    <h1 id="37-poteto-helppstack">第37章  /poteto-help―pstackの使い方を尋ね、依頼文を受け取る</h1>
+  </header>
+<nav class="toc" aria-label="目次">
+  <div class="toc-heading">
+    <span class="toc-title">目次</span>
+    <span class="toc-count">19 セクション</span>
+  </div>
+  <ol><li><a href="#_1">この章の構成</a></li><li><a href="#_2">役割：質問に答え、依頼文と出典のリンクを示す</a><ol><li><a href="#_3">助けを求める質問には作業を始めずに答え、作業の依頼なら作業を進める</a></li><li><a href="#_4">質問とマッピングされたファイルを、引用する前に読む</a></li></ol></li><li><a href="#pstackskillplaybookprinciple">使いどき：pstackを使い始めたばかりのときや、どのSkill、Playbook、Principleを使えばよいか迷ったとき</a></li><li><a href="#_5">手順：利用者が何を求めているかを見極め、求めていることに合わせて回答する</a><ol><li><a href="#1-2">1. 利用者が「何を求めているか」と、「利用者の環境」の2つを確かめる</a></li><li><a href="#2-5">2. 利用者の質問が、5つの場面のどれに当たるかに合わせて回答する</a><ol><li><a href="#pstack">pstackを導入するとき</a></li><li><a href="#poteto-mode">/poteto-mode で作業を始めるとき</a></li><li><a href="#skill">作業に合うSkillを選ぶとき</a></li><li><a href="#_6">作業がうまくいかなかったとき</a></li><li><a href="#pstack_1">pstackを自分用にしたいとき</a></li><li><a href="#playbookprinciple">PlaybookとPrincipleについての質問</a><ol><li><a href="#playbook">Playbookについての質問</a></li><li><a href="#principle">Principleについての質問</a></li></ol></li></ol></li><li><a href="#3">3. 質問への回答、利用者が使用する依頼文、出典のリンクの順に返答する</a></li></ol></li><li><a href="#poteto-help">依頼の書き方：/poteto-help の後に、質問を書く</a></li><li><a href="#_7">まとめ</a></li></ol>
+</nav>
+  <div class="article-body">
+
+<p>この章では、<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-help/SKILL.md"><code>/poteto-help</code></a> を扱います。</p>
+<p><code>/poteto-help</code> は、pstackの使い方についての質問に答えるSkillです。回答と一緒に、次の2つも示します。</p>
+<ul>
+<li><strong>利用者が次のメッセージとしてエージェントにそのまま送れる依頼文</strong></li>
+<li><strong>回答の根拠になったSkillや同梱ガイド（<a href="https://github.com/cursor/plugins/tree/main/pstack/docs/guide"><code>docs/guide</code></a>）のページへのリンク（出典のリンク）</strong></li>
+</ul>
+<p>たとえば、利用者が「このブランチのレビューには、どのSkillを使えばよいか」と尋ねると、<code>/poteto-help</code> は、使うSkillと、そのSkillを使うための依頼文の例と、出典のリンクを返します。</p>
+<p><code>/poteto-help</code> は、このような助けを求める質問（原文では help question）には答えますが、<strong>質問に出てきた作業（たとえばブランチのレビュー）は始めません</strong>。</p>
+<p>前の<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/8487f0">第36章</a>の <code>/setup-pstack</code> は、pstackを使い始めるときに最初に実行するSkillでした。一方、<code>/poteto-help</code> は、利用者がpstackを使い始めたばかりのときや、どのSkill、Playbook、Principleを使えばよいか迷ったときに使うSkillです。</p>
+<p>この章では、<code>/poteto-help</code> について、役割、使いどき、手順、依頼の書き方の4つの観点で解説します。</p>
+<h2 id="_1">この章の構成</h2>
+<p>この章の構成は次のとおりです。</p>
+<ul>
+<li>役割：質問に答え、依頼文と出典のリンクを示す</li>
+<li>使いどき：pstackを使い始めたばかりのときや、どのSkill、Playbook、Principleを使えばよいか迷ったとき</li>
+<li>手順：利用者が何を求めているかを見極め、求めていることに合わせて回答する</li>
+<li>依頼の書き方：<code>/poteto-help</code> の後に、質問を書く</li>
+<li>まとめ</li>
+</ul>
+<h2 id="_2">役割：質問に答え、依頼文と出典のリンクを示す</h2>
+<p><code>/poteto-help</code> は、利用者の質問に、次の3つを返します。</p>
+<ul>
+<li><strong>質問への回答</strong></li>
+<li><strong>利用者が使用する依頼文</strong>・・・ 回答に合う依頼文の例を1つ、コードブロックで示す</li>
+<li><strong>出典のリンク</strong>・・・ 回答の根拠になったSkillや同梱ガイドのページへのリンク</li>
+</ul>
+<h3 id="_3">助けを求める質問には作業を始めずに答え、作業の依頼なら作業を進める</h3>
+<p><code>/poteto-help</code> の <a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-help/SKILL.md"><code>SKILL.md</code></a> は、助けを求める質問に作業を始めずに答える理由を、次のように書いています。</p>
+<blockquote>
+<p>For a help question, don't start the work. The user asked how, and a pstack run spends real tokens, so let them send the prompt.</p>
+<p>助けを求める質問なら、作業は始めるな。利用者が尋ねたのは「どうすればよいか」であり、pstackの実行は実際にトークンを使うので、依頼文を送るのは利用者に任せよ。</p>
+</blockquote>
+<p>トークンとは、AIのモデルが読み書きする文章の量を数える単位です。トークンを多く使うほど、費用も多くかかります。pstackは、サブエージェントやパネル（同じ問いを複数のモデルに解かせて比べる仕組み。<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/33f073">第6章</a>）を動かす分だけ、トークンを余分に使います。そのため、<code>/poteto-help</code> は、作業を始めるかどうかを利用者に任せます。</p>
+<p>一方、作業の依頼について、<code>/poteto-help</code> は質問として扱いません。たとえば、「pstackでこの不具合を直して」という prompt は、作業の依頼に該当します。この場合、エージェントは、<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/SKILL.md"><code>/poteto-mode</code></a>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/4f8911">第38章</a>）の <code>SKILL.md</code> を読み、その手順に従って作業を進めます。あわせて、エージェントは利用者に、<code>/poteto-mode</code> をCustom Mode（Skillを毎ターン、エージェントのコンテキストに入れ続けるCursorの機能。<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/4fda7d">第7章</a>）にすれば有効なままになることを、一度だけ伝えます。</p>
+<h3 id="_4">質問とマッピングされたファイルを、引用する前に読む</h3>
+<p><code>/poteto-help</code> の <a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-help/SKILL.md"><code>SKILL.md</code></a> には、利用者の質問と、エージェントが行う回答の根拠になるファイル（<code>/blast-radius</code> の <code>SKILL.md</code>、<code>07-overnight.md</code> など）とのマッピングが書かれています。ここでいうマッピングとは、「この質問には、このファイルを読んで答える」という対応のことです。</p>
+<p>つまり、<code>/poteto-help</code> は、想定した質問ごとに、どのファイルを読んで答えるかを、あらかじめ決めている、ということです。</p>
+<p>マッピング先には、次の7種類があります。</p>
+<ul>
+<li>Skill</li>
+<li>Playbook</li>
+<li>Principle</li>
+<li>同梱ガイドのページ</li>
+<li><strong>README</strong>・・・ pstackのREADMEです。エージェントは、導入について聞かれたときに、インストールのコマンド（<code>/add-plugin pstack</code>）と、始めるための2つの手順（<code>/setup-pstack</code> の実行と、<code>/poteto-mode</code> の使い方）が書かれた節を示します。</li>
+<li><strong>Cursorのドキュメント</strong>・・・ Cursorのskillsのドキュメントです。エージェントは、<code>/poteto-mode</code> を毎ターン有効にする方法（Custom Mode）が話題になったときに、このドキュメントを示します。</li>
+<li><strong><code>/poteto-help</code> 自身の参照ファイル</strong>・・・ 次の2つがあります。</li>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-help/references/prompting.md"><code>references/prompting.md</code></a>: 依頼文の書き方の手引きです。エージェントは、利用者が送る依頼文を一緒に考えるときに、この手引きを読みます。また、エージェントは、作業が依頼と違う方向に進んだとき（例：再現だけを頼んだのに、エージェントが直し始めたとき）にも、エージェントの動作を1行で修正するための依頼文を探すために、この手引きを読みます。</li>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-help/references/recipes.md"><code>references/recipes.md</code></a>: 依頼文のサンプル集です。サンプルには、<code>&lt;symptom&gt;</code>（症状）のように、利用者ごとに中身が変わる部分が空けてあります。エージェントは、利用者の質問に合うサンプルを選び、空けてある部分に利用者の実際の内容を入れて、選んだサンプルを返答の依頼文の例にします。たとえば、エージェントは、不具合のサンプル <code>/poteto-mode &lt;symptom&gt;. repro first, then fix and verify.</code> の <code>&lt;symptom&gt;</code> に、「再試行の後、ユーザーに通知が2回届く」という利用者の症状を入れます。</li>
+</ul>
+<p>種類ごとに、例を1つずつ挙げます。</p>
+<table>
+<thead>
+<tr>
+<th>種類</th>
+<th><code>SKILL.md</code> の記述（原文）</th>
+<th>訳</th>
+<th>マッピング先</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Skill</td>
+<td>Know what a small diff could break outside itself</td>
+<td>小さな差分が、差分の外で壊しうるものを知りたい</td>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/blast-radius/SKILL.md"><code>/blast-radius</code></a>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/997880">第28章</a>）</td>
+</tr>
+<tr>
+<td>Playbook</td>
+<td>"babysit this pr"</td>
+<td>このPRの面倒を見て</td>
+<td>『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/babysit.md">Babysit</a>』（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/45a56e">第14章</a>）</td>
+</tr>
+<tr>
+<td>Principle</td>
+<td>The reply claims success from a green build</td>
+<td>返答が、ビルドが通ったことだけを根拠に成功と言っている</td>
+<td>『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-prove-it-works/SKILL.md">Prove It Works</a>』（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/1fb019">第19章</a>）</td>
+</tr>
+<tr>
+<td>同梱ガイド</td>
+<td>An overnight run moved but finished nothing</td>
+<td>夜通し動かした作業が、進みはしたが何も終わっていない</td>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/07-overnight.md"><code>07-overnight.md</code></a></td>
+</tr>
+<tr>
+<td>README</td>
+<td>The README and guide page 1 have the details.</td>
+<td>詳しくは、READMEと同梱ガイドの1ページ目にある</td>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/README.md">README</a></td>
+</tr>
+<tr>
+<td>Cursorのドキュメント</td>
+<td>Link Cursor's skills docs when this comes up.</td>
+<td>この話題になったら、Cursorのskillsのドキュメントへのリンクを示す</td>
+<td><a href="https://cursor.com/docs/skills">Cursorのskillsのドキュメント</a></td>
+</tr>
+<tr>
+<td>参照ファイル</td>
+<td>For a run that drifts, <code>references/prompting.md</code> has one-line steers.</td>
+<td>作業がずれたときは、<code>references/prompting.md</code> に、エージェントの動作を1行で修正するための依頼文がある</td>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-help/references/prompting.md"><code>references/prompting.md</code></a></td>
+</tr>
+</tbody>
+</table>
+<p>エージェントが利用者の質問に、答えるために必要な詳しい情報は、<code>/poteto-help</code> の <code>SKILL.md</code> ではなく、マッピングされたファイルに書かれています。そのため、エージェントは、<strong>マッピングされたファイルの内容を回答に引用する前に、マッピングされたファイルを読みます</strong>。</p>
+<p><code>/poteto-help</code> の <code>SKILL.md</code> の記述と、マッピングされたファイルの内容が食い違うときは、エージェントは、マッピングされたファイルの方を信頼します。</p>
+<h2 id="pstackskillplaybookprinciple">使いどき：pstackを使い始めたばかりのときや、どのSkill、Playbook、Principleを使えばよいか迷ったとき</h2>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/README.md">README</a> は、<code>/poteto-help</code> の使いどきを、次のように説明しています。</p>
+<blockquote>
+<p>you're new to pstack, or unsure which skill, playbook, or principle fits.</p>
+<p>pstackを使い始めたばかりのとき、または、どのSkill、Playbook、Principleが合うか分からないとき。</p>
+</blockquote>
+<p><strong><code>/poteto-help</code> が動くのは、利用者が <code>/poteto-help</code> と入力したときだけです</strong>。<code>/poteto-help</code> は <code>disable-model-invocation: true</code> の設定を持つので（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/46bd1f">第25章</a>）、エージェントが会話の内容から自分でこのSkillを選ぶことはありません。また、<code>/poteto-mode</code> もPlaybook（作業の種類ごとの進め方を定めた手順書）も、手順の中で <code>/poteto-help</code> を呼びません。</p>
+<h2 id="_5">手順：利用者が何を求めているかを見極め、求めていることに合わせて回答する</h2>
+<p>手順は次のとおりです。</p>
+<ol>
+<li>利用者が「何を求めているか」と「利用者の環境」の2つを確かめる</li>
+<li>利用者の質問が、5つの場面の「どれに該当するか」に合わせて回答する</li>
+<li>質問への回答、利用者が使用する依頼文、出典のリンクの順に返答する</li>
+</ol>
+<p>ここからは、各手順を1つずつ見ていきます。</p>
+<h3 id="1-2">1. 利用者が「何を求めているか」と、「利用者の環境」の2つを確かめる</h3>
+<p>エージェントはまず、利用者のメッセージとそれまでの会話から、利用者が何を求めているかを読み取ります。<br />
+<code>/poteto-help</code> は、利用者が求めることを、次の5つの場面に分けています（カッコ内は原文）。</p>
+<ul>
+<li>pstackを導入するとき（Get set up）</li>
+<li><code>/poteto-mode</code> で作業を始めるとき（Start a task with <code>/poteto-mode</code>）</li>
+<li>作業に合うSkillを選ぶとき（Pick a skill for a situation）</li>
+<li>作業がうまくいかなかったとき（Fix a run that went wrong）</li>
+<li>pstackを自分用にしたいとき（Make pstack my own）</li>
+</ul>
+<p>エージェントは、利用者の質問が「どの場面のものか」を判断できるときは、聞き返さずに、<code>SKILL.md</code> のその場面の節（例：節『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-help/SKILL.md#get-set-up">Get set up</a>』、節『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-help/SKILL.md#pick-a-skill">Pick a skill</a>』など）に沿って回答します。<br />
+たとえば、「PRのレビューにはどのSkillを使えばよいか」は、「<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-help/SKILL.md#pick-a-skill">Pick a skill</a>」の場面の質問です。</p>
+<p>エージェントがどの場面の質問かを判断できないときは、<strong>5つの場面を選択肢として示し、利用者に1つだけ質問します</strong>。そして、利用者が選んだ場面についてだけ回答します。</p>
+<p>ただし、利用者の環境によって、適切な回答が変わることがあります。<br />
+そこで、エージェントは次の2つを確かめ、確かめた結果によって、回答が変わるときだけ、その結果を利用者に伝えます。</p>
+<ul>
+<li><strong><code>~/.cursor/rules/pstack-models.mdc</code>（<code>/setup-pstack</code> が書き出す、役割ごとのモデルを決めたルールのファイル）があるか</strong>・・・ このファイルがなければ、利用者はまだ <code>/setup-pstack</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/8487f0">第36章</a>）を実行していないと判断できます。その場合、エージェントは、どの役割のサブエージェントも既定のモデルで動くことを、利用者に伝えます。</li>
+<li><strong>プロジェクトに検証スキルがあるか（<code>verify-*</code> という名前のSkillか、アプリを動かす別の仕組みがあるか）</strong>・・・ どちらもなければ、エージェントには、アプリを決まった手順で動かして確かめる方法がありません。そのため、利用者が <code>/poteto-help</code> に尋ねた質問が、変更が正しく動くことを確かめる方法についてのもの（例：「この修正が動くことを、どう確かめればよい？」）なら、エージェントは、回答の中で <code>/create-verification-skill</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/03ebca">第26章</a>）を紹介します。</li>
+</ul>
+<p><code>~/.cursor/rules/pstack-models.mdc</code> がないときは、エージェントは、役割ごとのモデルと推論の予算（役割のモデルの推論の強さ（Effort Level）を、一度に決める設定。<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/8487f0">第36章</a>）を今決めるかを、利用者に尋ねることがあります。</p>
+<p>エージェントが尋ねるのは、ルールファイルがないことがエージェントの回答に関係する場合で、次の3つです。</p>
+<ul>
+<li>利用者が、pstackを使い始めたばかりのとき</li>
+<li>利用者の質問が、導入や費用についてのとき</li>
+<li>どのモデルが動くかによって、エージェントの回答が変わるとき</li>
+</ul>
+<p>エージェントが、「モデルを今決めるか」を利用者に尋ねるのは、1つのチャットで1回までです。<br />
+また、エージェントが、利用者の質問が「どの場面のものか」を判断できないときは、「モデルを今決めるか」の質問を、5つの場面から選ぶ質問と一緒に尋ねます。</p>
+<p>「モデルを今決めるか」の質問で、エージェントが示す選択肢は、次の2つです。</p>
+<ul>
+<li><strong>今決める</strong>・・・ エージェントは、利用者に <code>/setup-pstack</code> と入力するよう伝え、利用者の質問にも回答する</li>
+<li><strong>後で決める</strong>・・・ エージェントは、利用者の質問に回答し、利用者が <code>/setup-pstack</code> を実行するまでは、どの役割も既定のモデルで動くことを、回答に1行添える</li>
+</ul>
+<h3 id="2-5">2. 利用者の質問が、5つの場面のどれに当たるかに合わせて回答する</h3>
+<p>エージェントが回答する内容は、場面ごとに決まっています。<br />
+ここからは、5つの場面それぞれで、エージェントが「何を回答するか」を見ていきます。最後に、5つの場面のほかに回答が決まっている、PlaybookとPrincipleについての質問を見ます。</p>
+<h4 id="pstack">pstackを導入するとき</h4>
+<p>利用者がpstackの導入について尋ねたときは、エージェントは、まず次の3つの手順を回答します。</p>
+<ol>
+<li>チャットで <code>/add-plugin pstack</code> と入力するか、サイドバーの Customize から、pstackをインストールする</li>
+<li><code>/setup-pstack</code> を実行する。<code>/setup-pstack</code> は、推論の予算を利用者に尋ね、役割ごとにモデルを割り当て、ルールを書き出す。このルールは、新しいチャットから効く</li>
+<li><code>/poteto-mode</code> で、作業の目的と、合否が出る確認方法を書いて、実際の作業を1つ始める</li>
+</ol>
+<p><strong>利用者がpstackをインストールしただけでは、何も変わりません</strong>。利用者がSkillを呼ぶまで、pstackは動かないからです。ただし、<code>/setup-pstack</code> だけは、利用者が名前を入力しなくても、「configure pstack models」（pstackのモデルを設定して）のような利用者の言葉から、エージェントが自動で読み込みます。</p>
+<p>また、エージェントは、依頼文の書き方の手引き（<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-help/references/prompting.md"><code>references/prompting.md</code></a>）に沿って、利用者の最初の依頼文を一緒に考えることを申し出ます。</p>
+<p>費用（トークンの使用量）が心配な利用者には、エージェントは、トークンがどこで使われ、どうすれば減らせるかを回答します。<br />
+pstackがトークンを余分に使うのは、主にサブエージェントとパネル（同じ問いを複数のモデルに解かせて比べる仕組み）が原因です。<br />
+トークンの使用量を減らす方法は、次の4つがあります。</p>
+<ul>
+<li><code>/setup-pstack</code> を実行し直し、推論の予算を小さくするか、安いモデルを選ぶ</li>
+<li>役割を <code>auto</code> か <code>inherit-parent</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/8487f0">第36章</a>）にして、チャットのモデルで動かす。チャットが Auto（Cursorがモデルを自動で選ぶ設定）や安いモデルで動いているときに、トークンを減らせる</li>
+<li>パネルの役割（<code>arena runners</code> など、パネルに複数のモデルを並べる役割。<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/8487f0">第36章</a>）に並べるモデルを減らす。並べたモデル1つにつき、サブエージェントが1つ起動する</li>
+<li><code>/poteto-mode</code> は、厳密さが必要な作業にだけ使う</li>
+</ul>
+<p>pstackがCursor以外のツールでも動くかを尋ねられたときの回答も、この場面に含まれています。pstackはCursor向けに作られています。pstackのSkillは、Agent Skills（複数のAIツールで共通に使えるSkillの書き方）の形式で書かれているので、ほかのツールでも読めます。ただし、作業を進めるSkill（例：<code>/poteto-mode</code>・<code>/how</code>・<code>/why</code>・<code>/teach</code>）の多くは、役割（例：コードを書く役割、文章と判断を受け持つ役割）を持つCursorのサブエージェントを起動します。また、起動したサブエージェントは、<code>/setup-pstack</code> で役割ごとに決めたモデルで動きます（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/8487f0">第36章</a>）。</p>
+<p>さらに、Custom Modeと <code>/loop</code>（エージェントを繰り返し起こし直すCursor組み込みのコマンド。<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/7d7609">第15章</a>）はCursorの機能です。そのため、ほかのツールでは、サブエージェントを起動する部分や、Custom Mode、<code>/loop</code> が動かない場合があります。</p>
+<h4 id="poteto-mode"><code>/poteto-mode</code> で作業を始めるとき</h4>
+<p>利用者が <code>/poteto-mode</code> での作業の始め方を尋ねたときは、エージェントは、まず <code>/poteto-mode</code> の動き方を回答します。<code>/poteto-mode</code> は、作業に合うPlaybookを選び、その手順をTODOリスト（エージェントが作業の始めに作る、その作業でやることの一覧）に写し、手順で必要になったときにほかのSkillを実行します。飛ばした手順も、<code>skip: &lt;理由&gt;</code> としてリストに残ります。そのうえで、エージェントは、主に次の3つを回答します。</p>
+<ul>
+<li><strong>良い依頼文には、目的と完了条件を書く</strong>・・・ 依頼文に、使うSkillは並べません。利用者が自分でSkillを並べると、Playbookなら踏むはずの手順が抜けたり、入れ替わったりしやすいからです。依頼文の書き方は、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/4fda7d">第7章</a>で扱いました。</li>
+<li><strong>会話の途中で別の作業に移るときは、「新しいタスク」（new task）と伝える</strong>・・・ そう伝えると、<code>/poteto-mode</code> はPlaybookを選び直します。</li>
+<li><strong><code>/poteto-mode</code> が有効なままになるかは、呼び出し方で決まる</strong>・・・ 違いは、次のとおりです。</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>呼び出し方</th>
+<th><code>/poteto-mode</code> の効き方</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Custom Modeにせず、メッセージに <code>/poteto-mode</code> を付けて送る</td>
+<td>そのメッセージにだけ効き、会話が進むと効き目が薄れる</td>
+</tr>
+<tr>
+<td><code>Option + Enter</code>（Mac）か <code>Alt + Enter</code>（Windows）、または <code>Use as Mode</code></td>
+<td>Custom Modeになり、毎ターンコンテキストに入る</td>
+</tr>
+</tbody>
+</table>
+<p>!</p>
+<ul>
+<li><strong>Custom Mode</strong>・・・ Skillを、毎ターン、エージェントのコンテキストに入れ続けるCursorの機能。利用者がモードを抜けるまで続く</li>
+<li><strong>Use as Mode</strong>・・・ Skillの一覧から、そのSkillをCustom Modeとして使う操作</li>
+</ul>
+<p>Custom Modeにした <code>/poteto-mode</code> は、雑談のターンには適用されません。また、Cursorのドキュメントは、Custom ModeをAgents Window（複数のエージェントを並べて管理する画面）とCLI（ターミナルから使うCursor）で使えると説明しています。Agents WindowとCLI以外の場所では、エージェントは、新しい作業のたびに <code>/poteto-mode</code> を付けるよう勧めます。</p>
+<p><code>/poteto-mode</code> を有効なままにする方法が話題になったときは、エージェントは、<a href="https://cursor.com/docs/skills">Cursorのskillsのドキュメント</a>へのリンクも示します。</p>
+<p>また、<code>/poteto-mode</code> は、Playbookの手順で起動するサブエージェントに、<code>poteto-agent</code>（<code>/poteto-mode</code> のルールを読んでから作業を始めるサブエージェント。<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/096f3d">第8章</a>）を使います。利用者が自分の依頼でエージェントにサブエージェントを起動させる場合にも、サブエージェントに <code>/poteto-mode</code> のルールを読んでから作業させることができます。サブエージェントにルールを読ませたい場合、利用者は、依頼文の中に <code>subagent_type: "poteto-agent"</code> と記述して、サブエージェントを起動するよう、エージェントに頼みます。依頼文の例は、次のとおりです（本書で作成した例です）。</p>
+<pre><code>subagent_type: &quot;poteto-agent&quot; のサブエージェントを起動して、src/auth/ の認証処理を読ませ、問題点を報告させてください。
+</code></pre>
+<p><code>subagent_type</code> は、エージェントがサブエージェントを起動するときに、どの種類のサブエージェントを使うかを指定する項目です。READMEによれば、<code>poteto-agent</code> は、親のエージェント（サブエージェントを起動する側のエージェント）が <code>subagent_type: "poteto-agent"</code> を指定して起動します。<code>poteto-agent</code> の定義は、pstackに同梱されたファイル（<a href="https://github.com/cursor/plugins/blob/main/pstack/agents/poteto-agent.md"><code>agents/poteto-agent.md</code></a>）に書かれているため、利用者が設定ファイルを用意する必要はありません。</p>
+<h4 id="skill">作業に合うSkillを選ぶとき</h4>
+<p>作業に合うSkillを尋ねられたとき、<strong>エージェントが基本として勧めるのは <code>/poteto-mode</code> です</strong>。<code>/poteto-mode</code> は、Playbookの手順で必要になったときに、ほかのSkillの多くを自動で実行するからです。</p>
+<p>ただし、利用者が、Playbookが行う作業より多くのことや、その一部だけを望むときは、エージェントは、目的に合うSkillを直接勧めます。たとえば、Playbookの手順を踏まずに、コードの動き方の説明だけがほしいときは、<code>/how</code> が合います。</p>
+<p>Skillを勧める前に、エージェントは、そのSkillの <code>SKILL.md</code> を読みます。そして、そのSkillを使うための依頼文の例を1つ示します。</p>
+<p>目的に合うSkillを直接勧めるとき、エージェントは、節『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-help/SKILL.md#pick-a-skill">Pick a skill</a>』にある対応表から、利用者の質問・依頼に合うSkillを選びます。<br />
+対応表は、次のとおりです。</p>
+<p>利用者がしたいことと、使うSkillの対応表（Pick a skill）</p>
+<table>
+<thead>
+<tr>
+<th>利用者がしたいこと</th>
+<th>Skill</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>自明でない作業を、厳密に進める</td>
+<td><code>/poteto-mode</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/4f8911">第38章</a>）</td>
+</tr>
+<tr>
+<td>今のコードの動き方や、新しいコードを置く場所を知る</td>
+<td><code>/how</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/788746">第22章</a>）</td>
+</tr>
+<tr>
+<td>コードがこの形になっている理由や、数値の出どころを知る</td>
+<td><code>/why</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/788746">第22章</a>）</td>
+</tr>
+<tr>
+<td>変更や仕組みを、分かりやすく説明してもらう</td>
+<td><code>/teach</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/788746">第22章</a>）</td>
+</tr>
+<tr>
+<td>ある話題についての、自分の最近の作業を思い出す</td>
+<td><code>/recall</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/788746">第22章</a>）</td>
+</tr>
+<tr>
+<td>小さな差分が、差分の外で壊しうるものを知る</td>
+<td><code>/blast-radius</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/997880">第28章</a>）</td>
+</tr>
+<tr>
+<td>関数の境界をまたぐコードを書く前に、型とモジュールの形を決める</td>
+<td><code>/architect</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/2ad346">第24章</a>）</td>
+</tr>
+<tr>
+<td>1つの課題に複数の案を出させ、良い部分を1つにまとめる</td>
+<td><code>/arena</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/2ad346">第24章</a>）</td>
+</tr>
+<tr>
+<td>複数のクラウドのエージェントに、範囲を分けて並列に確かめさせるか、同じ仕事を競わせる</td>
+<td><code>/swarm</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/2ad346">第24章</a>）</td>
+</tr>
+<tr>
+<td>異なるモデルに差分をレビューさせ、壊そうとさせる</td>
+<td><code>/interrogate</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/997880">第28章</a>）</td>
+</tr>
+<tr>
+<td>手元で安く動くテストがあるとき、テストを先に書いて不具合を直す</td>
+<td><code>/tdd</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/ad5727">第31章</a>）</td>
+</tr>
+<tr>
+<td><code>.ts</code> や <code>.tsx</code> の作業に、TypeScriptの規則を当てる</td>
+<td><code>/typescript-best-practices</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/4f9a46">第30章</a>）</td>
+</tr>
+<tr>
+<td>レビューの前に、書いた本人ではない審査役（Comment Sicko）に、コードの中のコメントを消させる</td>
+<td><code>/no-comments</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/8960d3">第32章</a>）</td>
+</tr>
+<tr>
+<td>文章から、AIが書いたと分かる癖を取り除く</td>
+<td><code>/unslop</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/44857b">第33章</a>）</td>
+</tr>
+<tr>
+<td>ドキュメント、RFC、README、PRの説明、コミットメッセージを、決まった基準で書く</td>
+<td><code>/technical-writing</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/44857b">第33章</a>）</td>
+</tr>
+<tr>
+<td>直前の返答を、平易な言葉で伝え直してもらう</td>
+<td><code>/bro</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/44857b">第33章</a>）</td>
+</tr>
+<tr>
+<td>エージェントに、アプリを決まった手順で動かして確かめる方法を与える</td>
+<td><code>/create-verification-skill</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/03ebca">第26章</a>）</td>
+</tr>
+<tr>
+<td>検証スキルと、その Feature Map（機能ごとに、操作の仕方と確かめる結果をまとめた文書）を、今のアプリに合わせ直す</td>
+<td><code>/maintain-verification-skill</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/03ebca">第26章</a>）</td>
+</tr>
+<tr>
+<td>性能の数値を、報告する前や、その数値をもとに作業する前に点検する</td>
+<td><code>/benchmark-checklist</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/167c91">第27章</a>）</td>
+</tr>
+<tr>
+<td>大きな変更や、多くの箇所にまたがる変更、席を離れている間に任せて後で確かめたい変更を進める</td>
+<td><code>/figure-it-out</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/3ce2b2">第23章</a>）</td>
+</tr>
+<tr>
+<td>作業の間に判断の記録を残し、後で確かめる</td>
+<td><code>/show-me-your-work</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/724887">第29章</a>）</td>
+</tr>
+<tr>
+<td>役割ごとのモデルと、推論の予算を決める</td>
+<td><code>/setup-pstack</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/8487f0">第36章</a>）</td>
+</tr>
+<tr>
+<td>自分の仕事の進め方を、<code>/poteto-mode</code> のような自分用のモードのSkillにする</td>
+<td><code>/automate-me</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/46bd1f">第25章</a>）</td>
+</tr>
+<tr>
+<td>終えた作業で分かったことを、Skillの修正に反映する</td>
+<td><code>/reflect</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/f70847">第34章</a>）</td>
+</tr>
+<tr>
+<td>エージェントが、このリポジトリで同じ間違いを繰り返さないようにする</td>
+<td><code>/correct</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/fe17ab">第35章</a>）</td>
+</tr>
+<tr>
+<td>ボタンを押すと、webhook 経由で Grok Bot を起こすページを作る</td>
+<td><code>/make-bot-ui</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/46bd1f">第25章</a>）</td>
+</tr>
+<tr>
+<td>pstackの中で、どこに何があるかを知る</td>
+<td><code>/poteto-help</code>（この章）</td>
+</tr>
+</tbody>
+</table>
+<p>対応表にないSkillがpstackにあるときは、エージェントは、そのSkillの frontmatter（<code>SKILL.md</code> の先頭にある設定欄）の <code>description</code>（Skillの説明）を読んで勧めます。Principle（<code>principle-*</code>）は、対応表ではなく、後の「<a href="#playbook%E3%81%A8principle%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6%E3%81%AE%E8%B3%AA%E5%95%8F">PlaybookとPrincipleについての質問</a>」で扱います。</p>
+<p>また、<code>/poteto-help</code> は、取り違えやすいSkillやPlaybookを、次のように区別しています。</p>
+<ul>
+<li><strong><code>/how</code>、<code>/why</code>、<code>/teach</code></strong>・・・ <code>/how</code> はコードが何をしているかを、<code>/why</code> はその理由を説明する。<code>/teach</code> は、その一方か両方を動かし、結果を分かりやすく説明する（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/788746">第22章</a>）</li>
+<li><strong><code>/arena</code> と <code>/swarm</code></strong>・・・ <code>/arena</code> は、すべてのエージェントに同じ課題を与え、良い部分をまとめる。<code>/swarm</code> は、複数のエージェントに、仕事を範囲に分けて担当させるか、同じ仕事を競わせ、1つの報告を返す（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/2ad346">第24章</a>）</li>
+<li><strong><code>/architect</code></strong>・・・ 設計を決めると、すぐに実装に進む。実装の前に設計を確かめたいときは、「with checkpoint」と付ける（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/2ad346">第24章</a>）</li>
+<li><strong><code>/interrogate</code> と <code>/blast-radius</code></strong>・・・ <code>/interrogate</code> は差分そのものをレビューする。<code>/blast-radius</code> は差分の外で壊れるものを探し、その変更が安全だと言える1つの事実を確かめる（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/997880">第28章</a>）</li>
+<li><strong><code>/recall</code> と『Session pickup』</strong>・・・ <code>/recall</code> は、最近の複数のチャットからコンテキストを組み立て直す。特定の1つのチャットやブランチの作業を再開するのは、『Session pickup』Playbookの役目（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/788746">第22章</a>、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/7d7609">第15章</a>）</li>
+<li><strong><code>/figure-it-out</code>、『Orchestrate』、『Autonomous run』</strong>・・・ <code>/figure-it-out</code> は、厳密に進める1回の作業を設計する。『Orchestrate』Playbookは、何日も続き、多くのPRにまたがる作業を運用する。『Autonomous run』Playbookは、1つの作業を、終わりの条件を満たすまで進める（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/3ce2b2">第23章</a>、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/8a8dd5">第16章</a>、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/7d7609">第15章</a>）</li>
+</ul>
+<p>さらに、<code>/poteto-help</code> は、pstackに含まれないものも挙げています。</p>
+<ul>
+<li><code>/deslop</code>、<code>control-cli</code>、<code>control-ui</code> は、<code>cursor-team-kit</code> という別のプラグインのSkill</li>
+<li><code>/loop</code> と <code>/create-skill</code> は、Cursorに組み込まれた機能</li>
+<li>pstackに <code>/orchestrate</code> というSkillはない。『Orchestrate』は <code>/poteto-mode</code> のPlaybook。<code>/</code> のメニューに <code>/orchestrate</code> が出るなら、それはほかのプラグインのSkill</li>
+</ul>
+<h4 id="_6">作業がうまくいかなかったとき</h4>
+<p>作業がうまくいかなかったときの回答は、症状ごとに決まっています。</p>
+<table>
+<thead>
+<tr>
+<th>症状</th>
+<th>直し方</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>数ターンで、モードが効かなくなった</td>
+<td>Custom Modeにせずに始めたため。Custom Modeで始めるか、作業のたびに <code>/poteto-mode</code> を付ける</td>
+</tr>
+<tr>
+<td>質問が、前の作業の次の手順として扱われた</td>
+<td>「新しいタスク」（new task）と伝えるか、このターンにはモードを使わなくてよいと伝える</td>
+</tr>
+<tr>
+<td>モデルを変えたのに、効かなかった</td>
+<td><code>/setup-pstack</code> のルールは新しいチャットから効く。新しいチャットを始める</td>
+</tr>
+<tr>
+<td>思ったより費用がかかった</td>
+<td>「pstackを導入するとき」の回答にある、トークンを減らす4つの方法を使う</td>
+</tr>
+<tr>
+<td>Skillが自動で読み込まれなかった</td>
+<td>利用者の言葉から自動で読み込まれるのは <code>/setup-pstack</code> だけ。ほかのSkillは、利用者が入力したときか、<code>/poteto-mode</code> が動かしたときに読み込まれる。ただし、<code>/poteto-mode</code> がすべてのSkillを動かすわけではない</td>
+</tr>
+<tr>
+<td>並列に動かしたエージェントが、互いのファイルを上書きした</td>
+<td>エージェントごとに worktree を分けるか、それぞれが自分のマシンを持つクラウドのエージェントで動かす</td>
+</tr>
+<tr>
+<td>夜通し動かした作業が、進みはしたが何も終わっていない</td>
+<td><code>/loop</code> には、時間の長さではなく、合否が出る確認方法を渡す</td>
+</tr>
+<tr>
+<td>エージェントの返答が、ビルドが通ったことだけを根拠に成功と言っている</td>
+<td>実際のコマンドの出力、操作の流れ、保存された値、プロファイル（性能の計測結果）のどれかを見せるよう頼む。Principle『Prove It Works』（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/1fb019">第19章</a>）の考え方</td>
+</tr>
+</tbody>
+</table>
+<p>!</p>
+<ul>
+<li><strong>worktree</strong>・・・ 1つのリポジトリに、作業ディレクトリを追加で作るgitの機能（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/cdc49b">第18章</a>）</li>
+</ul>
+<h4 id="pstack_1">pstackを自分用にしたいとき</h4>
+<p>pstackを自分用にしたいときの回答は、次の4つです。</p>
+<ul>
+<li><code>/automate-me</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/46bd1f">第25章</a>）で、自分の作業の履歴から、<code>/poteto-mode</code> と並べて使う自分用のモードのSkillを作る</li>
+<li>作業の後に <code>/reflect</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/f70847">第34章</a>）を使い、分かったことを、主に既存のSkillの修正案にする（<code>/reflect</code> の <code>SKILL.md</code> によれば、まれに、新しいSkillを作る案にもなる）。Skillに反映されるのは、利用者が承認した案だけ</li>
+<li><code>/poteto-mode write a skill for &lt;作業の流れ&gt;</code> で、『Authoring or modifying a skill』Playbookを動かす。Skillを変えた効果は、『Eval』Playbookで測る。このとき、テストを受けるエージェントには、テスト中であることを知らせない（どちらも<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/8263c0">第13章</a>）</li>
+<li>うまく動かないSkillは、問題が起きた機能開発のPRの中では直さず、そのSkillを直すための別のPRで直す</li>
+</ul>
+<h4 id="playbookprinciple">PlaybookとPrincipleについての質問</h4>
+<p>5つの場面のほかに、<code>/poteto-help</code> は、PlaybookとPrincipleについての質問への回答も決めています。</p>
+<h5 id="playbook">Playbookについての質問</h5>
+<p>Playbookは <code>/poteto-mode</code> の中にある手順書で、Skillではないので、<code>/</code> で呼び出せません。<code>/poteto-mode</code> が有効なときに、利用者が作業を説明すれば、合うPlaybookが選ばれます。<br />
+次のような言い方をすれば、利用者はPlaybookを直接選べます。</p>
+<p>言い方と、動くPlaybook（原文の箇条書きを、本書で表にしたもの）</p>
+<table>
+<thead>
+<tr>
+<th>言い方</th>
+<th>動くPlaybook</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>「babysit this pr」（このPRの面倒を見て）、「check on pr 123」（PR 123の状態を確認して）</td>
+<td>『Babysit』</td>
+</tr>
+<tr>
+<td>「land the stack」（スタックをtrunkに取り込んで）</td>
+<td>『Shipping』</td>
+</tr>
+<tr>
+<td>「take over this branch」（このブランチを引き継いで）</td>
+<td>『Session pickup』</td>
+</tr>
+<tr>
+<td>「pause safely」（安全に一時停止して）</td>
+<td>『Pause safely』</td>
+</tr>
+<tr>
+<td>「full autopilot on this queue」（このキューをfull autopilotで進めて）</td>
+<td>『Autopilot-full』</td>
+</tr>
+<tr>
+<td>「stack them, don't ship」（スタックにして、本番には入れないで）</td>
+<td>『Autopilot-stack』</td>
+</tr>
+<tr>
+<td>「run the eval playbook」（Eval Playbookを実行して）</td>
+<td>『Eval』</td>
+</tr>
+</tbody>
+</table>
+<p>ただし、表の言い方は、<code>/poteto-mode</code> を付けて使います。<code>/poteto-mode</code> を付けずに使うと、Playbookではなく、同じ仕事をするCursor自身のSkillが動くことがあるからです。</p>
+<p>表にないPlaybookを動かすときは、利用者は、<code>/poteto-mode</code> が有効なときに作業を依頼する必要があります。<code>/poteto-mode</code> は、利用者が説明した作業を、<code>/poteto-mode</code> の <code>SKILL.md</code> の節『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/SKILL.md#playbooks">Playbooks</a>』（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/4f8911">第38章</a>）の各項目と照らし合わせて、合うPlaybookを選びためです。各項目には、そのPlaybookを使う作業（例：『Bug fix』なら、報告された不具合を再現し、原因を突き止めて直す作業）が書かれています。また、一部の項目には、そのPlaybookを選ばせる言い方の例（例：『Prototype』の「mock it up」）も書かれているので、その例を参考にPlaybookを起動すると良いと思います。</p>
+<p>計画の立て方を尋ねられたとき、エージェントは、<strong>pstackには計画を書くための専用のSkillがない</strong>ことを伝えます。そのうえで、エージェントは、計画を立てる方法として、次の3つを示します。</p>
+<ul>
+<li>CursorのPlan Mode（実装の前に計画を立てるCursorのモード）を、pstackと一緒に使う</li>
+<li>何段階にも分かれる作業や、スタックしたPR（前のPRの上に次のPRを重ねる並べ方）にまたがる作業なら、<code>/poteto-mode</code> に計画を頼む。このとき、『Multi-phase or multi-PR plan』Playbookが動く（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/8a8dd5">第16章</a>）</li>
+<li>設計についての問いなら、『Prototype』Playbook（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/f1e85b">第12章</a>）か <code>/architect</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/2ad346">第24章</a>）を使う</li>
+</ul>
+<h5 id="principle">Principleについての質問</h5>
+<p>Principleは、作業中の判断の決まりを1つだけ書いた、短いSkillです（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/096f3d">第8章</a>）。<code>/poteto-mode</code> は、Principleを読み、返答の中で、判断に影響したPrincipleの名前と、そのPrincipleによって変わった選択を挙げます（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/4f8911">第38章</a>）。利用者がPrincipleを直接呼ぶことは、ほとんどありません。代わりに、利用者は、「apply prove it works. show me the real output.」（『Prove It Works』を当てはめて。実際の出力を見せて）のように、Principleの名前を使って、作業の方向を修正することができます。なお、<code>/principle-&lt;名前&gt;</code> と入力すれば、必要なときにPrincipleを読み込むこともできます。</p>
+<p>Principleについての質問には、エージェントは、同梱ガイドの <a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/08-principles.md"><code>08-principles.md</code></a> を示します。このページには、24件のPrincipleの一覧があります（<code>/poteto-help</code> の <code>SKILL.md</code> には、Principleの一覧はありません）。</p>
+<p>Principleの一覧（24件。詳しくは<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/4b3166">第4部</a>）</p>
+<table>
+<thead>
+<tr>
+<th>Principle</th>
+<th>概要</th>
+<th>解説</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-laziness-protocol/SKILL.md">Laziness Protocol</a></td>
+<td>コードの削除を優先し、問題を解決する最小の変更を選ぶ</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a8e80b">第17章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-subtract-before-you-add/SKILL.md">Subtract Before You Add</a></td>
+<td>機能を追加する前に、使われていないコードや重複した検証などの複雑さを削る</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a8e80b">第17章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-minimize-reader-load/SKILL.md">Minimize Reader Load</a></td>
+<td>読み手がたどる間接参照の層と、覚えておく必要があるコードの状態を減らす</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a8e80b">第17章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-foundational-thinking/SKILL.md">Foundational Thinking</a></td>
+<td>ロジックを書く前に、データ構造と土台（CI、lint、テスト基盤、共有の型など）を決める</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a8e80b">第17章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-redesign-from-first-principles/SKILL.md">Redesign from First Principles</a></td>
+<td>新しい要件を既存の設計に後付けせず、最初からあった前提として設計を組み直す</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a8e80b">第17章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-attack-the-premise/SKILL.md">Attack the Premise</a></td>
+<td>同じ前提に立つ修正をさらに重ねず、次の修正を書く前に、その前提そのものを疑う</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a8e80b">第17章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-outcome-oriented-execution/SKILL.md">Outcome-Oriented Execution</a></td>
+<td>移行途中のコードの整合性を保つための一時的なコードより、確かめられる最終形を優先する</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a8e80b">第17章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-experience-first/SKILL.md">Experience First</a></td>
+<td>実装の都合より、ユーザーの体験を選び、機能を少なく作ってよく仕上げる</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a8e80b">第17章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-exhaust-the-design-space/SKILL.md">Exhaust the Design Space</a></td>
+<td>形の異なる2〜3案のプロトタイプを作り、並べて比べてから設計を決める</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a8e80b">第17章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-build-the-lever/SKILL.md">Build the Lever</a></td>
+<td>手作業の代わりに、作業をする道具か、作業の正しさを証明する道具（codemod、スクリプト、生成器、サブエージェントが従うSkill）を作る</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a8e80b">第17章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-model-the-domain/SKILL.md">Model the Domain</a></td>
+<td>ドメインを、散らばった条件分岐ではなく構造（状態機械、型付きのオブジェクト、参照表、reducerなど）で表す</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/cdc49b">第18章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-boundary-discipline/SKILL.md">Boundary Discipline</a></td>
+<td>検証とエラー処理を外からデータが入る境界に集め、境界の内側のコードでは、型の付いた値を確かめ直さずに使い、業務のロジックを純粋関数に保つ</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/cdc49b">第18章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-type-system-discipline/SKILL.md">Type System Discipline</a></td>
+<td>型の検査を使い、ありえない状態をコンパイルの時点で作れなくする</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/cdc49b">第18章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-make-operations-idempotent/SKILL.md">Make Operations Idempotent</a></td>
+<td>状態を変える操作を、何度実行しても、途中から実行し直しても、最後は同じ状態になるように作る</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/cdc49b">第18章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-migrate-callers-then-delete-legacy-apis/SKILL.md">Migrate Callers Then Delete Legacy APIs</a></td>
+<td>呼び出し元を新しいAPIに移し、その変更の中で古いAPIも消す</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/cdc49b">第18章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-separate-before-serializing-shared-state/SKILL.md">Separate Before Serializing Shared State</a></td>
+<td>複数の主体が共有する書き込み先を先に分け、分けられないときだけ、ロックなどで書き込みを直列化する</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/cdc49b">第18章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-prove-it-works/SKILL.md">Prove It Works</a></td>
+<td>作業の結果を、ビルドの成功のような代理指標ではなく、実際に動かした機能や実際の値を直接見て確かめる</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/1fb019">第19章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-fix-root-causes/SKILL.md">Fix Root Causes</a></td>
+<td>不具合の症状を隠すガードを追加せず、症状を起こした根本原因を突き止めて直す</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/1fb019">第19章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-sequence-verifiable-units/SKILL.md">Sequence Work into Verifiable Units</a></td>
+<td>作業を確かめられる小さな単位に分け、各単位のチェック（テストなど）が通ってから次へ進み、コミットを正しさを示す順に並べる</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/1fb019">第19章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-test-behavior-not-implementation/SKILL.md">Test Behavior, Not Implementation</a></td>
+<td>コードを、そのコードを使う側と同じ方法で呼び、観察できる結果を、テストに直接書いた期待値と比べる</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/1fb019">第19章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-explain-the-number/SKILL.md">Explain the Number</a></td>
+<td>測った数値を信じる前に「何がその数値を頭打ちにしているか」を突き止め、エラーやキャッシュなど、別のものを測った可能性を証拠で消す</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/1fb019">第19章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-guard-the-context-window/SKILL.md">Guard the Context Window</a></td>
+<td>大きな出力や文書をサブエージェントに読ませ、主スレッドには要約だけを置く</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/c155cc">第20章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-never-block-on-the-human/SKILL.md">Never Block on the Human</a></td>
+<td>元に戻せる作業は人間の確認を待たずに進めて結果を見せ、元に戻せない操作だけを実行する前に人間に確認する</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/c155cc">第20章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-encode-lessons-in-structure/SKILL.md">Encode Lessons in Structure</a></td>
+<td>繰り返し必要になる修正を、文章の指示ではなく仕組み（lintのルール、メタデータのフラグ、実行時チェック、スクリプト）に組み込む</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/dd2d9f">第21章</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="3">3. 質問への回答、利用者が使用する依頼文、出典のリンクの順に返答する</h3>
+<p>エージェントは、次の順で返答します。</p>
+<ol>
+<li>質問への回答</li>
+<li>利用者が使用する依頼文の例を1つ、コードブロックで示す</li>
+<li>出典のリンク</li>
+</ol>
+<p><code>/poteto-help</code> に同梱された依頼文のサンプル集（<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-help/references/recipes.md"><code>references/recipes.md</code></a>）の中に、利用者の質問に合うサンプルがあれば、エージェントは、そのサンプルの空けてある部分に利用者の実際の内容を入れて、返答の依頼文の例にします。また、エージェントは、利用者がpstackの全体像を求めない限り、返答を短くします。</p>
+<p>サンプル集は、Understand（理解する）、Build（作る）、Design and plan（設計し、計画する）、Review and ship（レビューし、マージする）、Away and back（席を外し、戻る）の5つの節に分かれています。各サンプルには、<code>&lt;operation&gt;</code>（操作）や <code>&lt;time&gt;</code>（時間）のように、利用者ごとに中身が変わる部分が <code>&lt;&gt;</code> で空けてあります。たとえば、Buildの節の性能改善のサンプルと、エージェントが空けてある部分に利用者の実際の内容を入れた依頼文は、次のとおりです（後者は、本書で作成した例です）。</p>
+<pre><code>/poteto-mode &lt;operation&gt; takes &lt;time&gt; on &lt;fixture&gt;. trace it, fix the measured cause, show me before and after.
+// &lt;fixture&gt; で &lt;operation&gt; に &lt;time&gt; かかる。原因をトレースし、測った原因を直して、変更前と変更後を見せて。
+
+/poteto-mode search takes 3s on the 10k-item fixture. trace it, fix the measured cause, show me before and after.
+// 1万件のフィクスチャで検索に3秒かかる。原因をトレースし、測った原因を直して、変更前と変更後を見せて。
+</code></pre>
+<p>さらに、エージェントは、利用者が依頼文を考えるのを手伝う前や、作業が依頼と違う方向に進んだときは、依頼文の書き方の手引き（<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-help/references/prompting.md"><code>references/prompting.md</code></a>）を読みます。そして、エージェントは、依頼文の書き方の手引きに沿って、利用者と一緒に依頼文を考えたり、エージェントの動作を1行で修正するための依頼文を示したりします。</p>
+<p>エージェントが沿う内容は、次の7つの節に分かれています。</p>
+<ul>
+<li><strong>依頼文に入れるもの</strong>（Put in）・・・ 目的、作業が終わったことを判定する確認方法（合否が出るもの）、見せてほしい証拠（例：実際のコマンドの出力）、利用者がすでに知っていること（例：症状、再現手順、ログ）、実際の制約（例：「repro first」「don't change any code yet」）</li>
+<li><strong>依頼文に入れないもの</strong>（Leave out）・・・ やり方、Skillや手順の一覧、利用者が考える原因（エージェントが問題を言い直すまでは入れない）</li>
+<li><strong>先にコンテキストを読み込ませる</strong>（Load the context first）・・・ 分かりにくい報告は、作業の前に、エージェントに自分の言葉で言い直させる。新しいチャットでは、<code>/recall</code> で以前の作業を集めさせる。見慣れないコードを変える前に、<code>/how</code> で仕組みを、<code>/why</code> で理由を調べさせる。<code>/teach</code> に、選んだ方法が正しいことを説明させる</li>
+<li><strong>計画の前に設計する</strong>（Design before the plan）・・・ 最初の設計をそのまま採らず、いくつかの案をプロトタイプにさせて、証拠から選ぶ。未解決の問いには、プロトタイプで答えを出させる。共有パッケージやAPIは、先にREADMEかチュートリアルを書かせる。計画は、設計が決まってから頼む</li>
+<li><strong>続きの依頼は短くする</strong>（Follow up short）・・・ チャットが作業を覚えていれば、「do it」「continue」だけで依頼になる。話題が変わるときは、「new task」で始める</li>
+<li><strong>席を外す前に伝えること</strong>（Before stepping away）・・・ 「im going to bed」のように席を外すことを伝える。毎回確かめられる完了条件を書き、<code>/loop</code> に渡す。指定したブランチから新しいworktreeを作らせる。エージェントが止まって尋ねそうなことに、先に答えておく。判断の記録を頼む。行き詰まったときに止める条件を伝える</li>
+<li><strong>エージェントの動作を1行で修正するための依頼文</strong>（Steer in one line）・・・ 目的を伝え直す。Principleの名前を挙げる</li>
+</ul>
+<h2 id="poteto-help">依頼の書き方：<code>/poteto-help</code> の後に、質問を書く</h2>
+<p>利用者は、<code>/poteto-help</code> の後に、質問を書きます。pstackの<a href="https://github.com/cursor/plugins/blob/main/pstack/README.md">README</a>と、同梱ガイドの<a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/README.md"><code>README.md</code></a>は、次の例を挙げています。</p>
+<pre><code>/poteto-help which skill should i use to review this branch?
+// このブランチのレビューには、どのSkillを使えばよい？
+</code></pre>
+<p>同梱ガイドの<a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/10-recipes-and-pitfalls.md"><code>10-recipes-and-pitfalls.md</code></a>は、次の例を挙げています。</p>
+<pre><code>/poteto-help how do i get poteto-mode to stay on every turn?
+// poteto-mode を毎ターン有効にするには、どうすればよい？
+</code></pre>
+<p>同ページでは、上記の依頼をすると、質問への回答と、利用者が使用する依頼文と、出典のリンクが返ってくると説明しています。</p>
+<h2 id="_7">まとめ</h2>
+<ul>
+<li><strong>役割</strong>・・・ pstackの使い方についての質問に、回答と、利用者が使用する依頼文と、出典のリンクを返します。</li>
+<li><strong>使いどき</strong>・・・ pstackを使い始めたばかりのときや、どのSkill、Playbook、Principleを使えばよいか迷ったときに、利用者が <code>/poteto-help</code> と入力して使います。</li>
+<li><strong>手順</strong>・・・ エージェントは、利用者が何を求めているかを見極め、次の5つの場面の「どれに該当するか」に合わせて回答します。</li>
+<li>pstackを導入するとき</li>
+<li><code>/poteto-mode</code> で作業を始めるとき</li>
+<li>作業に合うSkillを選ぶとき</li>
+<li>作業がうまくいかなかったとき</li>
+<li>pstackを自分用にしたいとき</li>
+<li><strong>依頼の書き方</strong>・・・ 利用者は、<code>/poteto-help</code> の後に、知りたいことを普段の言葉で書きます。</li>
+</ul>
+<p>次の<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/4f8911">第38章</a>では、pstackのRouter（振り分け役）である <a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/SKILL.md"><code>/poteto-mode</code></a> を扱います。<code>/poteto-mode</code> は、利用者が依頼した作業を、その作業に合うPlaybookへ振り分けるSkillです。</p>
+  </div>
+  <footer class="article-footer">
+    <span>取得: 2026-10-06T23:37:35+09:00</span>
+    <a href="#article-top">↑ 先頭へ戻る</a>
+  </footer>
+</main>
+<script>
+(() => {
+  const progress = document.querySelector(".reading-progress > span");
+  const updateProgress = () => {
+    const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+    const ratio = scrollable > 0 ? window.scrollY / scrollable : 0;
+    if (progress) progress.style.width = `${Math.min(1, ratio) * 100}%`;
+  };
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  document.querySelectorAll("pre").forEach((block) => {
+    const button = document.createElement("button");
+    button.className = "copy-button";
+    button.type = "button";
+    button.textContent = "コピー";
+    button.addEventListener("click", async () => {
+      const text = block.querySelector("code")?.innerText || block.innerText;
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const textarea = document.createElement("textarea");
+          textarea.value = text;
+          textarea.style.position = "fixed";
+          textarea.style.opacity = "0";
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand("copy");
+          textarea.remove();
+        }
+        button.textContent = "コピー済み";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      } catch (error) {
+        button.textContent = "失敗";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      }
+    });
+    block.appendChild(button);
+  });
+
+  const links = new Map(
+    [...document.querySelectorAll(".toc a")].map((link) => [link.hash, link])
+  );
+  const headings = [...document.querySelectorAll(
+    ".article-body h2[id], .article-body h3[id], .article-body h4[id]"
+  )];
+  if ("IntersectionObserver" in window && headings.length) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        links.forEach((link) => link.classList.remove("is-active"));
+        links.get(`#${entry.target.id}`)?.classList.add("is-active");
+      });
+    }, { rootMargin: "-12% 0px -72% 0px" });
+    headings.forEach((heading) => observer.observe(heading));
+  }
+})();
+</script>
+</body>
+</html>

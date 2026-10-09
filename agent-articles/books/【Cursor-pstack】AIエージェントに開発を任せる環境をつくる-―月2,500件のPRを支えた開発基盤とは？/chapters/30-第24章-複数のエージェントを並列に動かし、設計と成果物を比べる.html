@@ -1,0 +1,1496 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="title" content="第24章 複数のエージェントを並列に動かし、設計と成果物を比べる">
+<meta name="book_title" content="【Cursor pstack】AIエージェントに開発を任せる環境をつくる ―月2,500件のPRを支えた開発基盤とは？">
+<meta name="source_url" content="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/2ad346">
+<meta name="author" content="kaito">
+<meta name="published_at" content="2026-10-02">
+<meta name="retrieved_at" content="2026-10-06T23:37:32+09:00">
+<meta name="site" content="zenn.dev">
+<meta name="content_type" content="article">
+<meta name="chapter_position" content="30">
+<title>第24章 複数のエージェントを並列に動かし、設計と成果物を比べる</title>
+<style>
+:root {
+  color-scheme: light;
+  --ink: #172033;
+  --muted: #64748b;
+  --line: #dbe4ef;
+  --accent: #2563eb;
+  --accent-dark: #1d4ed8;
+  --accent-soft: #eff6ff;
+  font-family: -apple-system, BlinkMacSystemFont, "Avenir Next",
+    "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 8% 0%, #dbeafe 0, transparent 32rem),
+    radial-gradient(circle at 100% 12%, #e0e7ff 0, transparent 28rem),
+    #f4f7fb;
+  color: var(--ink);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(120deg, transparent 0 48%, rgba(255, 255, 255, 0.4));
+}
+.article {
+  position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
+  max-width: 920px;
+  margin: clamp(1rem, 5vw, 4rem) auto;
+  padding: clamp(2rem, 6vw, 5rem) clamp(1.25rem, 7vw, 5.5rem);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  border-radius: 24px;
+  min-height: 100vh;
+  box-shadow:
+    0 24px 70px rgba(30, 64, 175, 0.1),
+    0 4px 16px rgba(15, 23, 42, 0.04);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 5px;
+  content: "";
+  background: linear-gradient(90deg, #2563eb, #7c3aed, #db2777);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin: 0 0 2.5rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.72rem;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+a {
+  color: var(--accent-dark);
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: #7c3aed;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--ink);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 18ch;
+  margin: 0 0 2.5rem;
+  font-size: clamp(2.15rem, 5vw, 3.65rem);
+  letter-spacing: -0.045em;
+}
+h2 {
+  position: relative;
+  margin: 3.8rem 0 1.25rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--line);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 4.2rem;
+  height: 3px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), #7c3aed);
+  border-radius: 999px;
+}
+h3 {
+  margin: 2.6rem 0 0.8rem;
+  color: var(--accent-dark);
+  font-size: 1.3rem;
+}
+h4, h5, h6 {
+  margin-top: 2rem;
+}
+p {
+  margin: 1.15rem 0;
+}
+ul, ol {
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.35rem 0;
+}
+li::marker {
+  color: var(--accent);
+  font-weight: 700;
+}
+strong {
+  color: #111827;
+}
+blockquote {
+  margin: 1.6rem 0;
+  padding: 0.8rem 1.25rem;
+  color: #475569;
+  background: linear-gradient(90deg, var(--accent-soft), #fff);
+  border-left: 4px solid var(--accent);
+  border-radius: 0 12px 12px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 3rem 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+img {
+  display: block;
+  max-width: 100%;
+  margin: 1.75rem auto;
+  height: auto;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+}
+pre {
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  padding: 1.15rem 1.25rem;
+  color: #e2e8f0;
+  background: #111827;
+  border: 1px solid #253047;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+}
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+:not(pre) > code {
+  padding: 0.15rem 0.4rem;
+  color: #9f1239;
+  background: #fff1f2;
+  border-radius: 5px;
+}
+table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  border-collapse: collapse;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
+  text-align: left;
+}
+th {
+  color: #1e3a8a;
+  background: #eff6ff;
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: #f8fafc;
+}
+@media (max-width: 600px) {
+  .article {
+    margin: 0;
+    padding: 2rem 1rem 4rem;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(2rem, 10vw, 2.75rem);
+  }
+  .metadata {
+    margin-bottom: 2rem;
+  }
+}
+@media print {
+  body {
+    background: #fff;
+  }
+  .article {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  a {
+    color: inherit;
+  }
+}
+</style>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0f1419;
+  --surface: #1a2332;
+  --surface-raised: #202c3f;
+  --surface-soft: rgba(26, 35, 50, 0.72);
+  --border: #2d3a4f;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #58a6ff;
+  --accent-strong: #79c0ff;
+  --green: #3fb950;
+  --purple: #bc8cff;
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+    "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  line-height: 1.75;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+  background: var(--bg);
+}
+body {
+  min-width: 320px;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 2rem 1.5rem 5rem;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(31, 111, 235, 0.18), transparent 32rem),
+    radial-gradient(circle at 100% 12%, rgba(137, 87, 229, 0.14), transparent 28rem),
+    var(--bg);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black, transparent 75%);
+}
+.reading-progress {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 20;
+  height: 3px;
+  background: rgba(45, 58, 79, 0.7);
+}
+.reading-progress > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  box-shadow: 0 0 14px rgba(88, 166, 255, 0.8);
+  transition: width 80ms linear;
+}
+.article {
+  position: relative;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  background: rgba(15, 20, 25, 0.76);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(88, 166, 255, 0.035) inset;
+  backdrop-filter: blur(16px);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  border-radius: 16px 16px 0 0;
+}
+.article-header {
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.eyebrow-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--green);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(63, 185, 80, 0.75);
+}
+.eyebrow-separator {
+  color: var(--border);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  background: rgba(32, 44, 63, 0.68);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+.source-link {
+  color: var(--text);
+  text-decoration: none;
+}
+.source-link:hover {
+  border-color: var(--accent);
+  background: rgba(88, 166, 255, 0.12);
+}
+a {
+  color: var(--accent);
+  overflow-wrap: anywhere;
+  text-decoration: none;
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 24ch;
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  background: linear-gradient(120deg, #fff 12%, #b9d8ff 58%, #bc8cff);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+h2 {
+  position: relative;
+  margin: 3.2rem 0 1.1rem;
+  padding: 0.75rem 0 0.65rem;
+  border-bottom: 1px solid var(--border);
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 3.8rem;
+  height: 2px;
+  content: "";
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(88, 166, 255, 0.7);
+}
+h3 {
+  margin: 2.25rem 0 0.7rem;
+  color: var(--accent-strong);
+  font-size: 1.2rem;
+}
+h4, h5, h6 {
+  margin-top: 1.75rem;
+}
+p {
+  margin: 0.9rem 0;
+}
+ul, ol {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.3rem 0;
+}
+li::marker {
+  color: var(--accent);
+}
+strong {
+  color: #fff;
+}
+blockquote {
+  margin: 1.4rem 0;
+  padding: 0.85rem 1.15rem;
+  color: #c9d1d9;
+  background: linear-gradient(100deg, rgba(88, 166, 255, 0.1), rgba(26, 35, 50, 0.55));
+  border: 1px solid rgba(88, 166, 255, 0.18);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 2.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+}
+pre {
+  position: relative;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  padding: 1rem 1.15rem;
+  color: #dbeafe;
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+pre code {
+  color: inherit;
+  background: transparent;
+}
+code {
+  font-family: "SF Mono", "Fira Code", ui-monospace, monospace;
+  font-size: 0.86em;
+}
+:not(pre) > code {
+  padding: 0.12em 0.38em;
+  color: #ffabbc;
+  background: rgba(248, 81, 73, 0.11);
+  border-radius: 4px;
+}
+.copy-button {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  padding: 0.25rem 0.55rem;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.72rem;
+  background: rgba(32, 44, 63, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.copy-button:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  border-spacing: 0;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.6rem 0.75rem;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+th {
+  color: var(--accent);
+  background: var(--surface);
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: rgba(26, 35, 50, 0.42);
+}
+tr:last-child td {
+  border-bottom: 0;
+}
+th:last-child, td:last-child {
+  border-right: 0;
+}
+.toc {
+  margin: 1.75rem 0 2.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.toc-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--border);
+}
+.toc-title {
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.toc-count {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.toc ol {
+  margin: 0.7rem 0 0;
+  padding-left: 1.25rem;
+}
+.toc ol ol {
+  margin: 0.2rem 0;
+}
+.toc li {
+  margin: 0.18rem 0;
+  font-size: 0.86rem;
+}
+.toc li::marker {
+  color: var(--muted);
+}
+.toc a {
+  display: inline-block;
+  max-width: 100%;
+  color: var(--muted);
+  transition: color 160ms ease, transform 160ms ease;
+}
+.toc a:hover, .toc a.is-active {
+  color: var(--accent-strong);
+  text-decoration: none;
+  transform: translateX(2px);
+}
+.article-body {
+  max-width: 78ch;
+  margin: 0 auto;
+}
+.article-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 1rem;
+  color: var(--muted);
+  font-size: 0.74rem;
+  border-top: 1px solid var(--border);
+}
+.article-footer a {
+  color: var(--muted);
+}
+@media (max-width: 720px) {
+  body {
+    padding: 0 0 3rem;
+  }
+  .article {
+    min-height: 100vh;
+    padding: 1.5rem 1rem 3rem;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+  .article::before {
+    border-radius: 0;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(1.9rem, 9vw, 2.6rem);
+  }
+  .article-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+@media print {
+  :root {
+    color-scheme: light;
+  }
+  body {
+    padding: 0;
+    color: #111;
+    background: #fff;
+  }
+  .reading-progress, .toc, .copy-button {
+    display: none;
+  }
+  .article {
+    max-width: none;
+    padding: 0;
+    background: #fff;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  h1, h2, h3, h4, h5, h6, strong {
+    color: #111;
+    -webkit-text-fill-color: initial;
+  }
+  a {
+    color: inherit;
+    text-decoration: underline;
+  }
+  pre {
+    color: #111;
+    background: #f4f4f4;
+    box-shadow: none;
+  }
+}
+</style>
+</head>
+<body>
+<div class="reading-progress" aria-hidden="true"><span></span></div>
+<main id="article-top" class="article">
+  <header class="article-header">
+    <div class="eyebrow">
+      <span class="eyebrow-dot"></span>
+      <span>ARTICLE</span>
+      <span class="eyebrow-separator">/</span>
+      <span>zenn.dev</span>
+    </div>
+    <div class="metadata" aria-label="記事メタデータ"><span class="metadata-item"><span class="metadata-label">著者</span>kaito</span><span class="metadata-item"><span class="metadata-label">公開日</span>2026-10-02</span><a class="metadata-item source-link" href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/2ad346"><span class="metadata-label">原文</span>読む</a><span class="metadata-item"><span class="metadata-label">サイト</span>zenn.dev</span><span class="metadata-item"><span class="metadata-label">形式</span>ARTICLE</span></div>
+    <h1 id="24">第24章 複数のエージェントを並列に動かし、設計と成果物を比べる</h1>
+  </header>
+<nav class="toc" aria-label="目次">
+  <div class="toc-heading">
+    <span class="toc-title">目次</span>
+    <span class="toc-count">41 セクション</span>
+  </div>
+  <ol><li><a href="#_1">この章の構成</a></li><li><a href="#3skillpoteto-mode-playbook">3つのSkillは、/poteto-mode が規則とPlaybookの手順に従って呼ぶ</a></li><li><a href="#architect">/architect は、呼び出し側の使い方から型を決め、骨組みが間違っていたら捨てる</a><ol><li><a href="#_2">役割：設計を、文章ではなくコードの骨組みで決める</a></li><li><a href="#_3">使いどき：関数の境界をまたぐコードを書く前</a></li><li><a href="#ground-scrap-5-phase">手順：Ground から Scrap まで、5つの Phase で進む</a><ol><li><a href="#phase-b2">Phase B：構造の異なる案を2つ以上比べる</a><ol><li><a href="#1">1. 呼び出し側の使い方を先に書き、そこから型を決める</a></li><li><a href="#2">2. よく行う読み書きに合うデータ構造を先に決める</a></li><li><a href="#3">3. 公開する関数を少なくし、処理はその裏に隠す</a></li><li><a href="#4">4. 常に成り立つべき条件は、できるだけ型で表す</a></li><li><a href="#5">5. 外から入る値は入口で一度だけ検証し、内側では確かめ直さない</a></li><li><a href="#_4">設計に理由書を付け、退けた別案とその理由を書く</a></li><li><a href="#8">統合する前に、8つの危険信号で点検する</a></li></ol></li><li><a href="#phase-c">Phase C：既定では人の確認を挟まずに実装へ進む</a></li><li><a href="#phase-e">Phase E：骨組みを捨てる判断</a></li></ol></li><li><a href="#_5">依頼の書き方：「一番気にしていること」を添える</a></li></ol></li><li><a href="#arena">/arena は、一つの最良の成果物のために複数の候補を競わせる</a><ol><li><a href="#n">役割：同じ課題をN個の候補に解かせる</a></li><li><a href="#_6">使いどき：後から直すと高くつく成果物</a><ol><li><a href="#arena-playbookskill">/arena は、PlaybookやほかのSkillからも呼ばれる</a><ol><li><a href="#architect1">/architect：設計案を1つだけで決めない</a></li><li><a href="#evalplaybookskill">『Eval』Playbook：Skillの変更の効果を、複数のモデルと目隠しの採点で測る</a></li><li><a href="#orchestrateplaybook">『Orchestrate』Playbook：後戻りできない判断を、作業を動かし始める前に比べる</a></li><li><a href="#blast-radius">/blast-radius：大きな変更の影響を、複数のモデルに調べさせる</a></li></ol></li></ol></li><li><a href="#frame-verify-6-phase">手順：Frame から Verify まで、6つの Phase で進む</a><ol><li><a href="#_7">判定役は、全候補が書き終えてから起動する</a></li><li><a href="#_8">候補には、作る成果物を明記した同じプロンプトを渡し、採点基準は見せない</a></li><li><a href="#_9">土台には、最も機能を追加しやすい候補を選ぶ</a></li><li><a href="#_10">候補の形が大きく食い違ったら、課題を定め直す</a></li><li><a href="#_11">最後に、統合した成果物と統合メモを返す</a></li></ol></li><li><a href="#_12">依頼の書き方：候補の数を指定する</a></li></ol></li><li><a href="#swarm-workers">/swarm は、網羅と競争のために仕事をWorkersに分け、結果を一つの報告にする</a><ol><li><a href="#cloud-agents">役割：Cloud Agentsを並列に動かす</a></li><li><a href="#_13">使いどき：網羅、競争、関門、探索の分割</a></li><li><a href="#frame-report-4-phase">手順：Frame から Report まで、4つの Phase で進む</a></li><li><a href="#_14">依頼の書き方：確かめ方、形と数、返すものを一文ずつ書く</a></li></ol></li><li><a href="#3skill">並列の3つのSkillは、得たいものと、変更の大きさや戻しにくさで使い分ける</a><ol><li><a href="#_15">設計の手間は、変更の大きさと戻しにくさで決める</a></li><li><a href="#arena-swarm">/arena と /swarm は、得たいものが異なる</a></li></ol></li><li><a href="#_16">まとめ</a></li></ol>
+</nav>
+  <div class="article-body">
+
+<p>この章では、次の3つのSkillを扱います。</p>
+<ol>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/architect/SKILL.md"><code>/architect</code></a></li>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/arena/SKILL.md"><code>/arena</code></a></li>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/swarm/SKILL.md"><code>/swarm</code></a></li>
+</ol>
+<p>3つは、どれも複数のサブエージェントを並列に動かします。3つが異なるのは、<strong>並列に動かして何を得たいか</strong>です。</p>
+<p>3つの違いは次のとおりです。</p>
+<ul>
+<li><strong><code>/architect</code></strong>・・・ エージェントが、実装の前に、型とモジュールの境界（例：インポートの処理を、1つの関数として公開するか、読み込み、検証、保存の3つの関数として公開するか）を決めます。そのために、複数のモデルに設計案を作らせて比べます。得たいのは、実装が従う一つの設計です。</li>
+<li><strong><code>/arena</code></strong>・・・ エージェントが、同じ課題（例：キャッシュキーの形式を決める）を複数のサブエージェントに別々に解かせ、最も良い案を土台にして、ほかの案の良いところを組み込みます。得たいのは、一つの最良の成果物です。</li>
+<li><strong><code>/swarm</code></strong>・・・ エージェントが、仕事（例：<code>packages/</code> 以下の全パッケージのチェック）を複数のエージェントに分担させるか、同じ課題で競わせ、結果を一つの報告にまとめます。得たいのは、漏れのない確認か、速い答えです。</li>
+</ul>
+<p>この章では、3つのSkillを誰が呼ぶのかを確かめたうえで、1つずつ、役割、使いどき、手順の3つの観点で解説します。原文に依頼例があるSkillには依頼例も示します。</p>
+<p>最後に、並列の3つのSkillの使い分けを整理します。</p>
+<h2 id="_1">この章の構成</h2>
+<p>この章の構成は次のとおりです。</p>
+<ul>
+<li>3つのSkillは、<code>/poteto-mode</code> が規則とPlaybookの手順に従って呼ぶ</li>
+<li><code>/architect</code> は、呼び出し側の使い方から型を決め、骨組みが間違っていたら捨てる</li>
+<li><code>/arena</code> は、一つの最良の成果物のために複数の候補を競わせる</li>
+<li><code>/swarm</code> は、網羅と競争のために仕事をWorkersに分け、結果を一つの報告にする</li>
+<li>並列の3つのSkillは、得たいものと、変更の大きさや戻しにくさで使い分ける</li>
+<li>まとめ</li>
+</ul>
+<h2 id="3skillpoteto-mode-playbook">3つのSkillは、<code>/poteto-mode</code> が規則とPlaybookの手順に従って呼ぶ</h2>
+<p><code>/architect</code>、<code>/arena</code>、<code>/swarm</code> は、<strong><code>/poteto-mode</code> が『Non-negotiables』の規則やPlaybookの手順に従って呼びます</strong>。</p>
+<table>
+<thead>
+<tr>
+<th>Skill</th>
+<th>一言でいうと</th>
+<th>並列の使い方</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/architect</code></td>
+<td>呼び出し側の使い方、型、モジュールの形を実装の前に決める</td>
+<td>内部で <code>/arena</code> を使い、複数の設計案を比べる</td>
+</tr>
+<tr>
+<td><code>/arena</code></td>
+<td>同じ課題をN個の候補（課題を解くサブエージェント）に解かせ、最も良い候補を土台に選び、ほかの候補の良い部分を移植する</td>
+<td>全員が同じ課題に取り組む</td>
+</tr>
+<tr>
+<td><code>/swarm</code></td>
+<td>N体のWorkers（並列に動く複数のエージェント）を分担か競争で動かし、一つの報告にまとめる</td>
+<td>別々の範囲を受け持つか、同じ課題で競う</td>
+</tr>
+</tbody>
+</table>
+<p>3つを誰が呼ぶかは、次のとおりです。</p>
+<ul>
+<li><strong><code>/architect</code>、<code>/arena</code>、<code>/swarm</code></strong>・・・ <code>/poteto-mode</code> が、節『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/SKILL.md#non-negotiables">Non-negotiables</a>』の規則と、Playbookの手順に従って呼びます。ほかのSkillも、各Skillの手順の中で呼びます（<code>/architect</code> は <code>/figure-it-out</code> と <code>/no-comments</code> が、<code>/arena</code> は <code>/architect</code> と <code>/blast-radius</code> が呼ぶ）。利用者が名前で直接呼ぶこともできます。</li>
+</ul>
+<h2 id="architect"><code>/architect</code> は、呼び出し側の使い方から型を決め、骨組みが間違っていたら捨てる</h2>
+<h3 id="_2">役割：設計を、文章ではなくコードの骨組みで決める</h3>
+<p><code>/architect</code> は、<strong>関数の境界をまたぐコードを書く前に、型、関数のシグネチャ（関数の名前、引数、戻り値の型）、モジュールの境界を、関数の中身を書かない骨組み（<code>not implemented</code>）で描くSkill</strong>です。</p>
+<p>!</p>
+<p><strong>骨組み</strong>・・・ 型、関数のシグネチャ（関数の名前、引数、戻り値の型）、モジュールの境界だけを書き、関数の中身は <code>throw new Error("not implemented")</code> のような仮の本体にしておくコード（以下の例の <code>ImportOptions</code>・<code>ImportResult</code>・<code>importRows</code>）。<code>not implemented</code> は「まだ実装していない」という意味で、仮の本体は、呼ばれるとこのエラーを投げるだけで、処理は何もしない</p>
+<p>たとえば、インポートの処理の骨組みを考えてみましょう。</p>
+<p>呼び出し側の使い方を先に書き、そこから型とシグネチャを決めると、次のようになります。</p>
+<pre><code>// 呼び出し側の使い方：これを先に書き、ここから型を決める
+async function onImportClick(file: File) {
+  const result = await importRows(file, { onError: &quot;skip&quot; });
+  console.log(`${result.imported}件を取り込み、${result.skipped}件を飛ばしました`);
+}
+
+// 骨組み：型とシグネチャだけを書き、中身は書かない
+// onError は、不正な行があったときに、その行を飛ばすか（skip）、取り込みを止めるか（stop）
+type ImportOptions = { onError: &quot;skip&quot; | &quot;stop&quot; };
+type ImportResult = { imported: number; skipped: number };
+
+export async function importRows(file: File, options: ImportOptions): Promise&lt;ImportResult&gt; {
+  throw new Error(&quot;not implemented&quot;);
+}
+</code></pre>
+<p>中身はまだなくても、呼び出し側が <code>importRows</code> を1回呼べば取り込めることと、戻り値で取り込んだ件数と飛ばした件数が分かることは、骨組みだけで読み取れます。</p>
+<p>エージェントが骨組みを先に作るのは、<strong>骨組みが、実装が守るべき「契約」（実装は骨組みの型とシグネチャのとおりに書く、という約束）になる</strong>からです。</p>
+<p>骨組みがあれば、実装が型から外れたことや、型の検査をすり抜ける逃げ道（<code>any</code> や、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/cdc49b">第18章</a>で見たキャスト（<code>as User</code> のように、値の型を決めつける書き方））が必要になったことが、骨組みとの<strong>差分として目に見えます</strong>。</p>
+<p>たとえば、骨組みでは <code>importRows(file, options)</code> だったのに、実装の途中で3つ目の引数が必要になれば、シグネチャの変更が差分に現れます。</p>
+<p>エージェントは、こうしたずれを、実装の中で黙って整合させて片付けずに表に出し、骨組みが間違っていたのか、要件を見落としていたのか、実装が必要以上のことをしているのかを問い直します。このような<strong>ずれは、設計か要件か実装のどこかに誤りがあることを示している</strong>からです。</p>
+<p><code>/architect</code> は、骨組みを1つの案で決めず、複数のモデルに作らせた案を統合して決めます。そのうえで骨組みに沿って中身を埋め、骨組みが間違っていると分かったら、骨組みを捨てて設計し直します。</p>
+<p>poteto氏は『The Complete Guide to pstack』<a href="https://x.com/poteto/status/2097732320606507506">Part 2</a>で、計画はコードで行うほうがはるかに効果的だと書き、その手段として、<code>/poteto-mode</code> でのプロトタイプ作りと <code>/architect</code> を挙げています。</p>
+<h3 id="_3">使いどき：関数の境界をまたぐコードを書く前</h3>
+<p><code>/poteto-mode</code> の節『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/SKILL.md#non-negotiables">Non-negotiables</a>』（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/096f3d">第8章</a>）は、関数の境界をまたぐコードには <code>/architect</code> を使うと定めています。</p>
+<p>Playbookも、この決まりに沿って <code>/architect</code> を手順に組み込んでいます。『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/feature.md"><strong>Feature</strong></a>』（機能の追加）は、手順2で必ず <code>/architect</code> を呼びます。『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/bug-fix.md"><strong>Bug fix</strong></a>』（不具合の修正）、『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/refactoring.md"><strong>Refactoring</strong></a>』（リファクタリング）、『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/perf-issue.md"><strong>Perf issue</strong></a>』（性能の改善）は、変更が関数の境界をまたぐときに <code>/architect</code> を呼びます。</p>
+<p>たとえば、新しい関数を作り、それを別のファイルの関数から呼ぶ変更は、関数の境界をまたぎます。一方、1つの関数の中の計算を直すだけの変更のように、1つの関数の中で閉じる変更には、<code>/architect</code> は必要ありません。</p>
+<p>また、ほかのSkillでは、<code>/figure-it-out</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/3ce2b2">第23章</a>）が、後戻りできない設計の判断で <code>/architect</code> を呼びます。<code>/no-comments</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/8960d3">第32章</a>）も、コメントの指摘を直すのにコードの新しい形が必要なときに、<code>/architect</code> を一度だけ呼びます。</p>
+<h3 id="ground-scrap-5-phase">手順：Ground から Scrap まで、5つの Phase で進む</h3>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>名前</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A</td>
+<td>Ground（土台を固める）</td>
+<td><code>/how</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/788746">第22章</a>）で、新しいコードが関わる仕組みを調べる。関係するファイル名を挙げるだけでは調べたことにならないので、<code>/how</code> が求めるとおり、処理の流れをたどった結果を残す。設計が、どのモジュールが何を受け持つかやレイヤーを変えるなら、<code>/why</code> で今の形になった理由も調べ、その理由を設計の制約にする</td>
+</tr>
+<tr>
+<td>B</td>
+<td>Sketch（骨組みを描く）</td>
+<td><code>/arena</code> で複数の設計案を作らせ、比べて統合する</td>
+</tr>
+<tr>
+<td>C</td>
+<td>Agree（合意する）</td>
+<td>既定では人の確認を挟まずに実装へ進む。利用者が求めたときだけ、設計を見せて承認を待つ</td>
+</tr>
+<tr>
+<td>D</td>
+<td>Implement（実装する）</td>
+<td>骨組みの <code>not implemented</code> の仮の本体を、実際のコードに置き換える</td>
+</tr>
+<tr>
+<td>E</td>
+<td>Scrap（捨てる）</td>
+<td>骨組みに合わない回避策や逸脱が実装で繰り返し出たら、骨組みを捨てて設計し直す</td>
+</tr>
+</tbody>
+</table>
+<h4 id="phase-b2">Phase B：構造の異なる案を2つ以上比べる</h4>
+<p>エージェントは、最初の案で十分に見えても、<strong>構造の異なる設計を少なくとも2つ作らせてから統合します</strong>。難しい設計を1回だけ作らせると、その設計は、モデルが最初に思いついた形に固まってしまうからです（同梱ガイドの <a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/04-design.md"><code>04-design.md</code></a>）。</p>
+<p>エージェントが比べるのは、1つの形の中の部分的な手直しではなく、形そのものが異なる案です。</p>
+<p>たとえば、<code>importRows</code> の引数の名前だけを変えた案は、同じ形の手直しにすぎません。1つの関数だけを公開する案と、読み込み、検証、保存を別々の関数として公開する案なら、形そのものが異なります。</p>
+<p>Phase B のこのやり方は、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a8e80b">第17章</a>の原則『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-exhaust-the-design-space/SKILL.md"><strong>Exhaust the Design Space</strong></a>』を具体化したものです。</p>
+<p><code>/arena</code> が起動する各候補（設計案を1つずつ作るサブエージェント）は、10項目の指示に従って設計案を作ります。ここでは、そのうち主な5つを紹介します。</p>
+<h5 id="1">1. 呼び出し側の使い方を先に書き、そこから型を決める</h5>
+<p>候補は、型を書く前に、その型を使う呼び出し箇所のコードを先に書きます。<strong>呼び出し側がどう使いたいかが、設計が満たすべき仕様</strong>だからです。</p>
+<p>使い方と型が食い違ったら、候補は、型のほうを直して使い方に合わせます。</p>
+<p>たとえば、骨組みの例で使用したコードでは、先に <code>onImportClick</code> の中で <code>importRows(file, { onError: "skip" })</code> という呼び出しを書き、その書き方に合わせて <code>ImportOptions</code> と <code>ImportResult</code> の型を決めました。</p>
+<pre><code>// 呼び出し側の使い方：これを先に書き、ここから型を決める
+async function onImportClick(file: File) {
+  const result = await importRows(file, { onError: &quot;skip&quot; });
+  console.log(`${result.imported}件を取り込み、${result.skipped}件を飛ばしました`);
+}
+
+// 骨組み：型とシグネチャだけを書き、中身は書かない
+// onError は、不正な行があったときに、その行を飛ばすか（skip）、取り込みを止めるか（stop）
+type ImportOptions = { onError: &quot;skip&quot; | &quot;stop&quot; };
+type ImportResult = { imported: number; skipped: number };
+
+export async function importRows(file: File, options: ImportOptions): Promise&lt;ImportResult&gt; {
+  throw new Error(&quot;not implemented&quot;);
+}
+</code></pre>
+<h5 id="2">2. よく行う読み書きに合うデータ構造を先に決める</h5>
+<p>候補は、ロジックを書く前に、よく行う読み書き（例：IDでユーザーを1人引く）に合うデータ構造を決めます。</p>
+<p>候補は、その読み書きを、決めたデータ構造でどう処理するかを1つずつたどって確かめます。たどった結果、「後で索引やキャッシュを追加すればよい」という答えになるなら、そのデータ構造は間違っています。</p>
+<p>たとえば、IDでユーザーを引く処理が多いのに、ユーザーを配列で持つケースを見てみましょう。</p>
+<p>配列で持つと、IDで引くたびに配列を先頭から探すことになります。IDで引く処理をこの構造でたどると、「後でIDからの索引を追加すればよい」という答えになるので、配列という構造は間違っています。そこで、候補は最初から、IDをキーにした表（マップ）で持つ構造を選びます。</p>
+<pre><code>type User = { id: string; name: string };
+// 探したいユーザーのID
+declare const id: string;
+
+// 前：IDで引くたびに、配列を先頭から探す
+const userList: User[] = [];
+const found = userList.find((u) =&gt; u.id === id);
+
+// 後：IDをキーにした表で持ち、IDから直接引く
+const usersById = new Map&lt;string, User&gt;();
+const user = usersById.get(id);
+</code></pre>
+<p>このように、向いているデータ構造はよく行う読み書きで変わるので、候補は、実装の前に、その読み書きに合った構造を選びます。</p>
+<h5 id="3">3. 公開する関数を少なくし、処理はその裏に隠す</h5>
+<p>候補は、外に公開する関数や型（公開インターフェース）を少なく小さくし、多くの処理をその裏に隠します。こうすることで、<strong>呼び出し側が知る必要のあることが減る</strong>からです。</p>
+<p>公開するものが少ないのに、裏に多くの処理を隠しているインターフェースを、「<strong>深いインターフェース</strong>」と呼びます。</p>
+<p>たとえば、インポートの処理の公開インターフェースを2通りに書くと、次のようになります。</p>
+<pre><code>// 深い：公開するのは1つの関数だけで、読み込み、検証、保存はその裏に隠す
+type DeepImporter = {
+  importRows(file: File, options: ImportOptions): Promise&lt;ImportResult&gt;;
+};
+
+// 浅い：3つの関数を公開し、呼び出し側がそれらを正しい順番で呼ぶ必要がある
+type ShallowImporter = {
+  loadRows(file: File): string[][];
+  validateRows(rows: string[][]): string[][];
+  saveRows(rows: string[][]): Promise&lt;void&gt;;
+};
+</code></pre>
+<p><code>DeepImporter</code> なら、呼び出し側は <code>importRows</code> を1回呼ぶだけで取り込めます。<code>ShallowImporter</code> では、呼び出し側が3つの関数を正しい順番で呼ばなければなりません。</p>
+<h5 id="4">4. 常に成り立つべき条件は、できるだけ型で表す</h5>
+<p>候補は、不変条件を、まず型で表します。型で表せないときは実行時のチェックで表し、それもできないときだけコメントで書きます。</p>
+<p>たとえば、「発送済みの注文は、必ず追跡番号を持つ」という不変条件を3通りで書くと、次のようになります。</p>
+<pre><code>// 型で表す：shipped の注文は、trackingNo を持つ形しか書けない
+type Order =
+  | { state: &quot;paid&quot; }
+  | { state: &quot;shipped&quot;; trackingNo: string };
+
+// 実行時のチェック：型では防げず、動かしたときに初めて見つかる
+type LooseOrder = { state: &quot;paid&quot; | &quot;shipped&quot;; trackingNo?: string };
+
+function assertTrackingNo(order: LooseOrder): void {
+  if (order.state === &quot;shipped&quot; &amp;&amp; !order.trackingNo) {
+    throw new Error(&quot;発送済みなのに追跡番号がありません&quot;);
+  }
+}
+
+// コメント：守られるかどうかは、コメントを読んだ人次第
+type CommentedOrder = {
+  state: &quot;paid&quot; | &quot;shipped&quot;;
+  // state が &quot;shipped&quot; のときは、必ず trackingNo を入れること
+  trackingNo?: string;
+};
+</code></pre>
+<p>型で表せば、不変条件を破るコードを書いた時点でコンパイラが知らせてくれます。そのため、候補は、不変条件をできるだけ型で表します。</p>
+<h5 id="5">5. 外から入る値は入口で一度だけ検証し、内側では確かめ直さない</h5>
+<p>候補は、外から値が入る場所（境界。例：ファイルやAPIのレスポンスを受け取る関数）で、値を一度だけ検証し、検証した値に型を付けます。内側のコードは、型の付いた値を確かめ直さずに使います。<strong>入口で一度確かめておけば、内側で同じ確認を何度も書かずに済む</strong>からです。</p>
+<p>たとえば、インポートの処理なら、<code>importRows</code> がファイルの各行を読んだ直後に、IDが空でないかを確かめます。内側の保存の処理は、確かめ終えた行だけを受け取るので、IDが空かどうかを確かめ直しません。</p>
+<p>この指示は、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/cdc49b">第18章</a>の原則『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-boundary-discipline/SKILL.md"><strong>Boundary Discipline</strong></a>』に従ったものです。</p>
+<h5 id="_4">設計に理由書を付け、退けた別案とその理由を書く</h5>
+<p>各候補は、設計に1ページの理由書を付けます。理由書では、呼び出し側から見た使い方（Usage）を型より先に書き、退けた別案とその理由を必ず書きます。</p>
+<p>候補は、別案を比べるときに、実装が簡単かどうかだけでなく、呼び出し側に見せる複雑さと、内側に隠す複雑さで比べます。たとえば、<code>DeepImporter</code> と <code>ShallowImporter</code> なら、呼び出し側が知る必要のある関数は1つと3つなので、<code>DeepImporter</code> のほうが、呼び出し側に見せる複雑さが小さくなります。</p>
+<h5 id="8">統合する前に、8つの危険信号で点検する</h5>
+<p>エージェントは、候補を統合する前に、すべての候補を、危険信号の一覧（<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/architect/references/design-red-flags.md"><code>references/design-red-flags.md</code></a>）で点検します。危険信号とは、エージェントが見つけたら、その設計を直すか、退ける理由になる構造上の特徴です。</p>
+<p>点検するときは、次の前提に立ちます。</p>
+<blockquote>
+<p>Assume the next contributor is an agent that sees only the files it opened, copies the nearest example, and takes the shortest path that compiles. Prefer the design where a change that looks right from one file is right for the whole repo.</p>
+<p>次にコードを変更するのは、自分が開いたファイルしか見ず、いちばん近くにある例をまね、コンパイルが通る最短の道を選ぶエージェントだと想定せよ。1つのファイルだけを見て正しく見える変更が、リポジトリ全体にとっても正しくなる設計を選べ。</p>
+</blockquote>
+<p>つまり、この前提は、次にコードを変えるエージェントがリポジトリ全体を見ていなくても、正しい変更しかできないような設計を選ぶ、ということを意味します。同じ前提は、<code>/correct</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/fe17ab">第35章</a>）にも書かれています。</p>
+<p>8つの危険信号は、次のとおりです。</p>
+<ul>
+<li><strong>浅いモジュール</strong>・・・ 公開する関数や型が多いのに、その裏に隠す処理が少ないモジュールです。</li>
+<li><strong>情報の漏れ</strong>・・・ 本来は1つのモジュールの中だけで決めておけばよいこと（例：データをどんな形で持つか）を、ほかのモジュールも前提にして書かれている状態です。その決めごとを変えると、前提にしているモジュールをすべて一緒に直す必要があります。</li>
+<li><strong>順番による分割</strong>・・・ 処理を実行する順番（読み込む→検証する→保存する）どおりに、モジュールを分けた構造です。順番どおりに分けると、どのモジュールも同じデータの形を受け渡しするので、その形を前提にするモジュールが増えます。原文は、同じデータを扱う処理は、実行するタイミングが異なっても1つのモジュールにまとめるよう勧めています。</li>
+<li><strong>素通しのメソッド</strong>・・・ 受け取った引数を、同じ形のまま別のメソッドへ渡すだけのメソッドです。</li>
+<li><strong>持ち主が複数いる</strong>（原文では Split ownership）・・・ 複数のモジュールが、同じ状態を書き換えたり、それぞれが自分の写しを持ったりしている状態です。</li>
+<li><strong>1つの作業に2つのやり方</strong>（原文では Two ways to do one task）・・・ 同じ作業に、2つ以上のやり方が用意されている状態です。</li>
+<li><strong>外から import できる内部実装</strong>（原文では Importable internals）・・・ モジュールの内部実装（外に公開するつもりのない関数や型など）を、外から import できる状態です。</li>
+<li><strong>手動で同期する一覧</strong>（原文では Hand-synced list）・・・ 2か所以上に同じ項目の一覧があり、項目を足すにはすべての一覧を編集する必要がある状態です。</li>
+</ul>
+<p>ここからは、前半の4つと後半の4つに分けて見ていきます。</p>
+<p>まず、前半の4つです。たとえば、インポートの処理で、前半の4つの危険信号をすべて含む骨組みは、次のようになります。</p>
+<pre><code>// load.ts：CSVを読み、各行を文字列の配列にする（浅いモジュール）
+export function loadRows(file: File): string[][] {
+  throw new Error(&quot;not implemented&quot;);
+}
+
+// validate.ts：0列目がIDであることを前提に、IDが空の行を除く（浅いモジュール・情報の漏れ）
+export function validateRows(rows: string[][]): string[][] {
+  throw new Error(&quot;not implemented&quot;);
+}
+
+// save.ts：0列目がIDであることを前提に、IDをキーにして保存する（浅いモジュール・情報の漏れ）
+export function saveRows(rows: string[][]): Promise&lt;void&gt; {
+  throw new Error(&quot;not implemented&quot;);
+}
+
+// importer.ts
+export class Importer {
+  // 受け取った rows を、同じ形のまま saveRows へ渡すだけ（素通しのメソッド）
+  save(rows: string[][]): Promise&lt;void&gt; {
+    return saveRows(rows);
+  }
+}
+
+// 呼び出し側：3つを正しい順番で呼ばないと取り込めない（順番による分割）
+async function onImportClick(file: File) {
+  const rows = validateRows(loadRows(file));
+  await new Importer().save(rows);
+}
+</code></pre>
+<p>このコードでは、4つの危険信号が次のように現れています。</p>
+<ul>
+<li><strong>浅いモジュール</strong>・・・ 3つのファイル（<code>load.ts</code>・<code>validate.ts</code>・<code>save.ts</code>）は関数を1つずつ公開していますが、どの関数も、読むだけ、行を除くだけ、保存するだけという小さな作業しかしていません。公開している関数の数に比べて、裏に隠している処理が少ないので、浅いモジュールです。その結果、1回の取り込みを終えるには、呼び出し側が3つの関数を自分で組み合わせて呼ぶ必要があります。原文も、1つの操作のために呼び出し側が複数の関数を組み合わせることを、浅いモジュールの兆候に挙げています。</li>
+<li><strong>情報の漏れ</strong>・・・ <code>validate.ts</code> と <code>save.ts</code> は、どちらも「各行は文字列の配列で、0列目（配列の先頭の要素）がID」という前提で書かれています。たとえば、CSVの列の並びが変わり、IDが2列目に移ったとします。すると、<code>validate.ts</code> と <code>save.ts</code> の両方を同時に直さなければなりません。</li>
+<li><strong>順番による分割</strong>・・・ ファイルを、処理の順番どおりに「読み込む」（<code>load.ts</code>）、「検証する」（<code>validate.ts</code>）、「保存する」（<code>save.ts</code>）の3つに分けています。3つのファイルは、行のデータを順に手渡ししていくので、3つとも「各行は文字列の配列」という同じ形を知っていなければなりません。そのため、行の形を変えると、3つのファイルすべてを直すことになります。</li>
+<li><strong>素通しのメソッド</strong>・・・ <code>Importer.save</code> は、受け取った <code>rows</code> を同じ形のまま <code>saveRows</code> へ渡すだけで、何も隠していません。</li>
+</ul>
+<p>このように、決めごとが複数のモジュールに散らばると、変えるたびに直す場所が増えるので、決めごとは1つのモジュールの内側に閉じ込める必要があります。</p>
+<p>前に示した <code>importRows(file, options)</code> の骨組みなら、呼び出し側は1つの関数を呼ぶだけで済みます。行の表し方や、どの列がIDかという決めごとは、<code>importRows</code> のモジュールの内側に閉じ込められます。</p>
+<p>次に、後半の4つです。どれも、上の前提に書かれたエージェントの次の3つの性質のせいで起きる間違いを扱っています。</p>
+<ul>
+<li>自分が開いたファイルしか見ない</li>
+<li>いちばん近くにある例をまねる</li>
+<li>コンパイルが通る最短の道を選ぶ</li>
+</ul>
+<p>後半の4つは、<code>importRows</code> の骨組みを使っていても、その周りのコードで起こりえます。ここからは、取り込みの処理を例に、1つずつ見ていきます。</p>
+<p><strong>持ち主が複数いる</strong></p>
+<p>取り込んだ行数を、2つのファイルがそれぞれ数えています。</p>
+<pre><code>// importer/progress.ts：取り込んだ行数を数える
+export let importedCount = 0;
+export function onRowImported() {
+  importedCount += 1;
+}
+
+// ui/ProgressBar.ts：画面に出す行数を、画面の側でも別に数えている
+let shownCount = 0;
+export function onRowShown() {
+  shownCount += 1;
+}
+</code></pre>
+<p>エージェントに「取り込みを中止したら、行数を0に戻して」と頼んだとします。エージェントは、開いた <code>progress.ts</code> に <code>importedCount = 0</code> を足して終えます。<code>ProgressBar.ts</code> は開いていないので、<code>shownCount</code> は0に戻りません。その結果、画面には、中止する前の行数が出たままになります。</p>
+<p>直し方は、行数の持ち主を1つにすることです。たとえば、<code>ProgressBar.ts</code> は自分では数えず、<code>progress.ts</code> の <code>importedCount</code> を読むだけにします。</p>
+<pre><code> // ui/ProgressBar.ts
+-let shownCount = 0;
+-export function onRowShown() {
+-  shownCount += 1;
+-}
++// 自分では数えず、progress.ts の importedCount を読むだけにする
++import { importedCount } from &quot;../importer/progress&quot;;
+</code></pre>
+<p>こうすれば、行数を0に戻す処理は <code>progress.ts</code> に足すだけで済み、画面の行数も一緒に0に戻ります。</p>
+<p><strong>1つの作業に2つのやり方</strong></p>
+<p>取り込みの入口が2つあります。</p>
+<pre><code>// importer/import.ts：ファイルから取り込む入口
+export function importRows(file: File, options: ImportOptions): Promise&lt;void&gt; {
+  throw new Error(&quot;not implemented&quot;);
+}
+
+// importer/import.ts：文字列から取り込む、古い入口。中身は importRows とほぼ同じ
+export function importText(text: string): Promise&lt;void&gt; {
+  throw new Error(&quot;not implemented&quot;);
+}
+</code></pre>
+<p>エージェントは、新しい画面に取り込みの機能を付けるとき、近くにある既存の画面のコードをまねます。その画面が <code>importText</code> を使っていれば、新しい画面も <code>importText</code> を使います。こうして、どちらの入口も呼び出し元が増え続けます。取り込みの不具合を直すときには、2つの入口の両方を直す必要が出てきます。</p>
+<p>直し方は、入口を <code>importRows</code> の1つに絞ることです。<code>importText</code> の呼び出し元を <code>importRows</code> に移し、同じ変更の中で <code>importText</code> を消します。</p>
+<pre><code> // importer/import.ts
+ export function importRows(file: File, options: ImportOptions): Promise&lt;void&gt; {
+   throw new Error(&quot;not implemented&quot;);
+ }
+-
+-export function importText(text: string): Promise&lt;void&gt; {
+-  throw new Error(&quot;not implemented&quot;);
+-}
+
+ // importText を呼んでいた画面（例：ui/PastePage.ts）
+-await importText(text);
++await importRows(new File([text], &quot;pasted.csv&quot;), options);
+</code></pre>
+<p><strong>外から import できる内部実装</strong></p>
+<p>取り込みの内側だけで使うつもりの関数が、<code>export</code> されています。</p>
+<pre><code>// importer/parse.ts：取り込みの内側だけで使うつもりの、CSVを解析する関数
+export function parseCsv(text: string): string[][] {
+  throw new Error(&quot;not implemented&quot;);
+}
+</code></pre>
+<p>エージェントに「取り込む前に、CSVの中身を画面に表示して」と頼んだとします。エージェントは、すでに <code>export</code> されている <code>parseCsv</code> を、プレビュー画面から直接 import します。取り込みのモジュールに表示用の入口を足すより、そのほうが早く、コンパイルも通るからです。</p>
+<pre><code>// ui/PreviewPage.ts：取り込みの内側の関数を、直接 import している
+import { parseCsv } from &quot;../importer/parse&quot;;
+</code></pre>
+<p>その結果、<code>parseCsv</code> は、取り込みのモジュールのインターフェース（外から使ってよい関数や型）の一部になってしまいます。あとで <code>parseCsv</code> の戻り値の形を変えると、プレビュー画面も壊れます。</p>
+<p>直し方は、<code>parseCsv</code> をモジュールの外から届かないようにし、外から import するとビルドが失敗するようにすることです。たとえば、ESLint のルールで、<code>importer</code> の外から内部のファイルを import することを禁じます。</p>
+<pre><code> // eslint.config.js
+ rules: {
++  &quot;no-restricted-imports&quot;: [&quot;error&quot;, {
++    patterns: [{
++      group: [&quot;**/importer/*&quot;, &quot;!**/importer/index&quot;],
++      message: &quot;importer の内部は import できません。importer/index から使ってください。&quot;,
++    }],
++  }],
+ },
+</code></pre>
+<p>CIで ESLint を実行していれば、<code>PreviewPage.ts</code> のような import は、CIで失敗します。エージェントは、失敗したメッセージを読んで、<code>importer/index</code> が公開している関数を使うように直します。</p>
+<p><strong>手動で同期する一覧</strong></p>
+<p>同じ列の一覧が、2つのファイルにあります。</p>
+<pre><code>// importer/columns.ts：取り込める列の一覧
+export const COLUMNS = [&quot;id&quot;, &quot;name&quot;, &quot;email&quot;];
+
+// ui/columnLabels.ts：画面に出す列名の一覧。同じ3つの列を、別に書き並べている
+export const COLUMN_LABELS = { id: &quot;ID&quot;, name: &quot;名前&quot;, email: &quot;メールアドレス&quot; };
+</code></pre>
+<p>エージェントに「電話番号の列を足して」と頼んだとします。エージェントは、開いた <code>columns.ts</code> の <code>COLUMNS</code> に <code>"phone"</code> を足して終えます。<code>COLUMN_LABELS</code> は更新されないので、画面には電話番号の列名が出ません。</p>
+<p>直し方は、一覧を1つにし、ほかの一覧はそこから作ることです。たとえば、列の名前と画面に出す名前を1つの一覧にまとめ、画面に出す列名の一覧は、そこから作ります。</p>
+<pre><code> // importer/columns.ts：列の名前と、画面に出す名前を、1つの一覧で持つ
+-export const COLUMNS = [&quot;id&quot;, &quot;name&quot;, &quot;email&quot;];
++export const COLUMNS = [
++  { key: &quot;id&quot;, label: &quot;ID&quot; },
++  { key: &quot;name&quot;, label: &quot;名前&quot; },
++  { key: &quot;email&quot;, label: &quot;メールアドレス&quot; },
++] as const;
+
+ // ui/columnLabels.ts：自分では書き並べず、COLUMNS から作る
+-export const COLUMN_LABELS = { id: &quot;ID&quot;, name: &quot;名前&quot;, email: &quot;メールアドレス&quot; };
++import { COLUMNS } from &quot;../importer/columns&quot;;
++export const COLUMN_LABELS = Object.fromEntries(COLUMNS.map((c) =&gt; [c.key, c.label]));
+</code></pre>
+<p>こうすれば、電話番号の列を足すときは、<code>COLUMNS</code> に1行足すだけで済みます。</p>
+<p>どうしても1つにできない一覧は、一覧どうしが食い違ったらビルドが失敗するようにします。</p>
+<h4 id="phase-c">Phase C：既定では人の確認を挟まずに実装へ進む</h4>
+<p><strong>既定では、エージェントは人の確認を挟まずに実装へ進みます</strong>。</p>
+<p>エージェントが人の返事を待たずに進め、人が後から方針を修正するのは、原則『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-never-block-on-the-human/SKILL.md"><strong>Never Block on the Human</strong></a>』（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/c155cc">第20章</a>）と同じ考え方です。</p>
+<p>人が設計の形に異議を唱えたら、エージェントはその異議を Phase A の新しい材料として扱い、調べ直して Phase B をやり直します。</p>
+<p>実装の前に設計の弱点を厳しく問いただしたいときは、エージェントは、統合した骨組みに<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/997880">第28章</a>の <code>/interrogate</code> をかけます。</p>
+<h4 id="phase-e">Phase E：骨組みを捨てる判断</h4>
+<p><strong>エージェントは、骨組みを捨てるかどうかを、1回きりの出来事ではなく、繰り返し現れるパターンで判断します</strong>。</p>
+<p>兆候は、たとえば次のようなものです。</p>
+<ol>
+<li>同じ形の回避策が、無関係なコードに繰り返し現れる（例：<code>importRows</code> を呼ぶ別々の画面が、どれも呼ぶ前に同じ前処理を自分で書いている）</li>
+<li>コンパイルを通すために、<code>any</code> やキャストのような逃げ道が必要になる</li>
+<li>呼び出し側が、共通の関数や型の内部の決まりを知らないと、それを使えない（例：<code>importRows</code> を呼ぶ前に、呼び出し側が必ず別の初期化の関数を呼んでおかなければならない）</li>
+<li>骨組みからの同じ形の逸脱が、別々の箇所で2回以上起きる（例：骨組みにない引数の追加が、2つの関数で別々に必要になる）</li>
+</ol>
+<p>たとえば、4つの兆候をすべて含む実装は、次のようになります。</p>
+<pre><code>type Row = { id: string; name: string };
+
+// 取り込みに使うデータベースの接続を、先に作っておく関数
+declare function initImporter(): Promise&lt;void&gt;;
+
+// 骨組みでは parseRows(text: string): Row[] だった
+// 兆候4：実装で、骨組みになかった tenantId（どの契約者のデータか）の引数が必要になった
+declare function parseRows(text: string, tenantId: string): Row[];
+
+// 骨組みでは saveRows(rows: Row[]): Promise&lt;void&gt; だった
+// 兆候4：実装で、骨組みになかった tenantId（どの契約者のデータか）の引数が必要になった
+declare function saveRows(rows: Row[], tenantId: string): Promise&lt;void&gt;;
+
+// 設定画面
+async function onUploadFromSettings(file: File) {
+  // 兆候3：これを先に呼ばないと、importRows が失敗する。この決まりは、importRows の型からは読み取れない
+  await initImporter();
+
+  // 兆候1：importRows を呼ぶ前に、CSVの1行目（見出しの行）を自分で取り除いている
+  const lines = (await file.text()).split(&quot;\n&quot;);
+  const body = new File([lines.slice(1).join(&quot;\n&quot;)], file.name);
+
+  // 兆候2：骨組みの ImportResult にない reasons（飛ばした行の理由）を読むために、any にしている
+  const result = (await importRows(body, { onError: &quot;skip&quot; })) as any;
+  console.log(result.reasons);
+}
+
+// ダッシュボード：設定画面とは無関係の画面なのに、兆候1の前処理と、兆候3の初期化を同じように書いている
+async function onUploadFromDashboard(file: File) {
+  // 兆候3の初期化
+  await initImporter();
+  // 兆候1の前処理
+  const lines = (await file.text()).split(&quot;\n&quot;);
+  const body = new File([lines.slice(1).join(&quot;\n&quot;)], file.name);
+  await importRows(body, { onError: &quot;stop&quot; });
+}
+</code></pre>
+<p>まれな入力や状況（エッジケース）への対応がいくつか必要になるだけでは、設計全体を否定する理由になりません。また、扱うデータそのものが入り組んでいるせいで分岐が増えるのも、骨組みを捨てる理由になりません。</p>
+<p>たとえば、国ごとに住所の書き方が異なるせいで分岐が増えるのは、データが入り組んでいるからで、設計が間違っているからではありません。</p>
+<p>骨組みを捨てるとき、エージェントは、それまでに作ったものに <code>/how</code> をかけ直して仕組みを調べ直します。そのうえで、古い骨組みに修正を継ぎ足すのではなく、実装で分かった新しい制約を最初からの前提として、Phase B から設計し直します。</p>
+<p>また、エージェントは、新しい骨組みに何かを追加する前に、まず不要なもの（例：使われなくなった関数や、重複した検証）を削ります。不要なものを先に削る手順は、原則『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-subtract-before-you-add/SKILL.md"><strong>Subtract Before You Add</strong></a>』（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a8e80b">第17章</a>）に従ったものです。そのため、新しい骨組みは、機能を追加し始める前の時点で、古い骨組みより小さくなります。</p>
+<h3 id="_5">依頼の書き方：「一番気にしていること」を添える</h3>
+<p>同梱ガイドの <a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/04-design.md"><code>04-design.md</code></a> には、次の依頼例があります。</p>
+<pre><code>/architect design the import pipeline before writing any code. i care most about how callers use it.
+// コードを書く前に、インポートの処理の流れを設計して。一番気にしているのは、呼び出し側がどう使うか。
+</code></pre>
+<p>Phase C で確認を挟みたいときは、利用者は次のように頼みます。</p>
+<pre><code>/architect with checkpoint. stop and show me before implementing.
+// 確認を挟んで。実装の前に止まって、設計を見せて。
+</code></pre>
+<p>使い方から設計を考える実践と、設計を見直す実践は、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/7549a7">第41章</a>と<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/166acb">第42章</a>で扱います。</p>
+<h2 id="arena"><code>/arena</code> は、一つの最良の成果物のために複数の候補を競わせる</h2>
+<h3 id="n">役割：同じ課題をN個の候補に解かせる</h3>
+<p><strong>候補</strong>とは設計案を1つずつ作るサブエージェントのことです。<br />
+<code>/arena</code>は、複数の候補に課題を解かせ、<strong>最良の成果物を選び、ほかの成果物の良い考えを最良のものに取り込むSkill</strong>です。</p>
+<h3 id="_6">使いどき：後から直すと高くつく成果物</h3>
+<p>利用者やエージェントは、キャッシュキーの形式のように、1回だけ作らせると最初に思いついた形に決まってしまいそうで、しかも後から変えると高くつく成果物に <code>/arena</code> を使います。</p>
+<p><code>/poteto-mode</code> の作業の中で <code>/arena</code> を呼ぶ場面は、主に2つです。</p>
+<p>1つは、<code>/architect</code> が Phase B で複数の設計案を作らせるときです。<br />
+もう1つは、『<strong>Feature</strong>』Playbookの手順4で、実装に複数の妥当な形がありうるとき（たとえば、エラーの扱い方やテストの構成に、複数の妥当な書き方があるとき）に、主エージェントがコーディングを <code>/arena</code> の候補に任せるときです。</p>
+<h4 id="arena-playbookskill"><code>/arena</code> は、PlaybookやほかのSkillからも呼ばれる</h4>
+<p><code>/arena</code> を呼ぶPlaybookとSkillは、どれも、<strong>1つのモデルに1回だけ作らせた答えでは偏りや見落としが残る場面</strong>で <code>/arena</code> を使います。呼ぶ側ごとの場面と理由は、次のとおりです。</p>
+<h5 id="architect1"><code>/architect</code>：設計案を1つだけで決めない</h5>
+<p><code>/architect</code> は、Phase B で <code>/arena</code> を呼び、複数のモデルに設計案を作らせます。難しい設計を1回だけ作らせると、その設計は、モデルが最初に思いついた形に固まってしまうからです（この章の<a href="#phase-b%EF%BC%9A%E6%A7%8B%E9%80%A0%E3%81%AE%E7%95%B0%E3%81%AA%E3%82%8B%E6%A1%88%E3%82%922%E3%81%A4%E4%BB%A5%E4%B8%8A%E6%AF%94%E3%81%B9%E3%82%8B">『Phase B：構造の異なる案を2つ以上比べる』</a>）。</p>
+<h5 id="evalplaybookskill">『Eval』Playbook：Skillの変更の効果を、複数のモデルと目隠しの採点で測る</h5>
+<p>『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/eval.md"><strong>Eval</strong></a>』は、Skillやプロンプトの変更が、エージェントの行動をどう変えるかを測るPlaybookです（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/8263c0">第13章</a>）。</p>
+<p>『Eval』では<code>/arena</code>を直接、呼び出すわけではありませんが、<code>/arena</code>の手順どおりに作業を進めるように定義されています。</p>
+<p>『Eval』では、変更を入れた環境で、同じ依頼を複数のモデルに別々に解かせます。そのうえで、どのモデルの出力かを伏せたまま、別のモデルに採点させます。<br />
+つまり、複数の候補に同じ課題を解かせ、別のモデルに採点させる進め方は、<code>/arena</code> と同じということです。</p>
+<h5 id="orchestrateplaybook">『Orchestrate』Playbook：後戻りできない判断を、作業を動かし始める前に比べる</h5>
+<p>『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/orchestrate.md"><strong>Orchestrate</strong></a>』は、何日も続き、多数のPRとサブエージェントが動くプロジェクトを管理するPlaybookです（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/8a8dd5">第16章</a>）。</p>
+<p>『Orchestrate』は、最初の手順（Frame）で、意見の分かれる作業の分け方や、後戻りできない判断を、最初の作業単位を試しに動かす前に <code>/arena</code> にかけます。<strong>後戻りできない判断は、プロジェクトが動き出した後では直せない</strong>からです。</p>
+<h5 id="blast-radius"><code>/blast-radius</code>：大きな変更の影響を、複数のモデルに調べさせる</h5>
+<p><code>/blast-radius</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/997880">第28章</a>）は、大きな変更や影響の広い変更を調べるときに、<code>/arena</code> で複数のモデルに同じ問いを投げ、その答えを統合します。<code>/blast-radius</code> の <code>SKILL.md</code> によれば、<strong>モデルが異なれば、見つける不具合も異なる</strong>からです。</p>
+<h3 id="frame-verify-6-phase">手順：Frame から Verify まで、6つの Phase で進む</h3>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>名前</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A</td>
+<td>Frame（課題を定める）</td>
+<td>各候補が作る成果物と、3〜6個の採点基準を決め、候補ごとに別の出力先を割り当てる。出力先を分けるのは、候補同士が互いの成果物を上書きしないようにするため</td>
+</tr>
+<tr>
+<td>B</td>
+<td>Fan out（一斉に起動する）</td>
+<td>N個のサブエージェントを同時に起動する。既定では、Opus と Grok で1体ずつ、合わせて2体</td>
+</tr>
+<tr>
+<td>C</td>
+<td>Cross-judge（別のモデルが採点する）</td>
+<td>全候補が書き終えてから、<strong>判定役</strong>（cross-judge）のモデルに採点させる。判定役には、できるだけ、<strong>主エージェント</strong>（候補を起動した元のエージェント）とは別の系統のモデルを選ぶ</td>
+</tr>
+<tr>
+<td>D</td>
+<td>Pick（土台を選ぶ）</td>
+<td>主エージェントが全候補を最後まで読んで採点基準ごとに採点し、判定役が勧める土台と比較して土台を決める。一致すれば選択の裏づけになる。食い違えば、主エージェントと判定役のどちらかに偏りがあるか、採点基準があいまいだったと疑う</td>
+</tr>
+<tr>
+<td>E</td>
+<td>Graft（移植する）</td>
+<td>負けた候補から価値のある部分を探し、機械的に貼り付けず、土台の設計に合うように書き直して組み込む。成果物が1つの考え方で一貫している必要があるため</td>
+</tr>
+<tr>
+<td>F</td>
+<td>Verify（確かめる）</td>
+<td>統合した成果物が実際に機能するかを、ほかの成果物と同じ厳しさで、原則『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-prove-it-works/SKILL.md"><strong>Prove It Works</strong></a>』（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/1fb019">第19章</a>）に従って確かめる</td>
+</tr>
+</tbody>
+</table>
+<p>6つの Phase の流れは次のとおりです。</p>
+<h4 id="_7">判定役は、全候補が書き終えてから起動する</h4>
+<p>判定役の採点と、主エージェントが全候補を読む作業は、全候補が書き終えてから並行して進みます。主エージェントは、候補がまだ書いている途中で判定役を起動しません。</p>
+<h4 id="_8">候補には、作る成果物を明記した同じプロンプトを渡し、採点基準は見せない</h4>
+<p>全候補は同じプロンプトを受け取るので、<strong>各候補が何を作るかは、プロンプトに書いた内容だけで決まります</strong>。そのため、主エージェントは Phase A で、各候補が作る成果物（例：キャッシュキーの形式の案と、その理由）をプロンプトに明記します。</p>
+<p>採点基準は、主エージェントが Phase D で土台を選ぶときに使うものなので、主エージェントは候補に採点基準を見せず、課題だけを見せます。</p>
+<h4 id="_9">土台には、最も機能を追加しやすい候補を選ぶ</h4>
+<p>主エージェントは、将来の保守担当者が、不変条件を壊さずに最も機能を追加しやすい候補を、土台に選びます。</p>
+<p>全候補が同じ形にたどり着いたら、主エージェントは、別々に解いた候補の答えが一致したことを強い裏づけとみなし、移植をせずにその形を採ります。</p>
+<h4 id="_10">候補の形が大きく食い違ったら、課題を定め直す</h4>
+<p>候補の形が大きく食い違ったら、主エージェントは、課題の定め方が足りなかったと判断し、Phase A に戻って課題を定め直してやり直します。</p>
+<p>たとえば、候補ごとにキャッシュキーの形式がすべて異なるとき、主エージェントは、各候補から少しずつ取った中間の形式を作ることはしません。<strong>中間の形式は、どの候補の考え方とも一貫しない形になる</strong>からです。</p>
+<h4 id="_11">最後に、統合した成果物と統合メモを返す</h4>
+<p>主エージェントが最後に返すのは、統合した成果物1つと、短い統合メモです。統合メモに書く内容は次のとおりです。</p>
+<ul>
+<li>土台に選んだ候補と、選んだ理由（判定役の結論を含む）</li>
+<li>ほかの候補から取り込んだ部分と、それぞれがどの候補から来たか</li>
+<li>検討したが取り込まなかった部分と、その理由</li>
+<li>成果物を出せずに途中で抜けた候補（あれば）。主エージェントは、抜けた候補を除いた残りの候補で統合を進め、抜けたことをメモに残します</li>
+<li>統合した成果物を、Phase F（Verify）で実際に動かして確かめた結果</li>
+</ul>
+<h3 id="_12">依頼の書き方：候補の数を指定する</h3>
+<p><code>04-design.md</code> には、候補数を指定する例があります。</p>
+<pre><code>/arena this, 5 candidates. the cache key format is expensive to change later.
+// これを候補5つで。キャッシュキーの形式は後から変えると高くつく。
+</code></pre>
+<p>同梱ガイドの <a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/10-recipes-and-pitfalls.md"><code>10-recipes-and-pitfalls.md</code></a> は、後から変えると高くつく決定の前に、今の設計についてセカンドオピニオンを頼む使い方も挙げています。</p>
+<p>この使い方では、主エージェントは、利用者とエージェントが今進めている設計を候補の一つとして、ほかの候補と比べます。</p>
+<pre><code>ask /arena for a second opinion on this thread and our approach
+// このスレッドと、私たちの進め方について、/arena でセカンドオピニオンを出して
+</code></pre>
+<h2 id="swarm-workers"><code>/swarm</code> は、網羅と競争のために仕事をWorkersに分け、結果を一つの報告にする</h2>
+<h3 id="cloud-agents">役割：Cloud Agentsを並列に動かす</h3>
+<p><code>/swarm</code> は、クラウド上でN体のエージェント（Workers）を同時に動かし、<strong>結果を集めて一つの報告を返すSkill</strong>です。<code>/arena</code> が「一つの最良の答え」を作るのに対し、<code>/swarm</code> は「漏れのない確認」か「速い答え」を作ります。</p>
+<p>poteto氏は『The Complete Guide to pstack』<a href="https://x.com/poteto/status/2094457600259842065">Part 1</a>で、多数の Cloud Agents（Cursorのクラウド上で動くエージェント）で検証スキルを実行し、十分なサンプル数で性能の改善を確かめたり、アプリをファジングしたりする使い方を挙げています。</p>
+<p>!</p>
+<p><strong>ファジング</strong>・・・ ランダムな入力や壊れた入力を大量に与えて、不具合を探すテスト</p>
+<h3 id="_13">使いどき：網羅、競争、関門、探索の分割</h3>
+<p>使いどきは次のとおりです。</p>
+<ul>
+<li><strong>網羅</strong>・・・ 主エージェントが、複数の範囲をWorkersに割り振り、漏れなく確かめます（例：<code>packages/</code> 以下のすべてのパッケージを確かめる）。</li>
+<li><strong>競争</strong>・・・ 主エージェントが、同じ課題を複数のWorkersに競わせます（例：同じ不具合の再現を複数のWorkersで試す）。</li>
+<li><strong>gauntlet</strong>（関門）・・・ 主エージェントが、1つの変更に検証を何本も並べ、変更がすべての検証に通ることを求めます（例は次の囲みで示します）。</li>
+<li><strong>探索の分割</strong>・・・ 主エージェントが、探す場所を複数に分け、各Workersに1か所ずつ調べさせます（例：不具合の原因を探すとき、疑わしいモジュール1つ1つに対して1体ずつWorkerを割り振って調べさせる）。</li>
+</ul>
+<p>!</p>
+<p><strong>gauntlet</strong>（関門）は、pstackのファイルに定義のある言葉ではありません。英語の gauntlet は、次々と課される試練をくぐり抜けることを指します。</p>
+<p>pstackでの使われ方は、同梱ガイドの <code>04-design.md</code> にある「gauntlet lanes」（関門の担当）という書き方と、<code>/swarm</code> を使うPlaybookから読み取れます。</p>
+<p>たとえば、Playbook『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/multi-phase-plan.md"><strong>Multi-phase or multi-PR plan</strong></a>』（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/8a8dd5">第16章</a>）が作る計画書では、PRがレビューに出せる状態になったときと、その後に変更をpushするたびに、その時点のPRの最新のコミットに対して、次の担当を <code>/swarm</code> で並列に走らせ、<strong>すべてが PASS のときだけ合格</strong>とします。</p>
+<ul>
+<li>テストやlintなどのチェックを、その最新のコミットで実行し直す担当1つ</li>
+<li>実際の画面やCLIで確かめる担当10個</li>
+<li>性能を測る担当1つ</li>
+<li>差分と実行の記録を読み、PRの説明を疑って点検する担当2つ以上</li>
+</ul>
+<p><code>/poteto-mode</code> は、節『Non-negotiables』で、仕事を並列に分ける場面（網羅、競争、関門、探索の分割）では <code>/swarm</code> を使うと定めています。特に、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/8a8dd5">第16章</a>で見た、多数のPRを検証しながら進めるPlaybookは、PRをマージしてよいかの判定に <code>/swarm</code> を使います。</p>
+<p>たとえば『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/autopilot-full.md"><strong>Autopilot-full</strong></a>』（PRごとの担当者が、作るところからマージまでを受け持つ手順書）では、コーディネーターエージェント（作業全体を管理するエージェント）が、独立した検証者を <code>/swarm</code> で並列に動かし、その結果を一つの判定にまとめます。各PRの担当者は、問題なしの判定が出るまで、PRをマージしません。</p>
+<h3 id="frame-report-4-phase">手順：Frame から Report まで、4つの Phase で進む</h3>
+<p><code>/swarm</code> は、次の4つの Phase で進みます。</p>
+<ol>
+<li><strong>Frame</strong>・・・ 主エージェントが、終了条件（何が成り立てば完了かを、確かめられる形で書いた条件）と、返すべき報告を定めます。形（次の表の分担、競争、混合）とWorkersの数も決めます。Workersの数は、利用者が依頼で指定すればその数にし、指定がなければ形から決めます。</li>
+<li><strong>Fan out</strong>・・・ 主エージェントが、全Workersをクラウドで同時に起動します。Workersはそれぞれ <code>PASS</code>（合格）、<code>ISSUES</code>（問題あり）、<code>BLOCKED</code>（確かめられなかった）のどれかを、証拠（例：確かめたコミットのSHA（コミットを識別する値）と、チェックの出力）付きで報告します。</li>
+<li><strong>Aggregate</strong>・・・ 主エージェントが結果を集めます。競争なら、Frame で宣言しておいた選び方の規則を当てはめて、結果を選びます。</li>
+<li><strong>Report</strong>・・・ 主エージェントが、結果の表、証拠付きの問題、結果が得られなかった範囲（空白）と途中で抜けたWorkers（脱落）を、一つの報告にまとめます。</li>
+</ol>
+<p>Frame で選ぶ形は、次の3つです。</p>
+<table>
+<thead>
+<tr>
+<th>形</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>分担（partition）</td>
+<td>仕事を重ならない範囲に分け、Workersがそれぞれ1つを受け持つ（例：パッケージごとに1体）</td>
+</tr>
+<tr>
+<td>競争（race）</td>
+<td>N体のWorkersに同じ指示を与えて競わせる（例：同じ不具合の再現を複数のWorkersで試す）</td>
+</tr>
+<tr>
+<td>混合</td>
+<td>分担と競争を組み合わせる（範囲ごとに複数のWorkersを競わせる）</td>
+</tr>
+</tbody>
+</table>
+<p>競争と混合の形では、主エージェントが、「最初に合格したものを採る」（first pass）、「全員を順位付けする」（rank all）、「最も良いものを採る」（best-of）のどれを選び方の規則にするかを、起動する前に宣言します。</p>
+<p>主エージェントは、指示で求めた記録がない結果は捨てます。記録とは、たとえば、確かめたコミットのSHA（コミットごとに付く、コミットを一意に指すID）や、何回測るかなどの計測の方法です。そして、記録のない結果を出したWorkerが受け持っていた仕事を、新しく起動したWorkerに一度だけやり直させます。<strong>どのコミットをどう確かめたかが分からない結果は、今のコードに当てはまるかを判断できない</strong>からです。</p>
+<p>2回目も記録が欠けたら、主エージェントはその範囲を空白として記録します。<strong>空白は合格と数えません</strong>。</p>
+<p>たとえば10体のうち9体が <code>PASS</code> で1体が欠ければ、報告は「9件合格」ではなく「9件合格、1件空白」になります。</p>
+<h3 id="_14">依頼の書き方：確かめ方、形と数、返すものを一文ずつ書く</h3>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/README.md">README</a>と同梱ガイドには、次の依頼例があります。</p>
+<pre><code>/swarm check every package under packages/ against its check.sh. one worker per package. one report.
+// packages/ 以下の全パッケージを、それぞれの check.sh で確かめて。1パッケージに1体。報告は1つ。
+</code></pre>
+<p>この依頼は、確かめ方（<code>check.sh</code>）、形と数（1パッケージに1体）、返すもの（報告は1つ）を、<strong>一文ずつ書いています</strong>。この3つは、主エージェントが Frame で決める内容に該当するので、依頼に書いておけば、主エージェントはその指定に沿って Frame を組み立てます。</p>
+<h2 id="3skill">並列の3つのSkillは、得たいものと、変更の大きさや戻しにくさで使い分ける</h2>
+<p>使い分けは次のとおりです。</p>
+<ul>
+<li><strong>関数の境界をまたぐ変更を設計したい（例：新しい関数を作り、別のファイルの関数から呼ぶ）</strong>・・・ 内部で <code>/arena</code> を使う <code>/architect</code></li>
+<li><strong>最後に一つの成果物がほしい（例：キャッシュキーの形式を1つに決める）</strong>・・・ <code>/arena</code></li>
+<li><strong>多くの範囲を確かめた結果を、一つの表にまとめたい（例：<code>packages/</code> 以下の全パッケージのチェック結果）</strong>・・・ <code>/swarm</code></li>
+</ul>
+<h3 id="_15">設計の手間は、変更の大きさと戻しにくさで決める</h3>
+<p>すべての変更に設計作業が必要なわけではありません。<code>04-design.md</code> は、次の目安を示しています。</p>
+<table>
+<thead>
+<tr>
+<th>状況</th>
+<th>使うもの</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>小さく完成した変更で、不安がある</td>
+<td><code>/interrogate</code> だけ</td>
+</tr>
+<tr>
+<td>関数の境界をまたぐ、または所有（どのモジュールが責任を持つか）を移す変更</td>
+<td><code>/architect</code>（内部で <code>/arena</code> も使う）</td>
+</tr>
+<tr>
+<td>命名やアルゴリズムのような単独の判断</td>
+<td><code>/arena</code> を直接</td>
+</tr>
+<tr>
+<td>範囲ごとの網羅的なチェック、並列のチェック、選び方の規則を宣言した競争</td>
+<td><code>/swarm</code></td>
+</tr>
+<tr>
+<td>意見が分かれ、元に戻すのが高くつく設計</td>
+<td><code>/architect</code> の後に <code>/interrogate</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>/poteto-mode</code> は、この目安を自分で当てはめ、関数の境界をまたぐ作業では、頼まれなくても <code>/architect</code> を呼びます。そのため、利用者がこれらのSkillを直接呼ぶのは、既定より念入りに、または手短に確かめたいときです。</p>
+<h3 id="arena-swarm">/arena と /swarm は、得たいものが異なる</h3>
+<table>
+<thead>
+<tr>
+<th>項目</th>
+<th><code>/arena</code></th>
+<th><code>/swarm</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>目的</td>
+<td>一つの最良の成果物を作る</td>
+<td>網羅するか、競争で速く答えを出す</td>
+</tr>
+<tr>
+<td>各サブエージェントへの指示</td>
+<td>全員に同じ課題</td>
+<td>分担なら別々の範囲、競争なら同じ指示</td>
+</tr>
+<tr>
+<td>結果のまとめ方</td>
+<td>土台を選び、負けた候補の良い部分を、土台の設計に合わせて書き直して移植する</td>
+<td>表にまとめる。競争なら宣言した規則で選ぶ</td>
+</tr>
+<tr>
+<td>出力</td>
+<td>統合した成果物1つと統合メモ</td>
+<td>チャットの中の一つの報告</td>
+</tr>
+</tbody>
+</table>
+<p><strong>利用者が網羅のために <code>/arena</code> を使うのは、よくある取り違えです</strong>（<code>10-recipes-and-pitfalls.md</code>）。<code>/arena</code> は全候補に同じ課題を与えるので、別々の範囲を確かめることにはならないからです。</p>
+<p>網羅には、利用者は、範囲を分けて結果を一つの報告にまとめる <code>/swarm</code> を使います。<code>/swarm</code> は、<code>/arena</code> のように土台を選んで移植する手順を踏みません。</p>
+<h2 id="_16">まとめ</h2>
+<ul>
+<li><strong>3つのSkillの分担</strong>・・・ <code>/architect</code>、<code>/arena</code>、<code>/swarm</code> は、<code>/poteto-mode</code> が『Non-negotiables』の規則やPlaybookの手順に従って呼びます。</li>
+<li><strong><code>/architect</code></strong>・・・ 関数の境界をまたぐコードの前に、呼び出し側の使い方から型を導き、関数の中身を書かない骨組みを作ります。同じ形の回避策や型の逃げ道（<code>any</code> やキャスト）が繰り返し出たら、骨組みを捨てて設計し直します。</li>
+<li><strong><code>/arena</code></strong>・・・ 後から直すと高くつく成果物（例：キャッシュキーの形式）を複数のモデルに解かせ、最も良い候補を土台に選び、ほかの候補の良い部分を土台の設計に合わせて書き直して移植します。</li>
+<li><strong><code>/swarm</code></strong>・・・ 網羅（例：全パッケージのチェック）や競争のためにWorkersを並列に動かし、一つの報告にまとめます。確かめたコミットなどの記録が、Workerを1回起動し直しても欠けた範囲は、合格と数えず空白として報告します。</li>
+<li><strong>並列の3つの使い分け</strong>・・・ 関数の境界をまたぐ変更なら <code>/architect</code>、一つの成果物なら <code>/arena</code>、網羅した結果の表なら <code>/swarm</code> です。</li>
+</ul>
+<p>次の<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/46bd1f">第25章</a>では、pstackを利用者の流儀と Grok Bot に広げる2つのSkillを扱います。見ていくのは、<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/automate-me/SKILL.md"><code>/automate-me</code></a>、<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/make-bot-ui/SKILL.md"><code>/make-bot-ui</code></a>です。</p>
+  </div>
+  <footer class="article-footer">
+    <span>取得: 2026-10-06T23:37:32+09:00</span>
+    <a href="#article-top">↑ 先頭へ戻る</a>
+  </footer>
+</main>
+<script>
+(() => {
+  const progress = document.querySelector(".reading-progress > span");
+  const updateProgress = () => {
+    const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+    const ratio = scrollable > 0 ? window.scrollY / scrollable : 0;
+    if (progress) progress.style.width = `${Math.min(1, ratio) * 100}%`;
+  };
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  document.querySelectorAll("pre").forEach((block) => {
+    const button = document.createElement("button");
+    button.className = "copy-button";
+    button.type = "button";
+    button.textContent = "コピー";
+    button.addEventListener("click", async () => {
+      const text = block.querySelector("code")?.innerText || block.innerText;
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const textarea = document.createElement("textarea");
+          textarea.value = text;
+          textarea.style.position = "fixed";
+          textarea.style.opacity = "0";
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand("copy");
+          textarea.remove();
+        }
+        button.textContent = "コピー済み";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      } catch (error) {
+        button.textContent = "失敗";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      }
+    });
+    block.appendChild(button);
+  });
+
+  const links = new Map(
+    [...document.querySelectorAll(".toc a")].map((link) => [link.hash, link])
+  );
+  const headings = [...document.querySelectorAll(
+    ".article-body h2[id], .article-body h3[id], .article-body h4[id]"
+  )];
+  if ("IntersectionObserver" in window && headings.length) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        links.forEach((link) => link.classList.remove("is-active"));
+        links.get(`#${entry.target.id}`)?.classList.add("is-active");
+      });
+    }, { rootMargin: "-12% 0px -72% 0px" });
+    headings.forEach((heading) => observer.observe(heading));
+  }
+})();
+</script>
+</body>
+</html>

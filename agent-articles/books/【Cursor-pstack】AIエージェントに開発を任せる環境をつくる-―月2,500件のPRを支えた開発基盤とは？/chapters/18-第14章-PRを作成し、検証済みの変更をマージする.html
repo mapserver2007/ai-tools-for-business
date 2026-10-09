@@ -1,0 +1,1097 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="title" content="第14章 PRを作成し、検証済みの変更をマージする">
+<meta name="book_title" content="【Cursor pstack】AIエージェントに開発を任せる環境をつくる ―月2,500件のPRを支えた開発基盤とは？">
+<meta name="source_url" content="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/45a56e">
+<meta name="author" content="kaito">
+<meta name="published_at" content="2026-10-02">
+<meta name="retrieved_at" content="2026-10-06T23:37:29+09:00">
+<meta name="site" content="zenn.dev">
+<meta name="content_type" content="article">
+<meta name="chapter_position" content="18">
+<title>第14章 PRを作成し、検証済みの変更をマージする</title>
+<style>
+:root {
+  color-scheme: light;
+  --ink: #172033;
+  --muted: #64748b;
+  --line: #dbe4ef;
+  --accent: #2563eb;
+  --accent-dark: #1d4ed8;
+  --accent-soft: #eff6ff;
+  font-family: -apple-system, BlinkMacSystemFont, "Avenir Next",
+    "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 8% 0%, #dbeafe 0, transparent 32rem),
+    radial-gradient(circle at 100% 12%, #e0e7ff 0, transparent 28rem),
+    #f4f7fb;
+  color: var(--ink);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(120deg, transparent 0 48%, rgba(255, 255, 255, 0.4));
+}
+.article {
+  position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
+  max-width: 920px;
+  margin: clamp(1rem, 5vw, 4rem) auto;
+  padding: clamp(2rem, 6vw, 5rem) clamp(1.25rem, 7vw, 5.5rem);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  border-radius: 24px;
+  min-height: 100vh;
+  box-shadow:
+    0 24px 70px rgba(30, 64, 175, 0.1),
+    0 4px 16px rgba(15, 23, 42, 0.04);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 5px;
+  content: "";
+  background: linear-gradient(90deg, #2563eb, #7c3aed, #db2777);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin: 0 0 2.5rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.72rem;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+a {
+  color: var(--accent-dark);
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: #7c3aed;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--ink);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 18ch;
+  margin: 0 0 2.5rem;
+  font-size: clamp(2.15rem, 5vw, 3.65rem);
+  letter-spacing: -0.045em;
+}
+h2 {
+  position: relative;
+  margin: 3.8rem 0 1.25rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--line);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 4.2rem;
+  height: 3px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), #7c3aed);
+  border-radius: 999px;
+}
+h3 {
+  margin: 2.6rem 0 0.8rem;
+  color: var(--accent-dark);
+  font-size: 1.3rem;
+}
+h4, h5, h6 {
+  margin-top: 2rem;
+}
+p {
+  margin: 1.15rem 0;
+}
+ul, ol {
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.35rem 0;
+}
+li::marker {
+  color: var(--accent);
+  font-weight: 700;
+}
+strong {
+  color: #111827;
+}
+blockquote {
+  margin: 1.6rem 0;
+  padding: 0.8rem 1.25rem;
+  color: #475569;
+  background: linear-gradient(90deg, var(--accent-soft), #fff);
+  border-left: 4px solid var(--accent);
+  border-radius: 0 12px 12px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 3rem 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+img {
+  display: block;
+  max-width: 100%;
+  margin: 1.75rem auto;
+  height: auto;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+}
+pre {
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  padding: 1.15rem 1.25rem;
+  color: #e2e8f0;
+  background: #111827;
+  border: 1px solid #253047;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+}
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+:not(pre) > code {
+  padding: 0.15rem 0.4rem;
+  color: #9f1239;
+  background: #fff1f2;
+  border-radius: 5px;
+}
+table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  border-collapse: collapse;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
+  text-align: left;
+}
+th {
+  color: #1e3a8a;
+  background: #eff6ff;
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: #f8fafc;
+}
+@media (max-width: 600px) {
+  .article {
+    margin: 0;
+    padding: 2rem 1rem 4rem;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(2rem, 10vw, 2.75rem);
+  }
+  .metadata {
+    margin-bottom: 2rem;
+  }
+}
+@media print {
+  body {
+    background: #fff;
+  }
+  .article {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  a {
+    color: inherit;
+  }
+}
+</style>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0f1419;
+  --surface: #1a2332;
+  --surface-raised: #202c3f;
+  --surface-soft: rgba(26, 35, 50, 0.72);
+  --border: #2d3a4f;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #58a6ff;
+  --accent-strong: #79c0ff;
+  --green: #3fb950;
+  --purple: #bc8cff;
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+    "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  line-height: 1.75;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+  background: var(--bg);
+}
+body {
+  min-width: 320px;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 2rem 1.5rem 5rem;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(31, 111, 235, 0.18), transparent 32rem),
+    radial-gradient(circle at 100% 12%, rgba(137, 87, 229, 0.14), transparent 28rem),
+    var(--bg);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black, transparent 75%);
+}
+.reading-progress {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 20;
+  height: 3px;
+  background: rgba(45, 58, 79, 0.7);
+}
+.reading-progress > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  box-shadow: 0 0 14px rgba(88, 166, 255, 0.8);
+  transition: width 80ms linear;
+}
+.article {
+  position: relative;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  background: rgba(15, 20, 25, 0.76);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(88, 166, 255, 0.035) inset;
+  backdrop-filter: blur(16px);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  border-radius: 16px 16px 0 0;
+}
+.article-header {
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.eyebrow-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--green);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(63, 185, 80, 0.75);
+}
+.eyebrow-separator {
+  color: var(--border);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  background: rgba(32, 44, 63, 0.68);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+.source-link {
+  color: var(--text);
+  text-decoration: none;
+}
+.source-link:hover {
+  border-color: var(--accent);
+  background: rgba(88, 166, 255, 0.12);
+}
+a {
+  color: var(--accent);
+  overflow-wrap: anywhere;
+  text-decoration: none;
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 24ch;
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  background: linear-gradient(120deg, #fff 12%, #b9d8ff 58%, #bc8cff);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+h2 {
+  position: relative;
+  margin: 3.2rem 0 1.1rem;
+  padding: 0.75rem 0 0.65rem;
+  border-bottom: 1px solid var(--border);
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 3.8rem;
+  height: 2px;
+  content: "";
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(88, 166, 255, 0.7);
+}
+h3 {
+  margin: 2.25rem 0 0.7rem;
+  color: var(--accent-strong);
+  font-size: 1.2rem;
+}
+h4, h5, h6 {
+  margin-top: 1.75rem;
+}
+p {
+  margin: 0.9rem 0;
+}
+ul, ol {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.3rem 0;
+}
+li::marker {
+  color: var(--accent);
+}
+strong {
+  color: #fff;
+}
+blockquote {
+  margin: 1.4rem 0;
+  padding: 0.85rem 1.15rem;
+  color: #c9d1d9;
+  background: linear-gradient(100deg, rgba(88, 166, 255, 0.1), rgba(26, 35, 50, 0.55));
+  border: 1px solid rgba(88, 166, 255, 0.18);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 2.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+}
+pre {
+  position: relative;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  padding: 1rem 1.15rem;
+  color: #dbeafe;
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+pre code {
+  color: inherit;
+  background: transparent;
+}
+code {
+  font-family: "SF Mono", "Fira Code", ui-monospace, monospace;
+  font-size: 0.86em;
+}
+:not(pre) > code {
+  padding: 0.12em 0.38em;
+  color: #ffabbc;
+  background: rgba(248, 81, 73, 0.11);
+  border-radius: 4px;
+}
+.copy-button {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  padding: 0.25rem 0.55rem;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.72rem;
+  background: rgba(32, 44, 63, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.copy-button:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  border-spacing: 0;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.6rem 0.75rem;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+th {
+  color: var(--accent);
+  background: var(--surface);
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: rgba(26, 35, 50, 0.42);
+}
+tr:last-child td {
+  border-bottom: 0;
+}
+th:last-child, td:last-child {
+  border-right: 0;
+}
+.toc {
+  margin: 1.75rem 0 2.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.toc-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--border);
+}
+.toc-title {
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.toc-count {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.toc ol {
+  margin: 0.7rem 0 0;
+  padding-left: 1.25rem;
+}
+.toc ol ol {
+  margin: 0.2rem 0;
+}
+.toc li {
+  margin: 0.18rem 0;
+  font-size: 0.86rem;
+}
+.toc li::marker {
+  color: var(--muted);
+}
+.toc a {
+  display: inline-block;
+  max-width: 100%;
+  color: var(--muted);
+  transition: color 160ms ease, transform 160ms ease;
+}
+.toc a:hover, .toc a.is-active {
+  color: var(--accent-strong);
+  text-decoration: none;
+  transform: translateX(2px);
+}
+.article-body {
+  max-width: 78ch;
+  margin: 0 auto;
+}
+.article-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 1rem;
+  color: var(--muted);
+  font-size: 0.74rem;
+  border-top: 1px solid var(--border);
+}
+.article-footer a {
+  color: var(--muted);
+}
+@media (max-width: 720px) {
+  body {
+    padding: 0 0 3rem;
+  }
+  .article {
+    min-height: 100vh;
+    padding: 1.5rem 1rem 3rem;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+  .article::before {
+    border-radius: 0;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(1.9rem, 9vw, 2.6rem);
+  }
+  .article-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+@media print {
+  :root {
+    color-scheme: light;
+  }
+  body {
+    padding: 0;
+    color: #111;
+    background: #fff;
+  }
+  .reading-progress, .toc, .copy-button {
+    display: none;
+  }
+  .article {
+    max-width: none;
+    padding: 0;
+    background: #fff;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  h1, h2, h3, h4, h5, h6, strong {
+    color: #111;
+    -webkit-text-fill-color: initial;
+  }
+  a {
+    color: inherit;
+    text-decoration: underline;
+  }
+  pre {
+    color: #111;
+    background: #f4f4f4;
+    box-shadow: none;
+  }
+}
+</style>
+</head>
+<body>
+<div class="reading-progress" aria-hidden="true"><span></span></div>
+<main id="article-top" class="article">
+  <header class="article-header">
+    <div class="eyebrow">
+      <span class="eyebrow-dot"></span>
+      <span>ARTICLE</span>
+      <span class="eyebrow-separator">/</span>
+      <span>zenn.dev</span>
+    </div>
+    <div class="metadata" aria-label="記事メタデータ"><span class="metadata-item"><span class="metadata-label">著者</span>kaito</span><span class="metadata-item"><span class="metadata-label">公開日</span>2026-10-02</span><a class="metadata-item source-link" href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/45a56e"><span class="metadata-label">原文</span>読む</a><span class="metadata-item"><span class="metadata-label">サイト</span>zenn.dev</span><span class="metadata-item"><span class="metadata-label">形式</span>ARTICLE</span></div>
+    <h1 id="14-pr">第14章 PRを作成し、検証済みの変更をマージする</h1>
+  </header>
+<nav class="toc" aria-label="目次">
+  <div class="toc-heading">
+    <span class="toc-title">目次</span>
+    <span class="toc-count">23 セクション</span>
+  </div>
+  <ol><li><a href="#_1">この章の構成</a></li><li><a href="#3playbookprtrunk">3つのPlaybookは「PRを作る、マージ可能にし、trunk に取り込む」の順につながる</a></li><li><a href="#opening-a-prpr">『Opening a PR』は、PRを小さく、読みやすく、すぐレビューできる形で作る</a><ol><li><a href="#prbriefing">PRの本文は「Briefing」として書く</a></li><li><a href="#prbabysit">PRを開いても、Babysitは始めない</a></li><li><a href="#_2">依頼の書き方：小さく順序立てたコミットと、説明に書く証拠を求める</a></li></ol></li><li><a href="#babysitprmerge-ready">『Babysit』は、未マージの最前線のPRから順に問題を片付け、merge-ready にする</a><ol><li><a href="#pr">手順：最前線のPRから順に問題を片付ける</a></li><li><a href="#bugbotfixdismissask">Bugbotのコメントは、fix、dismiss、askに分ける</a></li><li><a href="#merge-ready">merge-ready でも、マージはしない</a></li><li><a href="#_3">要点は「最前線だけ」の規則</a></li><li><a href="#_4">依頼の書き方：「緑にして」と頼み、状態だけなら小さく頼む</a></li></ol></li><li><a href="#shippingpr-trunk">『Shipping』は、別のエージェントの検証を通ったPRの範囲だけを trunk に取り込む</a><ol><li><a href="#_5">要点は「安全」の定義</a></li><li><a href="#pr1-trunk">手順：各PRを検証し、連続した範囲を決め、1つずつ trunk に取り込む</a><ol><li><a href="#1-pr">1. すべてのPRを独立に検証する</a></li><li><a href="#2">2. ルートから続く、連続した検証済みの範囲だけを取り込む</a></li><li><a href="#3">3. 判定が今もそのパッチ（変更差分）を表しているか確かめる</a></li><li><a href="#4-pr1">4. 最前線のPRだけを準備し、1つずつマージする</a></li><li><a href="#5">5. マージのたびに計算し直し、最前線がマージされるまで状態を監視する</a></li><li><a href="#6">6. 上限で止まる</a></li></ol></li><li><a href="#_6">依頼の書き方：「スタックを取り込んで」と頼む</a></li></ol></li><li><a href="#_7">まとめ</a></li></ol>
+</nav>
+  <div class="article-body">
+
+<p>この章では、次の3つのPlaybookを扱います。</p>
+<ol>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/opening-a-pr.md">Opening a PR</a></li>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/babysit.md">Babysit</a></li>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/shipping.md">Shipping</a></li>
+</ol>
+<p>3つとも、変更を trunk（PRのマージ先になる本流のブランチ）に取り込むまでを受け持つPlaybookで、それぞれが担当する段階は次の3つです。</p>
+<ul>
+<li><strong>PRを作る</strong></li>
+<li><strong>PRを merge-ready（マージできる状態）まで運ぶ</strong></li>
+<li><strong>検証済みのPRだけを trunk に取り込む</strong></li>
+</ul>
+<p>どのPlaybookを使うかは、PRが今どの段にあるかで決まります。まだPRがないのか、PRはあるがマージできる状態になっていないのか、マージできる状態のPRを trunk に取り込みたいのかによって、使い分けます。</p>
+<p>この章では、3つのPlaybookのつながり、それぞれの手順と要点を順に解説します。</p>
+<h2 id="_1">この章の構成</h2>
+<p>この章の構成は次のとおりです。</p>
+<ul>
+<li>3つのPlaybookは「PRを作る、マージ可能にし、trunk に取り込む」の順につながる</li>
+<li>『Opening a PR』は、PRを小さく、読みやすく、すぐレビューできる形で作る</li>
+<li>『Babysit』は、未マージの最前線のPRから順に問題を片付け、merge-ready にする</li>
+<li>『Shipping』は、別のエージェントの検証を通ったPRの範囲だけを trunk に取り込む</li>
+<li>まとめ</li>
+</ul>
+<h2 id="3playbookprtrunk">3つのPlaybookは「PRを作る、マージ可能にし、trunk に取り込む」の順につながる</h2>
+<p>冒頭で述べたそれぞれの担当領域は、「PRを作る」「緑（CIのチェックがすべて通った状態）にする」「trunk に取り込む」の順に並び、<strong>それぞれ、どこで終わるかが決まっています</strong>。</p>
+<table>
+<thead>
+<tr>
+<th>段階</th>
+<th>Playbook</th>
+<th>終わる地点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>作る</td>
+<td>『<strong>Opening a PR</strong>』</td>
+<td>PRのURLを返す</td>
+</tr>
+<tr>
+<td>緑にする</td>
+<td>『<strong>Babysit</strong>』</td>
+<td>merge-ready</td>
+</tr>
+<tr>
+<td>取り込む</td>
+<td>『<strong>Shipping</strong>』</td>
+<td>ルートから続く検証済みのPRがマージされる</td>
+</tr>
+</tbody>
+</table>
+<p>!</p>
+<ul>
+<li><strong>フォージ</strong>・・・ この章では、PRを管理するサービスと、それを操作するCLIをまとめて「フォージ」と呼びます。既定は GitHub CLI（<code>gh</code>）です。</li>
+<li><strong>trunk</strong>・・・ PRのマージ先になる本流のブランチです。多くのリポジトリでは <code>main</code> です。</li>
+<li><strong>スタック</strong>・・・ 親子関係でつながったPRの列です。最前線のPR（ルート）だけが trunk を向きます（形は次の節の図）。</li>
+<li><strong>マージの最前線</strong>・・・ スタックの中で、まだマージされていないPRのうち、次にマージするPRです。</li>
+<li><strong>merge-ready</strong>・・・ CIのチェックがすべて通っている、未解決のレビューがない、コンフリクトがない、とフォージが判断している状態です。</li>
+</ul>
+<p>それぞれ、依頼の言葉も異なります。以下は同梱ガイドの検証のページ（<a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/06-verify-and-ship.md"><code>docs/guide/06-verify-and-ship.md</code></a>）にある例です。</p>
+<pre><code>/poteto-mode babysit this pr. get it green.
+// このPRを babysit して。緑にして。
+</code></pre>
+<pre><code>/poteto-mode land the stack.
+// スタックを trunk に取り込んで。
+</code></pre>
+<p><strong>PRを開いただけでは『Babysit』は始まりません</strong>。</p>
+<p>「緑にして」と頼めば『<strong>Babysit</strong>』が、「スタックを取り込んで」と頼めば『<strong>Shipping</strong>』が動きます。</p>
+<h2 id="opening-a-prpr">『Opening a PR』は、PRを小さく、読みやすく、すぐレビューできる形で作る</h2>
+<p>『<strong>Opening a PR</strong>』は、<strong>変更をPRにするときの作法を決めるPlaybook</strong>です。</p>
+<p>手順はこれまで見てきたPlaybookと異なり番号付きではなく、見出しごとに規則をまとめています。主な規則は次のとおりです。</p>
+<ul>
+<li><strong>Worktree</strong>・・・ 作業は main から切った git worktree で行います。</li>
+<li><strong>Commits</strong>・・・ PRを開く前に、小さく順序立てたコミットへrebaseを使用してまとめ直します。各コミットを、単独でマージできる「将来のPR」として扱います。</li>
+<li><strong>PRs</strong>・・・ 差分に対して、コミットの前に <code>/deslop</code>（<a href="https://github.com/cursor/plugins/tree/main/cursor-team-kit"><code>cursor-team-kit</code></a> にある、AIが書きがちな余計なコードを削るSkill）、レビューの前に <code>/no-comments</code>（不要なコメントを削るSkill）を実行します。タイトル、説明、コミット本文は、技術文書の書き方の基準を定めた <code>/technical-writing</code> で書き、AIが書きがちな言い回しを削る <code>/unslop</code> をかけます（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/44857b">第33章</a>）。</li>
+<li><strong>Titles</strong>・・・ <code>fix(pstack): retarget opening-a-pr babysit trigger</code> のような、Conventional Commits の形式で書きます。</li>
+<li><strong>Forge</strong>・・・ 作成からマージまで、同じフォージを使い続けます。</li>
+<li><strong>Built-in PR tool</strong>・・・ 実行環境に組み込みのPRツール（例：Cursorのクラウドで動くエージェントが持つ、PRを作るためのツール）があれば、PRの作成、編集、マージ先の変更、レビュー可能な状態への切り替えは、フォージのCLI（GitHub CLI の <code>gh</code> コマンドなど、PRを管理するサービスを操作するコマンドラインのツール）ではなく、そのツールで行います。CLIで作ったPRは、そのツールが管理する対象に入らないからです。原文は、その例にPRの説明を挙げています。そのツールで作ったPRなら、後から別に起動したエージェントも、そのツールを使ってPRの説明を書き直せます。CLIで作ったPRの説明は、そのツールでは書き直せません。</li>
+<li><strong>Size and stacks</strong>・・・ 大きなPRを1つ作るより、狭いPRを5つ作るほうを選び、小さなPRはスタックとして積みます。</li>
+<li><strong>Readiness</strong>・・・ PRはドラフトではなく、レビュー可能な状態で開きます。組み込みのPRツールは既定でドラフトにすることがあるので、そのツールでPRを作るたびに <code>draft: false</code>（ドラフトにしない、という指定）を付けます。</li>
+</ul>
+<p>!</p>
+<ul>
+<li><strong>git worktree</strong>・・・ 1つのリポジトリから、別のブランチを取り出した作業ディレクトリを追加で作るgitの機能（例：main の作業ディレクトリを残したまま、修正用のブランチを別のディレクトリで開く）</li>
+<li><strong>rebase</strong>・・・ コミットを別のコミットの上に付け直し、履歴を並べ直すgitの操作</li>
+<li><strong>Conventional Commits</strong>・・・ <code>fix:</code> や <code>feat:</code> のような、変更の種類を表す接頭辞を付けてコミットメッセージを書く規約</li>
+</ul>
+<p>スタックは次のような形で、子のPRは、親のブランチをベースに向けます。</p>
+<pre><code>main  ← trunk
+ └─ PR #1 (base: main) ← ルートのPRだけが trunk を向く
+     └─ PR #2 (base: PR #1 のブランチ)
+         └─ PR #3 (base: PR #2 のブランチ)
+</code></pre>
+<h3 id="prbriefing">PRの本文は「Briefing」として書く</h3>
+<p>このPlaybookの要点は、本文の規則の最初の一文です。</p>
+<blockquote>
+<p>The PR body is a briefing, not the lab notebook.</p>
+<p>PRの本文はブリーフィングであって、実験ノートではない。</p>
+</blockquote>
+<p>作業中に試したことや経過は書き連ねず、差分を手元に持つレビュアーが変更を承認できるか<strong>判断するために必要な情報だけを書きます</strong>。</p>
+<p>このPlaybookは、レビュアーが<strong>1分以内に</strong>、次の4つを分かるように書くよう求めています。</p>
+<ul>
+<li>変更が存在する理由</li>
+<li>変更が扱わないこと</li>
+<li>変更が壊しうるもの</li>
+<li>変更が動くことを、どう証明したか</li>
+</ul>
+<p>そのため、本文は、識別子（<code>parseUser</code> や <code>src/date.ts</code> のような、関数名、型名、ファイルのパスなどのコード上の名前）をあまり使わない、短く簡単な文で書き、長い段落を続けて書くことはしません。</p>
+<p>各節は太字の書き出しではなく、見出し（<code>##</code>）の下に置き、節どうしの区切りを、分かりやすくします。節は次の順に並べ、書くことがない節は省きます。</p>
+<table>
+<thead>
+<tr>
+<th>節</th>
+<th>書くこと</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>## Why</code></td>
+<td>問題と、採用した方法を、短い文1〜3つで書く</td>
+</tr>
+<tr>
+<td><code>## What changed</code></td>
+<td>変更を、短い箇条書き1〜3つで書く。実際の関数名や型名（シンボル）、ファイルのパスは、変更の内容を説明するのに、その名前が欠かせない場合だけ書く</td>
+</tr>
+<tr>
+<td><code>## Scope</code></td>
+<td>このPRで扱う範囲と、扱わない範囲を、対にして必ず書く。短い項目1〜3つで書く（扱わない範囲の例：別のPRで行う関連の作業や、PRを作った人が認識しているものの、このPRでは対応しない不足。不足の例は「検索画面は作ったが、検索結果の並べ替えには、まだ対応していない」など）</td>
+</tr>
+<tr>
+<td><code>## Tradeoffs</code></td>
+<td>検討したが採用しなかった案のうち、レビュアーが「なぜこの案にしなかったのか」と聞きそうなものだけを書く。ほかに検討した案がなければ、この節は省く</td>
+</tr>
+<tr>
+<td><code>## Blast Radius</code>（影響範囲）</td>
+<td>この変更の影響を受ける人や機能と、それがなぜ安全か、または危ないかを、1〜2文で書く</td>
+</tr>
+<tr>
+<td><code>## Verification</code></td>
+<td>実際に実行した経路と結果を、箇条書き1〜3つで書く。性能の変更なら、主な数値を1つ、単位付きの <code>before → after</code> の形で書く（例：<code>p50 41 ms → 33 ms</code>）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="prbabysit">PRを開いても、Babysitは始めない</h3>
+<p><strong>エージェントはPRを開いたら、PRのURLを報告して、残りの作業を続けます</strong>。</p>
+<p>PRごとに『<strong>Babysit</strong>』を回すと、そのたびに作業が中断されます。さらに、後の作業でコミットを書き換えると、そのPRで回したCIのチェックが無駄になり、新しいコミットでやり直すことになります。</p>
+<p>例外は、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/8a8dd5">第16章</a>で扱う『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/autopilot-full.md"><strong>Autopilot-full</strong></a>』（PRのキューをエージェントが自律的にマージまで運ぶPlaybook）と『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/autopilot-stack.md"><strong>Autopilot-stack</strong></a>』（同じ進め方で、マージせずに1本のスタックを作るPlaybook）で、PRを1つずつ受け持つエージェント（オーナー）です。オーナーへの指示に『<strong>Babysit</strong>』のループが含まれているので、オーナーは担当するPRを開いたあとも、続けて merge-ready（Autopilot-stackでは STACK-READY）まで運びます。</p>
+<h3 id="_2">依頼の書き方：小さく順序立てたコミットと、説明に書く証拠を求める</h3>
+<p>同梱ガイドの依頼例は、コミットを小さく順序立てることと、証拠をPRの説明に書くことを求めています。</p>
+<pre><code>/poteto-mode open the pr. small ordered commits, evidence in the description.
+// PRを開いて。コミットは小さく順序立てて、証拠はPRの説明に書いて。
+</code></pre>
+<h2 id="babysitprmerge-ready">『Babysit』は、未マージの最前線のPRから順に問題を片付け、merge-ready にする</h2>
+<p>『<strong>Babysit</strong>』は、コンフリクト、レビューのスレッド、CIの失敗を片付け、<strong>PRやスタックを merge-ready まで運ぶ</strong>Playbookです。人間の判断が必要なところまで来たら止まります。</p>
+<p>Cursorには、PRの状態を見守る組み込みの <code>/autopilot</code> Skill（以前の名称は babysit）もあり、同じような依頼の言葉で呼び出されることがあります。そのため <code>/poteto-mode</code> は、<strong>PRの状態に関する依頼をすべてこのPlaybookに回す</strong>と明記しています。対象になる依頼の例は次のとおりです。</p>
+<ul>
+<li>「このPRを見ていて」</li>
+<li>「緑にして」</li>
+<li>「Bugbotのコメントに対応して」</li>
+<li>「PR X の様子を見て」</li>
+</ul>
+<p>!</p>
+<p><a href="https://cursor.com/ja/docs/bugbot"><strong>Bugbot</strong></a>・・・ Cursorが提供する、PRを自動でレビューする機能。PRが作られたり更新されたりすると、差分を読み、不具合やセキュリティの問題の疑いを、PRのレビューコメントとして書き込む</p>
+<h3 id="pr">手順：最前線のPRから順に問題を片付ける</h3>
+<p>主な手順は次のとおりです。</p>
+<ol>
+<li><strong>モードを宣言する</strong>・・・ どこまで作業するかを表すモードを、状態を確かめる前に決める。既定は <code>drive</code> で、小さなPRやドキュメントだけのPRは <code>check</code> にする（各モードについては以下の表を参照）</li>
+<li><strong>最前線だけに集中する</strong>・・・ 未マージの最前線のPRだけを直し、その上のPRには手を出さない</li>
+<li><strong>1つのスタックを担当するエージェントは1体</strong>にする</li>
+<li><strong>スタックの構成（PRの親子関係）を変えない</strong>・・・ rebase、ベースの付け替え、force-pushはしない。rebaseが必要なら、ブランチの持ち主に報告する</li>
+<li><strong>コンフリクト、レビューのスレッド、CIの順に片付ける</strong>・・・ 判明している修正は1回のpushにまとめ、チェックの再実行を1回で済ませる。コンフリクトだけは自分で解決せず、どのブランチにrebaseが必要かを報告して止まる</li>
+<li><strong>フォージの判定を信じる</strong>・・・ 「ready」は、CIのチェックがすべて通っていることではなく、フォージがマージできると認めている状態を指す。GitHubでは同梱のスクリプト <a href="https://github.com/cursor/plugins/tree/main/pstack/skills/poteto-mode/scripts/watch-pr"><code>watch-pr</code></a> でPRの状態を取得する</li>
+<li><strong>CIの失敗は、再実行の前に分類する</strong>・・・ 再実行はフレーク（コードと関係なく、ときどき失敗するテスト）やインフラの問題のときだけにし、差分自身のコードで失敗したときだけコミットで直す</li>
+<li><strong>Bugbotのコメントをトリアージする</strong></li>
+<li><strong>人間の判断が必要なところで止まる</strong></li>
+</ol>
+<p>!</p>
+<ul>
+<li><strong>force-push</strong>・・・ リモートのブランチの履歴を、手元の履歴で強制的に上書きするpush</li>
+<li><strong>トリアージ</strong>・・・ 対応が必要か、どう対応するかを決めるために、項目を振り分けること（例：直す、却下する、質問する）</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>モード</th>
+<th>何をするか</th>
+<th>対応する依頼</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>drive</code></td>
+<td>merge-ready になるまで、状態の確認と修正を繰り返す</td>
+<td>「緑にして」「マージできる状態にして」</td>
+</tr>
+<tr>
+<td><code>background</code></td>
+<td>ほかの作業を止めずに、PRの状態をトリアージする</td>
+<td>計画がまだ実行中のとき</td>
+</tr>
+<tr>
+<td><code>threads-only</code></td>
+<td>レビューコメントに答えるだけ</td>
+<td>「Bugbotのコメントに対応して」</td>
+</tr>
+<tr>
+<td><code>check</code></td>
+<td>状態を1回確認して報告する</td>
+<td>「X の様子を見て」「緑になった？」</td>
+</tr>
+</tbody>
+</table>
+<h3 id="bugbotfixdismissask">Bugbotのコメントは、fix、dismiss、askに分ける</h3>
+<p>手順8では、Bugbotなどのコメントを、対応する前に3つに分けます。基準は <a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/references/bugbot-triage.md"><code>references/bugbot-triage.md</code></a> にあります。</p>
+<ul>
+<li><strong>fix</strong>・・・ 正しさ、セキュリティ、データ損失などに関わりそうなら、問題のコードを含むPRのうち、最も先にマージされるPRで直し、スレッドを解決します。</li>
+<li><strong>dismiss</strong>・・・ 記録済みの危険の少ないパターンに当てはまり、指摘された懸念が該当しないとコードで証明できる場合、短い理由を返信して解決します。</li>
+<li><strong>ask</strong>・・・ 指摘が新しい種類のもの、深刻度が高いもの、あいまいなものなら、推測せずに利用者に尋ねます。</li>
+</ul>
+<p>Bugbotの指摘は、まずコードで確かめます。誤検知かどうか判断できないときは、<strong>推測せずに利用者に確認します</strong>。確認の手間より、本物のバグを誤って退ける損失のほうが大きいからです。</p>
+<p>レビューコメントは検証すべき主張であり、そのまま従う指示ではないので、指摘を消すことだけを目的にコードを変えず、問題を確かめた場合にのみ修正します。</p>
+<h3 id="merge-ready">merge-ready でも、マージはしない</h3>
+<p>手順9のマージの規則は次のとおりです。</p>
+<blockquote>
+<p>Babysitting never authorizes merging. Only an explicit request to merge, land, ship, or merge when ready does.</p>
+<p>babysitはマージを許可しない。許可するのは、マージする、取り込む（land）、出す（ship）、準備ができたらマージする、という明示的な依頼だけである。</p>
+</blockquote>
+<p>merge-ready に達しても、<strong>エージェントは報告して止まります</strong>。マージを頼まれたら『<strong>Shipping</strong>』に回します。</p>
+<p>merge-ready に達したら、その回に行ったコメントの振り分けを見直し、チームで役立つdismissのパターン（記録済みの危険の少ないパターン）があれば、<code>references/bugbot-triage.md</code> への追加を別のPRで提案します。</p>
+<h3 id="_3">要点は「最前線だけ」の規則</h3>
+<p>『<strong>Babysit</strong>』では、<strong>次にマージするPRの問題を優先して修正します</strong>。</p>
+<p>後続のPRに付いたレビューコメントも読み、対応事項をまとめますが、その修正で先にマージするPRのチェックをやり直すことになる場合は、後続のPRの修正を後回しにします。</p>
+<p>たとえばPR #1 のCIが失敗しているときにPR #3 にレビューコメントが付いても、まずPR #1 のCIを通します。スタックは下から順にしかマージできないので、今マージを進められるのは最前線だけです。</p>
+<p>また、上のPRへの指摘を、来るたびに直してpushすると、そのたびにチェックが再実行されます。そのため、上のPRへの指摘は貯めておき、最前線の修正と同じ1回のpushにまとめて直します。</p>
+<h3 id="_4">依頼の書き方：「緑にして」と頼み、状態だけなら小さく頼む</h3>
+<p>merge-ready まで運んでほしいときは、「緑にして」と頼みます。章の冒頭で示した依頼を、もう一度示します。</p>
+<pre><code>/poteto-mode babysit this pr. get it green.
+// このPRを babysit して。緑にして。
+</code></pre>
+<p>状態だけを知りたいときは、小さく頼みます。次の依頼なら、ループを始めずに <code>check</code> で答えます。</p>
+<pre><code>/poteto-mode check on pr 123. anything outstanding?
+// PR 123 の状態を確認して。残っていることはある？
+</code></pre>
+<h2 id="shippingpr-trunk">『Shipping』は、別のエージェントの検証を通ったPRの範囲だけを trunk に取り込む</h2>
+<p>『<strong>Shipping</strong>』は、CIが通ったスタックを<strong>trunk（PRのマージ先になる本流のブランチ）に取り込むよう頼まれたとき</strong>に使うPlaybookです。各PRを独立に検証し、ルートから続く検証済みの範囲だけを1つずつマージします。<code>/poteto-mode</code> はこのPlaybookを「Green is not safe.」（CIが通っていても安全とは言えない）と要約しています。</p>
+<h3 id="_5">要点は「安全」の定義</h3>
+<blockquote>
+<p>Safe means a verdict from an agent that did not write the code. CI green is not a verdict, and an approving bot review is not a verdict.</p>
+<p>安全とは、そのコードを書いていないエージェントによる判定のことだ。CIが通ったことは判定ではなく、承認するボットのレビューも判定ではない。</p>
+</blockquote>
+<p><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/27a183">第2章</a>の「信頼するのはエージェントではなく成果物」を、マージの直前の確認にも当てはめ、<strong>誰が確かめるかまで決めた定義</strong>となっています。</p>
+<h3 id="pr1-trunk">手順：各PRを検証し、連続した範囲を決め、1つずつ trunk に取り込む</h3>
+<p>手順は6つです。</p>
+<ol>
+<li>すべてのPRを独立に検証する</li>
+<li>ルートから続く、連続した検証済みの範囲だけを取り込む</li>
+<li>判定が今もそのパッチ（変更差分）を表しているか確かめる</li>
+<li>最前線のPRだけを準備し、1つずつマージする</li>
+<li>マージのたびに計算し直し、最前線がマージされるまで状態を監視する</li>
+<li>上限で止まる</li>
+</ol>
+<p>ここからは、各手順を1つずつ見ていきます。</p>
+<p>!</p>
+<ul>
+<li><strong><code>git patch-id</code></strong>・・・ コミットの差分の中身から識別子を計算するgitのコマンド。コミットのIDが変わっても、差分が同じなら同じ値になる</li>
+</ul>
+<h4 id="1-pr">1. すべてのPRを独立に検証する</h4>
+<p>PRごとにサブエージェントを1体ずつ割り当て、親のブランチとPRの最新のコミットを実際の画面やコマンドで比べさせる。結果は <code>PASS</code>、<code>PASS+NOTES</code>（注記つきの合格）、<code>FAIL</code> のいずれか。</p>
+<h4 id="2">2. ルートから続く、連続した検証済みの範囲だけを取り込む</h4>
+<p>手順2の「連続した範囲」は、次のように決まります。</p>
+<pre><code>PR #4  PASS      ← 検証済みだが、下に未検証がある
+PR #3  (未検証)  ← ここで連続が切れる
+PR #2  PASS
+PR #1  PASS      ← 最前線
+main
+</code></pre>
+<p>つまり、<strong>取り込んでよいのは PR #1 と #2 だけです</strong>。</p>
+<p>PR #4をマージするには、前提となる未検証のPR #3を検証してからマージする必要があり、#3の検証を飛ばすと、未検証の変更まで trunk に入ってしまうことになります。</p>
+<h4 id="3">3. 判定が今もそのパッチ（変更差分）を表しているか確かめる</h4>
+<p>rebaseでコミットのID（SHA）が変わっても、差分の中身が同じかを <code>git patch-id</code> で比べる。中身が変わっていれば検証し直す。</p>
+<h4 id="4-pr1">4. 最前線のPRだけを準備し、1つずつマージする</h4>
+<p>準備は、必要なら最前線のPRを最新の trunk にrebaseし、そのPRのベースを trunk に付け替えることを指す。1つマージされてから次を準備する。</p>
+<h4 id="5">5. マージのたびに計算し直し、最前線がマージされるまで状態を監視する</h4>
+<p>1つマージされるたびに、新しく最前線になったPRのベース、チェック、patch-idを調べ直す。自動マージを予約していても、それをスタックが安全である証拠とは見なさない。</p>
+<h4 id="6">6. 上限で止まる</h4>
+<p>上限は、検証済みの連続したPRの一番上のPR（手順2の図ではPR #2）。そこまでマージしたら、何が取り込まれたか、次の未検証のPRはどれかを報告して終わる。</p>
+<h3 id="_6">依頼の書き方：「スタックを取り込んで」と頼む</h3>
+<p>章の冒頭で示した依頼を、もう一度示します。</p>
+<pre><code>/poteto-mode land the stack.
+// スタックを trunk に取り込んで。
+</code></pre>
+<h2 id="_7">まとめ</h2>
+<ul>
+<li><strong>3つのPlaybookのつながり</strong>・・・ 『<strong>Opening a PR</strong>』はPRを作成し、『<strong>Babysit</strong>』はマージ可能な状態まで整え、『<strong>Shipping</strong>』は検証を通ったPRを trunk（PRのマージ先になる本流のブランチ）へマージします。</li>
+<li><strong>Opening a PR</strong>・・・ 小さく順序立てたコミットと差分を絞ったPRを作り、本文は「ブリーフィング」として短く書きます。PRを開いても『<strong>Babysit</strong>』は始めません。</li>
+<li><strong>Babysit</strong>・・・ モードを宣言し、最前線だけを見て merge-ready まで運びます。Bugbotのコメントは fix、dismiss、ask に分けます。</li>
+<li><strong>Shipping</strong>・・・ 「安全」をコードを書いていないエージェントの判定と定義し、ルートから連続した検証済みの範囲だけを1つずつマージします。</li>
+<li><strong>BabysitとShippingの違い</strong>・・・ 2つのうち、マージするのは明示的な依頼を受けた『<strong>Shipping</strong>』だけです（『Autopilot-full』など<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/8a8dd5">第16章</a>のPlaybookには別の決まりがあります）。</li>
+</ul>
+<p>次の<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/7d7609">第15章</a>では、1つの長い作業を人が席を外している間も続け、止め、再開し、片付ける4つのPlaybookを見ていきます。</p>
+  </div>
+  <footer class="article-footer">
+    <span>取得: 2026-10-06T23:37:29+09:00</span>
+    <a href="#article-top">↑ 先頭へ戻る</a>
+  </footer>
+</main>
+<script>
+(() => {
+  const progress = document.querySelector(".reading-progress > span");
+  const updateProgress = () => {
+    const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+    const ratio = scrollable > 0 ? window.scrollY / scrollable : 0;
+    if (progress) progress.style.width = `${Math.min(1, ratio) * 100}%`;
+  };
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  document.querySelectorAll("pre").forEach((block) => {
+    const button = document.createElement("button");
+    button.className = "copy-button";
+    button.type = "button";
+    button.textContent = "コピー";
+    button.addEventListener("click", async () => {
+      const text = block.querySelector("code")?.innerText || block.innerText;
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const textarea = document.createElement("textarea");
+          textarea.value = text;
+          textarea.style.position = "fixed";
+          textarea.style.opacity = "0";
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand("copy");
+          textarea.remove();
+        }
+        button.textContent = "コピー済み";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      } catch (error) {
+        button.textContent = "失敗";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      }
+    });
+    block.appendChild(button);
+  });
+
+  const links = new Map(
+    [...document.querySelectorAll(".toc a")].map((link) => [link.hash, link])
+  );
+  const headings = [...document.querySelectorAll(
+    ".article-body h2[id], .article-body h3[id], .article-body h4[id]"
+  )];
+  if ("IntersectionObserver" in window && headings.length) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        links.forEach((link) => link.classList.remove("is-active"));
+        links.get(`#${entry.target.id}`)?.classList.add("is-active");
+      });
+    }, { rootMargin: "-12% 0px -72% 0px" });
+    headings.forEach((heading) => observer.observe(heading));
+  }
+})();
+</script>
+</body>
+</html>

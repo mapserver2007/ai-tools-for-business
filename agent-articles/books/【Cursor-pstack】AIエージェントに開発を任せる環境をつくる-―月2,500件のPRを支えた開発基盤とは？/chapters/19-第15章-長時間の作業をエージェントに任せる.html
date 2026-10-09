@@ -1,0 +1,1019 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="title" content="第15章 長時間の作業をエージェントに任せる">
+<meta name="book_title" content="【Cursor pstack】AIエージェントに開発を任せる環境をつくる ―月2,500件のPRを支えた開発基盤とは？">
+<meta name="source_url" content="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/7d7609">
+<meta name="author" content="kaito">
+<meta name="published_at" content="2026-10-02">
+<meta name="retrieved_at" content="2026-10-06T23:37:29+09:00">
+<meta name="site" content="zenn.dev">
+<meta name="content_type" content="article">
+<meta name="chapter_position" content="19">
+<title>第15章 長時間の作業をエージェントに任せる</title>
+<style>
+:root {
+  color-scheme: light;
+  --ink: #172033;
+  --muted: #64748b;
+  --line: #dbe4ef;
+  --accent: #2563eb;
+  --accent-dark: #1d4ed8;
+  --accent-soft: #eff6ff;
+  font-family: -apple-system, BlinkMacSystemFont, "Avenir Next",
+    "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 8% 0%, #dbeafe 0, transparent 32rem),
+    radial-gradient(circle at 100% 12%, #e0e7ff 0, transparent 28rem),
+    #f4f7fb;
+  color: var(--ink);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(120deg, transparent 0 48%, rgba(255, 255, 255, 0.4));
+}
+.article {
+  position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
+  max-width: 920px;
+  margin: clamp(1rem, 5vw, 4rem) auto;
+  padding: clamp(2rem, 6vw, 5rem) clamp(1.25rem, 7vw, 5.5rem);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  border-radius: 24px;
+  min-height: 100vh;
+  box-shadow:
+    0 24px 70px rgba(30, 64, 175, 0.1),
+    0 4px 16px rgba(15, 23, 42, 0.04);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 5px;
+  content: "";
+  background: linear-gradient(90deg, #2563eb, #7c3aed, #db2777);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin: 0 0 2.5rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.72rem;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+a {
+  color: var(--accent-dark);
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: #7c3aed;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--ink);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 18ch;
+  margin: 0 0 2.5rem;
+  font-size: clamp(2.15rem, 5vw, 3.65rem);
+  letter-spacing: -0.045em;
+}
+h2 {
+  position: relative;
+  margin: 3.8rem 0 1.25rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--line);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 4.2rem;
+  height: 3px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), #7c3aed);
+  border-radius: 999px;
+}
+h3 {
+  margin: 2.6rem 0 0.8rem;
+  color: var(--accent-dark);
+  font-size: 1.3rem;
+}
+h4, h5, h6 {
+  margin-top: 2rem;
+}
+p {
+  margin: 1.15rem 0;
+}
+ul, ol {
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.35rem 0;
+}
+li::marker {
+  color: var(--accent);
+  font-weight: 700;
+}
+strong {
+  color: #111827;
+}
+blockquote {
+  margin: 1.6rem 0;
+  padding: 0.8rem 1.25rem;
+  color: #475569;
+  background: linear-gradient(90deg, var(--accent-soft), #fff);
+  border-left: 4px solid var(--accent);
+  border-radius: 0 12px 12px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 3rem 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+img {
+  display: block;
+  max-width: 100%;
+  margin: 1.75rem auto;
+  height: auto;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+}
+pre {
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  padding: 1.15rem 1.25rem;
+  color: #e2e8f0;
+  background: #111827;
+  border: 1px solid #253047;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+}
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+:not(pre) > code {
+  padding: 0.15rem 0.4rem;
+  color: #9f1239;
+  background: #fff1f2;
+  border-radius: 5px;
+}
+table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  border-collapse: collapse;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
+  text-align: left;
+}
+th {
+  color: #1e3a8a;
+  background: #eff6ff;
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: #f8fafc;
+}
+@media (max-width: 600px) {
+  .article {
+    margin: 0;
+    padding: 2rem 1rem 4rem;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(2rem, 10vw, 2.75rem);
+  }
+  .metadata {
+    margin-bottom: 2rem;
+  }
+}
+@media print {
+  body {
+    background: #fff;
+  }
+  .article {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  a {
+    color: inherit;
+  }
+}
+</style>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0f1419;
+  --surface: #1a2332;
+  --surface-raised: #202c3f;
+  --surface-soft: rgba(26, 35, 50, 0.72);
+  --border: #2d3a4f;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #58a6ff;
+  --accent-strong: #79c0ff;
+  --green: #3fb950;
+  --purple: #bc8cff;
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+    "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  line-height: 1.75;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+  background: var(--bg);
+}
+body {
+  min-width: 320px;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 2rem 1.5rem 5rem;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(31, 111, 235, 0.18), transparent 32rem),
+    radial-gradient(circle at 100% 12%, rgba(137, 87, 229, 0.14), transparent 28rem),
+    var(--bg);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black, transparent 75%);
+}
+.reading-progress {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 20;
+  height: 3px;
+  background: rgba(45, 58, 79, 0.7);
+}
+.reading-progress > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  box-shadow: 0 0 14px rgba(88, 166, 255, 0.8);
+  transition: width 80ms linear;
+}
+.article {
+  position: relative;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  background: rgba(15, 20, 25, 0.76);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(88, 166, 255, 0.035) inset;
+  backdrop-filter: blur(16px);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  border-radius: 16px 16px 0 0;
+}
+.article-header {
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.eyebrow-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--green);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(63, 185, 80, 0.75);
+}
+.eyebrow-separator {
+  color: var(--border);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  background: rgba(32, 44, 63, 0.68);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+.source-link {
+  color: var(--text);
+  text-decoration: none;
+}
+.source-link:hover {
+  border-color: var(--accent);
+  background: rgba(88, 166, 255, 0.12);
+}
+a {
+  color: var(--accent);
+  overflow-wrap: anywhere;
+  text-decoration: none;
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 24ch;
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  background: linear-gradient(120deg, #fff 12%, #b9d8ff 58%, #bc8cff);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+h2 {
+  position: relative;
+  margin: 3.2rem 0 1.1rem;
+  padding: 0.75rem 0 0.65rem;
+  border-bottom: 1px solid var(--border);
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 3.8rem;
+  height: 2px;
+  content: "";
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(88, 166, 255, 0.7);
+}
+h3 {
+  margin: 2.25rem 0 0.7rem;
+  color: var(--accent-strong);
+  font-size: 1.2rem;
+}
+h4, h5, h6 {
+  margin-top: 1.75rem;
+}
+p {
+  margin: 0.9rem 0;
+}
+ul, ol {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.3rem 0;
+}
+li::marker {
+  color: var(--accent);
+}
+strong {
+  color: #fff;
+}
+blockquote {
+  margin: 1.4rem 0;
+  padding: 0.85rem 1.15rem;
+  color: #c9d1d9;
+  background: linear-gradient(100deg, rgba(88, 166, 255, 0.1), rgba(26, 35, 50, 0.55));
+  border: 1px solid rgba(88, 166, 255, 0.18);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 2.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+}
+pre {
+  position: relative;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  padding: 1rem 1.15rem;
+  color: #dbeafe;
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+pre code {
+  color: inherit;
+  background: transparent;
+}
+code {
+  font-family: "SF Mono", "Fira Code", ui-monospace, monospace;
+  font-size: 0.86em;
+}
+:not(pre) > code {
+  padding: 0.12em 0.38em;
+  color: #ffabbc;
+  background: rgba(248, 81, 73, 0.11);
+  border-radius: 4px;
+}
+.copy-button {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  padding: 0.25rem 0.55rem;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.72rem;
+  background: rgba(32, 44, 63, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.copy-button:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  border-spacing: 0;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.6rem 0.75rem;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+th {
+  color: var(--accent);
+  background: var(--surface);
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: rgba(26, 35, 50, 0.42);
+}
+tr:last-child td {
+  border-bottom: 0;
+}
+th:last-child, td:last-child {
+  border-right: 0;
+}
+.toc {
+  margin: 1.75rem 0 2.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.toc-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--border);
+}
+.toc-title {
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.toc-count {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.toc ol {
+  margin: 0.7rem 0 0;
+  padding-left: 1.25rem;
+}
+.toc ol ol {
+  margin: 0.2rem 0;
+}
+.toc li {
+  margin: 0.18rem 0;
+  font-size: 0.86rem;
+}
+.toc li::marker {
+  color: var(--muted);
+}
+.toc a {
+  display: inline-block;
+  max-width: 100%;
+  color: var(--muted);
+  transition: color 160ms ease, transform 160ms ease;
+}
+.toc a:hover, .toc a.is-active {
+  color: var(--accent-strong);
+  text-decoration: none;
+  transform: translateX(2px);
+}
+.article-body {
+  max-width: 78ch;
+  margin: 0 auto;
+}
+.article-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 1rem;
+  color: var(--muted);
+  font-size: 0.74rem;
+  border-top: 1px solid var(--border);
+}
+.article-footer a {
+  color: var(--muted);
+}
+@media (max-width: 720px) {
+  body {
+    padding: 0 0 3rem;
+  }
+  .article {
+    min-height: 100vh;
+    padding: 1.5rem 1rem 3rem;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+  .article::before {
+    border-radius: 0;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(1.9rem, 9vw, 2.6rem);
+  }
+  .article-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+@media print {
+  :root {
+    color-scheme: light;
+  }
+  body {
+    padding: 0;
+    color: #111;
+    background: #fff;
+  }
+  .reading-progress, .toc, .copy-button {
+    display: none;
+  }
+  .article {
+    max-width: none;
+    padding: 0;
+    background: #fff;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  h1, h2, h3, h4, h5, h6, strong {
+    color: #111;
+    -webkit-text-fill-color: initial;
+  }
+  a {
+    color: inherit;
+    text-decoration: underline;
+  }
+  pre {
+    color: #111;
+    background: #f4f4f4;
+    box-shadow: none;
+  }
+}
+</style>
+</head>
+<body>
+<div class="reading-progress" aria-hidden="true"><span></span></div>
+<main id="article-top" class="article">
+  <header class="article-header">
+    <div class="eyebrow">
+      <span class="eyebrow-dot"></span>
+      <span>ARTICLE</span>
+      <span class="eyebrow-separator">/</span>
+      <span>zenn.dev</span>
+    </div>
+    <div class="metadata" aria-label="記事メタデータ"><span class="metadata-item"><span class="metadata-label">著者</span>kaito</span><span class="metadata-item"><span class="metadata-label">公開日</span>2026-10-02</span><a class="metadata-item source-link" href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/7d7609"><span class="metadata-label">原文</span>読む</a><span class="metadata-item"><span class="metadata-label">サイト</span>zenn.dev</span><span class="metadata-item"><span class="metadata-label">形式</span>ARTICLE</span></div>
+    <h1 id="15">第15章 長時間の作業をエージェントに任せる</h1>
+  </header>
+<nav class="toc" aria-label="目次">
+  <div class="toc-heading">
+    <span class="toc-title">目次</span>
+    <span class="toc-count">32 セクション</span>
+  </div>
+  <ol><li><a href="#_1">この章の構成</a></li><li><a href="#4playbook1">4つのPlaybookは、1つの長い作業を「続ける、止めて再開する、片付ける」で分担する</a><ol><li><a href="#_2">章全体に出てくる道具</a></li></ol></li><li><a href="#autonomous-run">『Autonomous run』は、終了条件を先に決め、それが満たされるまで止まらずに作業を続ける</a><ol><li><a href="#6">6つの手順</a><ol><li><a href="#1">1. 終了条件を決める</a></li><li><a href="#2">2. エージェントの起こし方を決める</a></li><li><a href="#3">3. 証拠を元に必要な変更を一つずつ行い、結果を確かめる</a></li><li><a href="#4">4. 途中で見つけたことは自分で片付ける</a></li><li><a href="#5-show-me-your-work">5. 毎回、/show-me-your-work で判断を記録する</a></li><li><a href="#6_1">6. 終了条件が満たされたら止まる</a></li><li><a href="#_3">返答に書く項目</a></li></ol></li><li><a href="#_4">要点は、終了条件を確かめられる述語にすること</a></li></ol></li><li><a href="#pause-safely">『Pause safely』は、何も知らないエージェントが再開できる区切りで作業を止める</a><ol><li><a href="#4_1">4つの手順</a></li><li><a href="#_5">要点は「エージェントの頭の中にしかないもの」を外に出すこと</a></li></ol></li><li><a href="#session-pickup">『Session pickup』は、前のエージェントの記録を信じて作業の続きから始める</a><ol><li><a href="#5">5つの手順</a></li><li><a href="#_6">要点は、前の記録を信頼できる入力として扱うこと</a></li><li><a href="#_7">依頼の書き方：判断ログを読み、済んだ作業の続きから始めるよう頼む</a></li></ol></li><li><a href="#worktree-and-simulator-cleanupworktree">『Worktree and simulator cleanup』は、worktreeを消す前に「使われていない」を証明する</a><ol><li><a href="#6_2">6つの手順</a><ol><li><a href="#1_1">1. 記録して監査する</a></li><li><a href="#2_1">2. 分類は助言であって、許可ではない</a></li><li><a href="#3_1">3. 消す前に使用状況を確かめる</a></li><li><a href="#4_2">4. 元に戻せない損失の前で止まる</a></li><li><a href="#5_1">5. 確定したものを消す</a></li><li><a href="#6_3">6. シミュレーターなど、ほかの回収先も片付ける</a></li><li><a href="#_8">返答に書く項目</a></li></ol></li><li><a href="#_9">要点は、削除の前の関門がそのままレビューになること</a></li><li><a href="#worktree">依頼の書き方：「安全に消せるworktreeを消して」と頼む</a></li></ol></li><li><a href="#_10">まとめ</a></li></ol>
+</nav>
+  <div class="article-body">
+
+<p>この章では、次の4つのPlaybookを扱います。</p>
+<ol>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/autonomous-run.md">Autonomous run</a></li>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/pause-safely.md">Pause safely</a></li>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/session-pickup.md">Session pickup</a></li>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/worktree-cleanup.md">Worktree and simulator cleanup</a></li>
+</ol>
+<p>4つとも、<strong>1つの長い作業をエージェントに任せる</strong>ためのPlaybookです。役割は次のとおりです。</p>
+<ul>
+<li>1つのタスクを、止めずに最後まで進める</li>
+<li>途中で止めて、別のエージェントが再開する</li>
+<li>作業のあとで、不要なworktreeなどを片付ける</li>
+</ul>
+<p>!</p>
+<ul>
+<li><strong>worktree</strong>・・・ gitの機能で、1つのリポジトリから複数の作業ディレクトリを作り、別々のブランチを同時にチェックアウトできるようにするもの</li>
+</ul>
+<p>同梱ガイドの夜間作業のページ（<a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/07-overnight.md"><code>docs/guide/07-overnight.md</code></a>）は、寝ている間に作業を任せられる条件を3つ挙げています。3つの条件は次のとおりです。</p>
+<ul>
+<li><strong>確かめられる終了条件</strong></li>
+<li><strong>分離したworktree</strong></li>
+<li><strong>朝に監査する判断記録</strong></li>
+</ul>
+<p>たとえば「古い呼び出し元がゼロ」は確かめられる終了条件ですが、「4時間作業して」はこの条件には入りません。</p>
+<p>この章では、4つのPlaybookを役割で整理したうえで、それぞれの使いどころ、手順、要点を順に解説します。</p>
+<h2 id="_1">この章の構成</h2>
+<p>この章の構成は次のとおりです。</p>
+<ul>
+<li>4つのPlaybookは、1つの長い作業を「続ける、止めて再開する、片付ける」で分担する</li>
+<li>『Autonomous run』は、終了条件を先に決め、それが満たされるまで止まらずに作業を続ける</li>
+<li>『Pause safely』は、何も知らないエージェントが再開できる区切りで作業を止める</li>
+<li>『Session pickup』は、前のエージェントの記録を信じて作業の続きから始める</li>
+<li>『Worktree and simulator cleanup』は、worktreeを消す前に「使われていない」を証明する</li>
+<li>まとめ</li>
+</ul>
+<h2 id="4playbook1">4つのPlaybookは、1つの長い作業を「続ける、止めて再開する、片付ける」で分担する</h2>
+<p>この章の4つのPlaybookは、次の表の<strong>3つの役割</strong>に分かれます。</p>
+<table>
+<thead>
+<tr>
+<th>役割</th>
+<th>Playbook</th>
+<th>責任を持つもの</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1つのタスクを止めずに最後まで進める</td>
+<td>『<strong>Autonomous run</strong>』</td>
+<td>終了条件</td>
+</tr>
+<tr>
+<td>止めて、再開する</td>
+<td>『<strong>Pause safely</strong>』</td>
+<td>再開できる状態で止めること</td>
+</tr>
+<tr>
+<td>止めて、再開する</td>
+<td>『<strong>Session pickup</strong>』</td>
+<td>前の作業のどこから再開するか</td>
+</tr>
+<tr>
+<td>後片付け</td>
+<td>『<strong>Worktree and simulator cleanup</strong>』</td>
+<td>ディスク容量を取り戻すことと、消してよいかを削除前に確かめること</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_2">章全体に出てくる道具</h3>
+<p>この章のPlaybookには、次の道具が繰り返し出てきます。</p>
+<ul>
+<li><strong><code>/loop</code></strong>・・・ 決まった間隔や、CIの完了などのイベントでエージェントを起動する、Cursor組み込みのコマンドです。</li>
+<li><strong><code>decisions.tsv</code></strong>・・・ <code>/show-me-your-work</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/724887">第29章</a>）が書く判断記録で、1行に1つの判断を書きます。</li>
+</ul>
+<p>長い作業や席を外す作業では、<code>/show-me-your-work</code> で判断を記録します。朝の確認では、夜の作業をすべて読み直すのではなく、<strong>この記録（<code>decisions.tsv</code>）で判断を監査します</strong>。</p>
+<h2 id="autonomous-run">『Autonomous run』は、終了条件を先に決め、それが満たされるまで止まらずに作業を続ける</h2>
+<p>『<strong>Autonomous run</strong>』は、「終わるまで回して」「/loop で X まで回して」のような依頼で、<strong>長いタスクを止まらずに完了まで運ぶ</strong>Playbookです。</p>
+<h3 id="6">6つの手順</h3>
+<p>手順は次のとおりです。</p>
+<ol>
+<li>終了条件を決める</li>
+<li>エージェントの起こし方を決める</li>
+<li>証拠を元に必要な変更を一つずつ行い、結果を確かめる</li>
+<li>途中で見つけたことは自分で片付ける</li>
+<li>毎回、<code>/show-me-your-work</code> で判断を記録する</li>
+<li>終了条件が満たされたら止まる</li>
+</ol>
+<p>ここからは、各手順を1つずつ見ていきます。</p>
+<h4 id="1">1. 終了条件を決める</h4>
+<p>「テストが通る」「N個のPRがすべてマージされた」のような形で、最初の繰り返しの前に終了条件を書く。</p>
+<h4 id="2">2. エージェントの起こし方を決める</h4>
+<p><code>/loop</code> を使って決める。CIの完了、マージなど、待つべきイベントがあるなら、そのイベントを監視し、エージェントを起こす監視役のサブエージェントを付け、予備として長い間隔の定期的な起動も用意する。待つべきイベントがないなら、結果を確かめ直す価値が出るころに合わせた一定の間隔で起動する。</p>
+<h4 id="3">3. 証拠を元に必要な変更を一つずつ行い、結果を確かめる</h4>
+<p>証拠をもとに必要最小限の変更をする。変更後、最初に決めた終了条件に近づいたかを確かめ、近づいていればコミットし、近づいていなければ変更を取り消す（原則『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-sequence-verifiable-units/SKILL.md"><strong>Sequence Work into Verifiable Units</strong></a>』、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/1fb019">第19章</a>）。</p>
+<h4 id="4">4. 途中で見つけたことは自分で片付ける</h4>
+<p>関連するバグや不安定な検証はエージェントが自分で直し、本筋から外れた修正は別のPRにする。人間に判断を求めるのは、元に戻せない操作、実験では決められない判断、本当の行き詰まりだけ。</p>
+<h4 id="5-show-me-your-work">5. 毎回、<code>/show-me-your-work</code> で判断を記録する</h4>
+<p>反復のたびに、何を変えたかと、終了条件に近づいたかを、1行ずつ記録する。</p>
+<h4 id="6_1">6. 終了条件が満たされたら止まる</h4>
+<p>条件を満たしていなければ、別の方法を試す。条件を下げて完了とはせず、本当に進められなくなった場合は、その状況を報告する。</p>
+<h4 id="_3">返答に書く項目</h4>
+<p>返答に書く項目は次のとおりです。</p>
+<ul>
+<li>終了条件</li>
+<li>ループ回数</li>
+<li>最終的に残した変更と、試しても条件に近づかず元に戻した変更</li>
+<li>最後の条件の状態</li>
+</ul>
+<h3 id="_4">要点は、終了条件を確かめられる述語にすること</h3>
+<p>述語とは条件のことで、満たされたかどうかを、真か偽かで判定できるものです。</p>
+<p>冒頭で述べたように、<strong>時間の長さは終了条件になりません</strong>。「4時間作業して」では確かめるものがなく、朝に残るのは4時間分の動きだけです。同梱ガイドの落とし穴のページ（<a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/10-recipes-and-pitfalls.md"><code>docs/guide/10-recipes-and-pitfalls.md</code></a>）も、「もっと良くして」のようなあいまいな条件を失敗例に挙げています。そのため、エージェントは手順1で条件を決め、手順6で止まるまで同じ条件を守ります。</p>
+<h2 id="pause-safely">『Pause safely』は、何も知らないエージェントが再開できる区切りで作業を止める</h2>
+<p>『<strong>Pause safely</strong>』は、止めるよう指示されたとき、Cursorを再起動するとき、会話のコンパクション（入りきらない分の会話を要約して詰める処理）が迫っているときに使うPlaybookです。<strong>何も知らないエージェントでも再開できる状態で止めます</strong>。明示的な指示でだけ動き、「続けて」「止まらないで」と言われたら止まりません。</p>
+<h3 id="4_1">4つの手順</h3>
+<ol>
+<li><strong>安全な区切りで止まる</strong>・・・ 今の最小単位の手順を終えるか元に戻し、新しいことは始めない</li>
+<li><strong>止まるために元に戻せない操作をしない</strong>・・・ すでにPRを出している場合を除き、PRも作らずpushもしない</li>
+<li><strong>作業を消えない形にする</strong>・・・ コミットしていない編集を、<code>wip:</code> で始まる一つのコミットにまとめる</li>
+<li><strong>再開用のメモを、コンテキストの外に書く</strong>・・・ 意図、進み具合、次の手順、注意点を書く。<code>/show-me-your-work</code> の記録があれば、重複させずにそれを指す</li>
+</ol>
+<p>返答に書く項目は次のとおりです。</p>
+<ul>
+<li>ループのどこにいるか</li>
+<li>ファイルやコミットに記録されている情報と、まだ会話（チャット）のコンテキストにしか残っていない作業の状況・意図・注意点など</li>
+<li>作ったコミット</li>
+<li>再開時の最初の行動</li>
+</ul>
+<h3 id="_5">要点は「エージェントの頭の中にしかないもの」を外に出すこと</h3>
+<p>エージェントのコンテキストは、コンパクションやセッションの終わりで消えます。エージェントが返答で「ディスクにあるもの（ファイルやコミットに記録されている情報）」と「頭の中にしかないもの（作業の状況・意図・注意点）」を分けて書くので、<strong>何をファイルやコミットに移し損ねたかが見えます</strong>。</p>
+<p><code>wip:</code> コミットは編集途中のコードを、再開メモはコードに書けない意図や注意点を、ディスクに残します。<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/dc9141">第4章</a>の「コードベースは記憶である」を、一つの作業の単位で実行する手順と読むことができます。</p>
+<h2 id="session-pickup">『Session pickup』は、前のエージェントの記録を信じて作業の続きから始める</h2>
+<p>『<strong>Session pickup</strong>』は、前のエージェントが途中まで進めた作業を、トランスクリプト（エージェントとの会話の記録）、Cloud AgentsのURL、pushされたブランチから引き継ぐPlaybookです。『<strong>Pause safely</strong>』と対になっています。</p>
+<p>特定の一つの作業を引き継ぐなら『Session pickup』、<strong>複数のチャットからコンテキストを集めるなら <a href="https://github.com/cursor/plugins/blob/main/pstack/skills/recall/SKILL.md"><code>/recall</code></a></strong>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/788746">第22章</a>）を使います。</p>
+<h3 id="5">5つの手順</h3>
+<ol>
+<li><strong>前の記録を探す</strong>
+   - 探す先は、作業中のワークスペースのトランスクリプト、Cloud AgentsのURL、pushされたブランチのどれか
+   - 長いトランスクリプトはサブエージェントに読ませ、要約だけを主スレッド（サブエージェントを呼び出す元の会話）に置く（原則『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-guard-the-context-window/SKILL.md"><strong>Guard the Context Window</strong></a>』、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/c155cc">第20章</a>）</li>
+<li><strong>作業の状態を組み立て直す</strong>
+   - 作業中のブランチ、すでに入った変更（<code>git log</code> やベースとの <code>git diff</code> で確かめる）、残っているTODO、下された判断を把握する</li>
+<li><strong>済んだことと残りを比べる</strong>
+   - 計画したことと済んだことを比べてどこから再開するかを特定し、終わった作業を繰り返さない</li>
+<li><strong>残りの作業を、内容に合うPlaybookに引き渡す</strong>
+   - ここから先は、作業内容に合うPlaybookが引き継ぐ</li>
+<li><strong>引き継いだ主張を実物で確かめる</strong>
+   - 前のエージェントの「成功した」という自己申告は証明とせず、引き継いだ変更を実際に確かめる（原則『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-prove-it-works/SKILL.md"><strong>Prove It Works</strong></a>』、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/1fb019">第19章</a>）</li>
+</ol>
+<p>返答に書く項目は次のとおりです。</p>
+<ul>
+<li>前のエージェントがどこで止まったか</li>
+<li>引き継いだものと、やり直したもの</li>
+<li>再開地点</li>
+<li>結果</li>
+</ul>
+<h3 id="_6">要点は、前の記録を信頼できる入力として扱うこと</h3>
+<p><strong>再開したエージェントは、前の記録を自分で導き直さずに、そのまま入力として使います</strong>。</p>
+<p>Playbookは、前の記録を使って済んだ作業と残っている作業を見分け、残っているところから再開するよう求めています。</p>
+<p>たとえば、前のエージェントが不具合を再現し、操作手順や画面・ログを残していれば、次のエージェントは同じ操作をやり直さず、その記録を読んで原因調査や修正から再開します。</p>
+<h3 id="_7">依頼の書き方：判断ログを読み、済んだ作業の続きから始めるよう頼む</h3>
+<p>同梱ガイドの依頼例は、ブランチの引き継ぎを頼み、判断ログを読んで何が済んでいるかを把握することと、終わった作業をやり直さないことを求めています。</p>
+<pre><code>/poteto-mode take over this branch. read the decision log, figure out what's done, and continue from there. don't redo finished work.
+// このブランチを引き継いで。判断ログを読み、何が済んでいるかを把握して、そこから続けて。終わった作業はやり直さないで。
+</code></pre>
+<h2 id="worktree-and-simulator-cleanupworktree">『Worktree and simulator cleanup』は、worktreeを消す前に「使われていない」を証明する</h2>
+<p>『<strong>Worktree and simulator cleanup</strong>』は、マージ済みや放棄されたgit worktreeと古いiOSシミュレーターを消して、ディスクの空き容量を増やすPlaybookです。</p>
+<h3 id="6_2">6つの手順</h3>
+<p>手順は次のとおりです。</p>
+<ol>
+<li>記録して監査する</li>
+<li>分類は助言であって、許可ではない</li>
+<li>消す前に使用状況を確かめる</li>
+<li>元に戻せない損失の前で止まる</li>
+<li>確定したものを消す</li>
+<li>シミュレーターなど、ほかの回収先も片付ける</li>
+</ol>
+<p>ここからは、各手順を1つずつ見ていきます。</p>
+<h4 id="1_1">1. 記録して監査する</h4>
+<p>今のディスク使用量を <code>df -h /</code> で記録し、<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/scripts/worktree-audit.sh"><code>worktree-audit.sh</code></a> を実行する（原則『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-build-the-lever/SKILL.md"><strong>Build the Lever</strong></a>』、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a8e80b">第17章</a>）。</p>
+<p><code>worktree-audit.sh</code> は何も消さない読み取り専用のスクリプトとなっています。調べる項目は次のとおりです。</p>
+<ul>
+<li>各worktreeの大きさ</li>
+<li>各worktreeの古さ（最後に更新されてからの期間）</li>
+<li>マージ済みか</li>
+<li>未コミットの編集</li>
+<li>PRの状態</li>
+<li>最後に触ったチャット</li>
+</ul>
+<p>スクリプトは、これらをもとに分類を提案します。</p>
+<h4 id="2_1">2. 分類は助言であって、許可ではない</h4>
+<p>スクリプトの分類は削除候補の提案。ピン留め中または進行中のチャット（サイドバーにでてくるエージェントとのチャット）が使っているworktreeは、削除対象から外す。スクリプトが、ピン留め中のチャットが使うworktreeをsafeと判定した例もあるため、候補をチャットの一覧と照合する。</p>
+<h4 id="3_1">3. 消す前に使用状況を確かめる</h4>
+<p>疑わしいものは、サブエージェントにトランスクリプト（エージェントとの会話の記録）を読ませて確かめる。</p>
+<h4 id="4_2">4. 元に戻せない損失の前で止まる</h4>
+<p>未コミットの作業があるものは、利用者に差分を見せて判断をもらう。</p>
+<h4 id="5_1">5. 確定したものを消す</h4>
+<p><code>git worktree remove</code> と <code>git worktree prune</code> で消す。ブランチは残るので、コミットは失われない。</p>
+<h4 id="6_3">6. シミュレーターなど、ほかの回収先も片付ける</h4>
+<p>古いシミュレーターやランタイム、必要ならビルドのキャッシュも消す。</p>
+<h4 id="_8">返答に書く項目</h4>
+<p>返答に書く項目は次のとおりです。</p>
+<ul>
+<li>削除前後のディスク空き容量と、増えた容量</li>
+<li>消したworktree</li>
+<li>残したものと、それぞれの理由</li>
+</ul>
+<h3 id="_9">要点は、削除の前の関門がそのままレビューになること</h3>
+<p>worktreeやシミュレーターを削除すると、作業中の環境や未コミットの変更を失う可能性があります。そのため、削除前に、使用中でないことと未コミットの変更がないことを確認します。この確認が、誤削除を防ぐ関門（削除の前に通す確認）としての役割を果たします。</p>
+<p>ほかのPlaybookではコードレビューが誤りを見つけますが、このPlaybookは、コードレビューを通さずに利用者の手元のworktreeやシミュレーターを消す唯一のPlaybookです。そのため、手順2〜4で使用中のものや未コミットの作業を確かめる<strong>関門が、そのままレビューになります</strong>。</p>
+<h3 id="worktree">依頼の書き方：「安全に消せるworktreeを消して」と頼む</h3>
+<p>同梱ガイドの依頼例は、何がディスクを使っているかを尋ね、安全に消せるworktreeだけを消すよう頼んでいます。</p>
+<pre><code>/poteto-mode what's eating my disk? prune the worktrees that are safe to prune.
+// 何がディスクを食っている？ 安全に消せるworktreeを消して。
+</code></pre>
+<h2 id="_10">まとめ</h2>
+<ul>
+<li><strong>4つのPlaybookの役割</strong>・・・ 『<strong>Autonomous run</strong>』は1つのタスクを最後まで進め、『<strong>Pause safely</strong>』と『<strong>Session pickup</strong>』は作業を止めて再開し、『<strong>Worktree and simulator cleanup</strong>』は後片付けを受け持ちます。</li>
+<li><strong>Autonomous run</strong>・・・ 確かめられる終了条件を決め、それが満たされるまで止まらずに作業を続けます。</li>
+<li><strong>Pause safely</strong>・・・ エージェントの頭の中にしかないものを <code>wip:</code> コミットと再開メモに出して止まります。</li>
+<li><strong>Session pickup</strong>・・・ 前の記録を信頼して、やり直すことをせず、引き継いだ主張は実際に確認します。</li>
+<li><strong>Worktree and simulator cleanup</strong>・・・ 使われていないことを証明してから消します。削除前の関門がそのままレビューになります。</li>
+</ul>
+<p>次の<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/8a8dd5">第16章</a>では、何本ものPRを計画し、複数のエージェントで運用する4つのPlaybookを見ていきます。</p>
+  </div>
+  <footer class="article-footer">
+    <span>取得: 2026-10-06T23:37:29+09:00</span>
+    <a href="#article-top">↑ 先頭へ戻る</a>
+  </footer>
+</main>
+<script>
+(() => {
+  const progress = document.querySelector(".reading-progress > span");
+  const updateProgress = () => {
+    const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+    const ratio = scrollable > 0 ? window.scrollY / scrollable : 0;
+    if (progress) progress.style.width = `${Math.min(1, ratio) * 100}%`;
+  };
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  document.querySelectorAll("pre").forEach((block) => {
+    const button = document.createElement("button");
+    button.className = "copy-button";
+    button.type = "button";
+    button.textContent = "コピー";
+    button.addEventListener("click", async () => {
+      const text = block.querySelector("code")?.innerText || block.innerText;
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const textarea = document.createElement("textarea");
+          textarea.value = text;
+          textarea.style.position = "fixed";
+          textarea.style.opacity = "0";
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand("copy");
+          textarea.remove();
+        }
+        button.textContent = "コピー済み";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      } catch (error) {
+        button.textContent = "失敗";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      }
+    });
+    block.appendChild(button);
+  });
+
+  const links = new Map(
+    [...document.querySelectorAll(".toc a")].map((link) => [link.hash, link])
+  );
+  const headings = [...document.querySelectorAll(
+    ".article-body h2[id], .article-body h3[id], .article-body h4[id]"
+  )];
+  if ("IntersectionObserver" in window && headings.length) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        links.forEach((link) => link.classList.remove("is-active"));
+        links.get(`#${entry.target.id}`)?.classList.add("is-active");
+      });
+    }, { rootMargin: "-12% 0px -72% 0px" });
+    headings.forEach((heading) => observer.observe(heading));
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1310 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="title" content="第16章 多数のPRを計画し、複数のエージェントで運用する">
+<meta name="book_title" content="【Cursor pstack】AIエージェントに開発を任せる環境をつくる ―月2,500件のPRを支えた開発基盤とは？">
+<meta name="source_url" content="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/8a8dd5">
+<meta name="author" content="kaito">
+<meta name="published_at" content="2026-10-02">
+<meta name="retrieved_at" content="2026-10-06T23:37:29+09:00">
+<meta name="site" content="zenn.dev">
+<meta name="content_type" content="article">
+<meta name="chapter_position" content="20">
+<title>第16章 多数のPRを計画し、複数のエージェントで運用する</title>
+<style>
+:root {
+  color-scheme: light;
+  --ink: #172033;
+  --muted: #64748b;
+  --line: #dbe4ef;
+  --accent: #2563eb;
+  --accent-dark: #1d4ed8;
+  --accent-soft: #eff6ff;
+  font-family: -apple-system, BlinkMacSystemFont, "Avenir Next",
+    "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 8% 0%, #dbeafe 0, transparent 32rem),
+    radial-gradient(circle at 100% 12%, #e0e7ff 0, transparent 28rem),
+    #f4f7fb;
+  color: var(--ink);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(120deg, transparent 0 48%, rgba(255, 255, 255, 0.4));
+}
+.article {
+  position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
+  max-width: 920px;
+  margin: clamp(1rem, 5vw, 4rem) auto;
+  padding: clamp(2rem, 6vw, 5rem) clamp(1.25rem, 7vw, 5.5rem);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  border-radius: 24px;
+  min-height: 100vh;
+  box-shadow:
+    0 24px 70px rgba(30, 64, 175, 0.1),
+    0 4px 16px rgba(15, 23, 42, 0.04);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 5px;
+  content: "";
+  background: linear-gradient(90deg, #2563eb, #7c3aed, #db2777);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin: 0 0 2.5rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.72rem;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+a {
+  color: var(--accent-dark);
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: #7c3aed;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--ink);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 18ch;
+  margin: 0 0 2.5rem;
+  font-size: clamp(2.15rem, 5vw, 3.65rem);
+  letter-spacing: -0.045em;
+}
+h2 {
+  position: relative;
+  margin: 3.8rem 0 1.25rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--line);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 4.2rem;
+  height: 3px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), #7c3aed);
+  border-radius: 999px;
+}
+h3 {
+  margin: 2.6rem 0 0.8rem;
+  color: var(--accent-dark);
+  font-size: 1.3rem;
+}
+h4, h5, h6 {
+  margin-top: 2rem;
+}
+p {
+  margin: 1.15rem 0;
+}
+ul, ol {
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.35rem 0;
+}
+li::marker {
+  color: var(--accent);
+  font-weight: 700;
+}
+strong {
+  color: #111827;
+}
+blockquote {
+  margin: 1.6rem 0;
+  padding: 0.8rem 1.25rem;
+  color: #475569;
+  background: linear-gradient(90deg, var(--accent-soft), #fff);
+  border-left: 4px solid var(--accent);
+  border-radius: 0 12px 12px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 3rem 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+img {
+  display: block;
+  max-width: 100%;
+  margin: 1.75rem auto;
+  height: auto;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+}
+pre {
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  padding: 1.15rem 1.25rem;
+  color: #e2e8f0;
+  background: #111827;
+  border: 1px solid #253047;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+}
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+:not(pre) > code {
+  padding: 0.15rem 0.4rem;
+  color: #9f1239;
+  background: #fff1f2;
+  border-radius: 5px;
+}
+table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  border-collapse: collapse;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
+  text-align: left;
+}
+th {
+  color: #1e3a8a;
+  background: #eff6ff;
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: #f8fafc;
+}
+@media (max-width: 600px) {
+  .article {
+    margin: 0;
+    padding: 2rem 1rem 4rem;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(2rem, 10vw, 2.75rem);
+  }
+  .metadata {
+    margin-bottom: 2rem;
+  }
+}
+@media print {
+  body {
+    background: #fff;
+  }
+  .article {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  a {
+    color: inherit;
+  }
+}
+</style>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0f1419;
+  --surface: #1a2332;
+  --surface-raised: #202c3f;
+  --surface-soft: rgba(26, 35, 50, 0.72);
+  --border: #2d3a4f;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #58a6ff;
+  --accent-strong: #79c0ff;
+  --green: #3fb950;
+  --purple: #bc8cff;
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+    "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  line-height: 1.75;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+  background: var(--bg);
+}
+body {
+  min-width: 320px;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 2rem 1.5rem 5rem;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(31, 111, 235, 0.18), transparent 32rem),
+    radial-gradient(circle at 100% 12%, rgba(137, 87, 229, 0.14), transparent 28rem),
+    var(--bg);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black, transparent 75%);
+}
+.reading-progress {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 20;
+  height: 3px;
+  background: rgba(45, 58, 79, 0.7);
+}
+.reading-progress > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  box-shadow: 0 0 14px rgba(88, 166, 255, 0.8);
+  transition: width 80ms linear;
+}
+.article {
+  position: relative;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  background: rgba(15, 20, 25, 0.76);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(88, 166, 255, 0.035) inset;
+  backdrop-filter: blur(16px);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  border-radius: 16px 16px 0 0;
+}
+.article-header {
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.eyebrow-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--green);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(63, 185, 80, 0.75);
+}
+.eyebrow-separator {
+  color: var(--border);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  background: rgba(32, 44, 63, 0.68);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+.source-link {
+  color: var(--text);
+  text-decoration: none;
+}
+.source-link:hover {
+  border-color: var(--accent);
+  background: rgba(88, 166, 255, 0.12);
+}
+a {
+  color: var(--accent);
+  overflow-wrap: anywhere;
+  text-decoration: none;
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 24ch;
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  background: linear-gradient(120deg, #fff 12%, #b9d8ff 58%, #bc8cff);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+h2 {
+  position: relative;
+  margin: 3.2rem 0 1.1rem;
+  padding: 0.75rem 0 0.65rem;
+  border-bottom: 1px solid var(--border);
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 3.8rem;
+  height: 2px;
+  content: "";
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(88, 166, 255, 0.7);
+}
+h3 {
+  margin: 2.25rem 0 0.7rem;
+  color: var(--accent-strong);
+  font-size: 1.2rem;
+}
+h4, h5, h6 {
+  margin-top: 1.75rem;
+}
+p {
+  margin: 0.9rem 0;
+}
+ul, ol {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.3rem 0;
+}
+li::marker {
+  color: var(--accent);
+}
+strong {
+  color: #fff;
+}
+blockquote {
+  margin: 1.4rem 0;
+  padding: 0.85rem 1.15rem;
+  color: #c9d1d9;
+  background: linear-gradient(100deg, rgba(88, 166, 255, 0.1), rgba(26, 35, 50, 0.55));
+  border: 1px solid rgba(88, 166, 255, 0.18);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 2.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+}
+pre {
+  position: relative;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  padding: 1rem 1.15rem;
+  color: #dbeafe;
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+pre code {
+  color: inherit;
+  background: transparent;
+}
+code {
+  font-family: "SF Mono", "Fira Code", ui-monospace, monospace;
+  font-size: 0.86em;
+}
+:not(pre) > code {
+  padding: 0.12em 0.38em;
+  color: #ffabbc;
+  background: rgba(248, 81, 73, 0.11);
+  border-radius: 4px;
+}
+.copy-button {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  padding: 0.25rem 0.55rem;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.72rem;
+  background: rgba(32, 44, 63, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.copy-button:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  border-spacing: 0;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.6rem 0.75rem;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+th {
+  color: var(--accent);
+  background: var(--surface);
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: rgba(26, 35, 50, 0.42);
+}
+tr:last-child td {
+  border-bottom: 0;
+}
+th:last-child, td:last-child {
+  border-right: 0;
+}
+.toc {
+  margin: 1.75rem 0 2.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.toc-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--border);
+}
+.toc-title {
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.toc-count {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.toc ol {
+  margin: 0.7rem 0 0;
+  padding-left: 1.25rem;
+}
+.toc ol ol {
+  margin: 0.2rem 0;
+}
+.toc li {
+  margin: 0.18rem 0;
+  font-size: 0.86rem;
+}
+.toc li::marker {
+  color: var(--muted);
+}
+.toc a {
+  display: inline-block;
+  max-width: 100%;
+  color: var(--muted);
+  transition: color 160ms ease, transform 160ms ease;
+}
+.toc a:hover, .toc a.is-active {
+  color: var(--accent-strong);
+  text-decoration: none;
+  transform: translateX(2px);
+}
+.article-body {
+  max-width: 78ch;
+  margin: 0 auto;
+}
+.article-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 1rem;
+  color: var(--muted);
+  font-size: 0.74rem;
+  border-top: 1px solid var(--border);
+}
+.article-footer a {
+  color: var(--muted);
+}
+@media (max-width: 720px) {
+  body {
+    padding: 0 0 3rem;
+  }
+  .article {
+    min-height: 100vh;
+    padding: 1.5rem 1rem 3rem;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+  .article::before {
+    border-radius: 0;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(1.9rem, 9vw, 2.6rem);
+  }
+  .article-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+@media print {
+  :root {
+    color-scheme: light;
+  }
+  body {
+    padding: 0;
+    color: #111;
+    background: #fff;
+  }
+  .reading-progress, .toc, .copy-button {
+    display: none;
+  }
+  .article {
+    max-width: none;
+    padding: 0;
+    background: #fff;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  h1, h2, h3, h4, h5, h6, strong {
+    color: #111;
+    -webkit-text-fill-color: initial;
+  }
+  a {
+    color: inherit;
+    text-decoration: underline;
+  }
+  pre {
+    color: #111;
+    background: #f4f4f4;
+    box-shadow: none;
+  }
+}
+</style>
+</head>
+<body>
+<div class="reading-progress" aria-hidden="true"><span></span></div>
+<main id="article-top" class="article">
+  <header class="article-header">
+    <div class="eyebrow">
+      <span class="eyebrow-dot"></span>
+      <span>ARTICLE</span>
+      <span class="eyebrow-separator">/</span>
+      <span>zenn.dev</span>
+    </div>
+    <div class="metadata" aria-label="記事メタデータ"><span class="metadata-item"><span class="metadata-label">著者</span>kaito</span><span class="metadata-item"><span class="metadata-label">公開日</span>2026-10-02</span><a class="metadata-item source-link" href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/8a8dd5"><span class="metadata-label">原文</span>読む</a><span class="metadata-item"><span class="metadata-label">サイト</span>zenn.dev</span><span class="metadata-item"><span class="metadata-label">形式</span>ARTICLE</span></div>
+    <h1 id="16-pr">第16章 多数のPRを計画し、複数のエージェントで運用する</h1>
+  </header>
+<nav class="toc" aria-label="目次">
+  <div class="toc-heading">
+    <span class="toc-title">目次</span>
+    <span class="toc-count">53 セクション</span>
+  </div>
+  <ol><li><a href="#_1">この章の構成</a></li><li><a href="#4playbookpr">4つのPlaybookは多数のPRを計画して運用し、中心のエージェントはコードを書かない</a><ol><li><a href="#_2">章全体に出てくる道具</a></li></ol></li><li><a href="#multi-phase-or-multi-pr-planpr">『Multi-phase or multi-PR plan』は、コードを書かずに、PRごとの検証方法まで決めたチェックリスト形式の計画書を作る</a><ol><li><a href="#7">7つの手順</a><ol><li><a href="#1">1. 計画が必要かを判断する</a></li><li><a href="#2">2. 未解決の問いは、書く前にプロトタイプで決める</a></li><li><a href="#3">3. 調査はサブエージェントに任せる</a></li><li><a href="#4">4. 計画書のひな形を写し、すべての項目を埋める</a></li><li><a href="#5-ai">5. 計画書は技術文書の基準で書き、AIらしい言い回しを削る</a></li><li><a href="#6">6. 計画書の形を確かめる</a></li><li><a href="#7_1">7. 計画を引き渡す</a></li><li><a href="#_3">返答に書く項目</a></li></ol></li><li><a href="#check-planmjs">計画書のひな形と check-plan.mjs</a></li><li><a href="#_4">要点は「テストだけでは検証にならない」という検証規則</a></li><li><a href="#_5">依頼の書き方：守る制約と、先に見たいものを書く</a></li></ol></li><li><a href="#orchestratepr1">『Orchestrate』は、何日も続く多数のPRの作業を、コードを書かない1体のコーディネーターエージェントが管理する</a><ol><li><a href="#7_2">7つの手順</a><ol><li><a href="#1-frame">1. 終了条件を決める（Frame）</a></li><li><a href="#2-install-the-runtime">2. 状態を置く場所を用意する（Install the runtime）</a></li><li><a href="#3-1pilot">3. 1つの単位で試運転する（Pilot）</a></li><li><a href="#4-workersscale">4. Workersを増やす（Scale）</a></li><li><a href="#5-drain">5. 完了の知らせをまとめて処理する（Drain）</a></li><li><a href="#6-land">6. 検証済みの単位から順にマージする（Land）</a></li><li><a href="#7-close">7. 記録を照合して閉じる（Close）</a></li><li><a href="#_6">返答に書く項目</a></li></ol></li><li><a href="#3_1">役割は3つのレイヤー</a></li><li><a href="#_7">ストア、指示書、台帳が状態を持つ</a><ol><li><a href="#workers">指示書は、Workersが受け取る唯一の説明</a></li><li><a href="#pr">台帳には、PRをどこまで確かめたかを記録する</a></li><li><a href="#stacker-1">スタックの付け直しは、stacker 1体だけが行う</a></li><li><a href="#_8">様子を見るために、エージェントを再開しない</a></li><li><a href="#4_1">運用者に判断を求めるのは4種類だけ</a></li></ol></li><li><a href="#3_2">要点は、完了、常設の指示、指示書についての3つの規則</a></li><li><a href="#_9">依頼の書き方：終了条件と、確認する頻度を書く</a></li></ol></li><li><a href="#autopilot-fullpr">『Autopilot-full』は、PRごとのオーナーがマージまで進め、コーディネーターエージェントは検証の判定だけを受け持つ</a><ol><li><a href="#7_3">7つの手順</a><ol><li><a href="#1-state-then-wait">1. 運用者の開始の指示を待つ（state-then-wait）</a></li><li><a href="#2-pr1">2. PRごとに1体のオーナーを起動する</a></li><li><a href="#3-pr">3. オーナー同士は並列に動かし、PRを積み重ねない</a></li><li><a href="#4-swarm">4. ラウンドごとに /swarm で検証する</a></li><li><a href="#5-clean-verdict">5. clean verdict が出たら、オーナーが自分でマージし、次の作業は新しいオーナーが受け持つ</a></li><li><a href="#6-1">6. コーディネーターエージェントは、1時間ごとに全体を点検する</a></li><li><a href="#7_4">7. 運用者が止めたら、すべてのオーナーを止める</a></li><li><a href="#_10">返答に書く項目</a></li></ol></li><li><a href="#_11">要点は、進捗を「副作用」だけで数えること</a></li><li><a href="#_12">依頼の書き方：各項目が独立していることと、マージの期限を書く</a></li></ol></li><li><a href="#autopilot-stackautopilot-fullpr1">『Autopilot-stack』は、Autopilot-fullと同じ手順でPRを作って検証し、マージせずに1本のスタックとして運用者に渡す</a><ol><li><a href="#autopilot-full">手順：Autopilot-full との違い</a></li><li><a href="#_13">要点は、スタックの並びを書き換えるのはコーディネーターエージェントだけという分担</a></li><li><a href="#_14">依頼の書き方：「スタックにして、本番には入れないで」と書く</a></li></ol></li><li><a href="#5">長く動く作業の5つの選択肢は、誰がマージし、何を単位にするかで選ぶ</a></li><li><a href="#_15">まとめ</a></li></ol>
+</nav>
+  <div class="article-body">
+
+<p>この章では、次の4つのPlaybookを扱います。</p>
+<ol>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/multi-phase-plan.md">Multi-phase or multi-PR plan</a></li>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/orchestrate.md">Orchestrate</a></li>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/autopilot-full.md">Autopilot-full</a></li>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/autopilot-stack.md">Autopilot-stack</a></li>
+</ol>
+<p>4つとも、何本ものPRにまたがる作業を、複数のエージェントで計画し、運用するためのPlaybookです。『<strong>Multi-phase or multi-PR plan</strong>』は計画書を作り、『<strong>Orchestrate</strong>』は何日も続く作業を管理し、『<strong>Autopilot-full</strong>』と『<strong>Autopilot-stack</strong>』はPRのキューを検証しながら進めます。</p>
+<p>1つの長い作業を続け、止め、再開するPlaybookは、前の<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/7d7609">第15章</a>で扱いました。</p>
+<p>この章では、4つのPlaybookの分担を整理したうえで、それぞれの使いどころ、手順、要点を解説し、最後に長く動く作業の選び方を比べます。</p>
+<h2 id="_1">この章の構成</h2>
+<p>この章の構成は次のとおりです。</p>
+<ul>
+<li>4つのPlaybookは多数のPRを計画して運用し、中心のエージェントはコードを書かない</li>
+<li>『Multi-phase or multi-PR plan』は、コードを書かずに、PRごとの検証方法まで決めたチェックリスト形式の計画書を作る</li>
+<li>『Orchestrate』は、何日も続く多数のPRの作業を、コードを書かない1体のコーディネーターエージェントが管理する</li>
+<li>『Autopilot-full』は、PRごとのオーナーがマージまで進め、コーディネーターエージェントは検証の判定だけを受け持つ</li>
+<li>『Autopilot-stack』は、Autopilot-fullと同じ手順でPRを作って検証し、マージせずに1本のスタックとして運用者に渡す</li>
+<li>長く動く作業の5つの選択肢は、誰がマージし、何を単位にするかで選ぶ</li>
+<li>まとめ</li>
+</ul>
+<h2 id="4playbookpr">4つのPlaybookは多数のPRを計画して運用し、中心のエージェントはコードを書かない</h2>
+<p>この章の4つのPlaybookは、次の表のように責任を分担します。</p>
+<table>
+<thead>
+<tr>
+<th>Playbook</th>
+<th>責任を持つもの</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>『<strong>Multi-phase or multi-PR plan</strong>』</td>
+<td>計画。コードではない</td>
+</tr>
+<tr>
+<td>『<strong>Orchestrate</strong>』</td>
+<td>プログラム（何日も続く作業の全体）。コードは持たない</td>
+</tr>
+<tr>
+<td>『<strong>Autopilot-full</strong>』</td>
+<td>検証の判定。PRは持たない</td>
+</tr>
+<tr>
+<td>『<strong>Autopilot-stack</strong>』</td>
+<td>スタック。マージは持たない</td>
+</tr>
+</tbody>
+</table>
+<p>4つのPlaybookは、どれも「持たないもの」（コード、PR、マージ）を明記しています。</p>
+<p><strong>コーディネーターエージェントは自分ではコードを書かず</strong>、計画、Workers（並列に動く複数のエージェント）への指示書、判定に専念します。ただし『Orchestrate』では、ローカルでのGit操作がすぐ終わる場合、検証済みの変更をブランチに取り込んでpushする作業は、コーディネーターエージェントが行ってもよいとしています。</p>
+<p>コーディネーターエージェントは、<strong>運用者</strong>（<strong>作業を依頼し、最終判断をする人間</strong>）とやり取りする常駐のチャットです。『<strong>Orchestrate</strong>』では「コーディネーター」、『<strong>Autopilot-full</strong>』と『<strong>Autopilot-stack</strong>』では「ルート」と呼ばれます。呼び名は異なりますが、この章ではいずれも「コーディネーターエージェント」という名称を使用します。</p>
+<h3 id="_2">章全体に出てくる道具</h3>
+<p>この章のPlaybookには、次の道具が繰り返し出てきます。</p>
+<ul>
+<li><strong><code>/loop</code></strong>・・・ 決まった間隔などでエージェントを起動する、Cursor組み込みのコマンドです（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/7d7609">第15章</a>）。この章のPlaybookでは、コーディネーターエージェントが、全体の点検を1時間ごとに実行するために、<code>/loop 1h</code> を設定します。</li>
+<li><strong><code>decisions.tsv</code></strong>・・・ <code>/show-me-your-work</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/724887">第29章</a>）が書く判断記録で、1行に1つの判断を書きます。</li>
+<li><strong>state-then-wait</strong>・・・ 進め方や計画の説明を求められたら、説明を返して止まります。また、運用者から明示的に「始めて」と指示されるまで、作業には着手しない、という規則です。</li>
+</ul>
+<h2 id="multi-phase-or-multi-pr-planpr">『Multi-phase or multi-PR plan』は、コードを書かずに、PRごとの検証方法まで決めたチェックリスト形式の計画書を作る</h2>
+<p>『<strong>Multi-phase or multi-PR plan</strong>』は、複数のフェーズやスタックしたPRにまたがる作業の計画を作るPlaybookです。</p>
+<p>計画はチェックリスト形式です。担当者は作業を1項目ずつ実行し、完了を示す証拠を添えてチェックを入れます。運用者はその証拠を見て、各項目が実際に完了したか確認します。<strong>証拠がない項目にはチェックを入れません</strong>。</p>
+<p>poteto氏は<a href="https://x.com/poteto/status/2097732320606507506">『The Complete Guide to pstack』Part 2</a>で、このPlaybookを、納得のいく設計ができた後に実行計画を作るためのものと紹介しています。計画づくりの実践的な解説は<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/166acb">第42章</a>で扱います。</p>
+<h3 id="7">7つの手順</h3>
+<p>手順は次のとおりです。</p>
+<ol>
+<li>計画が必要かを判断する</li>
+<li>未解決の問いは、書く前にプロトタイプで決める</li>
+<li>調査はサブエージェントに任せる</li>
+<li>計画書のひな形を写し、すべての項目を埋める</li>
+<li>計画書は技術文書の基準で書き、AIらしい言い回しを削る</li>
+<li>計画書の形を確かめる</li>
+<li>計画を引き渡す</li>
+</ol>
+<p>ここからは、各手順を1つずつ見ていきます。</p>
+<h4 id="1">1. 計画が必要かを判断する</h4>
+<p>変更が1〜2ファイルに収まり、方針が明らかなら、計画を作らず、計画不要と伝えて止まる。</p>
+<h4 id="2">2. 未解決の問いは、書く前にプロトタイプで決める</h4>
+<p>『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/prototype.md"><strong>Prototype</strong></a>』（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/f1e85b">第12章</a>）で決め、証拠を計画書の付録に残す。運用者に尋ねるのは、実行では決められない判断だけ（原則『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-never-block-on-the-human/SKILL.md"><strong>Never Block on the Human</strong></a>』、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/c155cc">第20章</a>）。</p>
+<h4 id="3">3. 調査はサブエージェントに任せる</h4>
+<p>調査はサブエージェントが行い、関係するファイルの場所、コードの決まりごと、テストを実行するコマンド、入口になるコード（例：<code>main</code> 関数や、APIのリクエストを最初に受け取る関数）を返させる。</p>
+<p>サブエージェントには、読んだファイルの中身を、丸ごと返答に貼り付けさせない。<br />
+主エージェントのコンテキストを、調査の中身で埋めないためである（原則『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-guard-the-context-window/SKILL.md"><strong>Guard the Context Window</strong></a>』、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/c155cc">第20章</a>）。</p>
+<h4 id="4">4. 計画書のひな形を写し、すべての項目を埋める</h4>
+<p>計画書にPRごとにそのPRで行う変更、変更するファイル、検証方法を書く。1つのPRには検証可能な単位の1つの変更が含まれる。</p>
+<h4 id="5-ai">5. 計画書は技術文書の基準で書き、AIらしい言い回しを削る</h4>
+<p>技術文書の基準を定めた <code>/technical-writing</code> で書き、AIらしい言い回しを削る <code>/unslop</code> を通す。</p>
+<h4 id="6">6. 計画書の形を確かめる</h4>
+<p><code>check-plan.mjs</code> を実行し、見出しや検証項目の不足、文章上のルール違反として出力されたエラーをすべて直す。</p>
+<h4 id="7_1">7. 計画を引き渡す</h4>
+<p>計画のパスとスクリプトの出力を返答に出し、作業を止める。実行は、運用者の明示的な開始指示を待ってから、計画に書いた実行用Playbook（『<strong>Autopilot-full</strong>』、『<strong>Autopilot-stack</strong>』、『<strong>Orchestrate</strong>』のどれか）で始める。</p>
+<h4 id="_3">返答に書く項目</h4>
+<p>返答に書く項目は次のとおりです。</p>
+<ul>
+<li>計画のパス</li>
+<li>PRの依存関係</li>
+<li>レビューが必要なPR</li>
+<li>プロトタイプが証明したこと</li>
+<li><code>check-plan.mjs</code> の出力</li>
+</ul>
+<h3 id="check-planmjs">計画書のひな形と check-plan.mjs</h3>
+<p>計画書の構成は次のとおりです。</p>
+<ul>
+<li>冒頭の概要</li>
+<li>読み方</li>
+<li>プログラム全体のチェックリスト</li>
+<li>PRごとの節</li>
+<li>終了の節</li>
+<li>付録（プロトタイプの証拠、採用しなかった案、リスク、資料）</li>
+</ul>
+<p>PRごとの節が持つ<strong>9つの小見出し</strong>は次のとおりです。</p>
+<ul>
+<li>依存</li>
+<li>触るファイル</li>
+<li>変更</li>
+<li>観察できる結果</li>
+<li>unit の検証（単体テスト）</li>
+<li>live の検証（実際のアプリの動作）</li>
+<li>perf の検証（パフォーマンス）</li>
+<li>Review gate（マージ前に運用者の確認が必要かどうかと、その確認方法を示す）</li>
+<li>マージ</li>
+</ul>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/scripts/check-plan.mjs"><code>check-plan.mjs</code></a> は、計画書の見出しや必須項目、文章の書き方などについて、違反がないか確認します。問題があれば、行番号と理由を表示します。このPlaybookでは、計画書のルールを文章だけでなく、スクリプトで確認するようにしています（原則『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-encode-lessons-in-structure/SKILL.md"><strong>Encode Lessons in Structure</strong></a>』、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/dd2d9f">第21章</a>）。</p>
+<h3 id="_4">要点は「テストだけでは検証にならない」という検証規則</h3>
+<p>このPlaybookでは、unit・live・perfの各検証の冒頭に、共通の合格条件として次の一文を配置します。</p>
+<blockquote>
+<p>Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.</p>
+<p>テストだけでは十分な検証ではない。PRが検証済みになるのは、unit、live、perf のボックスがすべてチェックされたときだけだ。</p>
+</blockquote>
+<p>計画書では、PRごとにunit・live・perfの検証欄を設け、それぞれに具体的な確認方法も書きます。画面や操作に影響するPRには、マージ前に運用者が確認する「Review gate」も設けます。</p>
+<p>各欄の内容は次のとおりです。</p>
+<ul>
+<li><strong>Verify, unit</strong>・・・ テストファイル、追加するケース、実行コマンドを書きます。</li>
+<li><strong>Verify, live</strong>・・・ 必須項目です。10本のレーン（並列の検証担当）が、PRの最新のコミットで実際の画面やCLIを操作します。レーン1は、同じシナリオをtrunk（マージ先の本流のブランチ）とPRの両方で実行する回帰（変更による不具合がないかの確認）のレーンです。</li>
+<li><strong>Verify, perf</strong>・・・ trunkとPRの両方で同じ指標を測定し、失敗とみなす数値を決めます。</li>
+<li><strong>Review gate</strong>・・・ 画面や操作に影響するPRは、マージ前に運用者がスクリーンショットと動画でレビューします。</li>
+</ul>
+<p>画面の操作には、ブラウザやElectron（デスクトップアプリを構築するフレームワーク）なら <code>control-ui</code>、CLIやTUIなら <code>control-cli</code>（どちらも <a href="https://github.com/cursor/plugins/tree/main/cursor-team-kit"><code>cursor-team-kit</code></a>）を使います。</p>
+<p>!</p>
+<ul>
+<li><strong>TUI</strong>・・・ ターミナル上で、画面を描いてキー操作で使うユーザーインターフェース（例：vim、htop など）</li>
+</ul>
+<h3 id="_5">依頼の書き方：守る制約と、先に見たいものを書く</h3>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/README.md">README</a>の依頼例は、社内のものを漏らさないという制約、一時ディレクトリで作業するという条件、先に依存関係のグラフを見せてほしいという要望を伝えています。</p>
+<pre><code>/poteto-mode open source these skills as a plugin. nothing internal leaks, work in a temp dir, show me the dependency graph first.
+// これらのSkillをプラグインとして公開して。社内のものは何も漏らさず、一時ディレクトリで作業して、先に依存関係のグラフを見せて。
+</code></pre>
+<h2 id="orchestratepr1">『Orchestrate』は、何日も続く多数のPRの作業を、コードを書かない1体のコーディネーターエージェントが管理する</h2>
+<p>『<strong>Orchestrate</strong>』は、何日も続き、多数のPRと数十から数百のサブエージェントが動くプロジェクトを、1体のコーディネーターエージェントに任せるPlaybookです。運用者は1日2回だけ確認する想定です。<strong>コーディネーターエージェントはコードを持たず</strong>、Workers（複数のサブエージェント）への指示書を書き、完了の知らせを処理し、判断を下します。</p>
+<h3 id="7_2">7つの手順</h3>
+<p>手順は次のとおりです。</p>
+<ol>
+<li>終了条件を決める（Frame）</li>
+<li>状態を置く場所を用意する（Install the runtime）</li>
+<li>1つの単位で試運転する（Pilot）</li>
+<li>Workersを増やす（Scale）</li>
+<li>完了の知らせをまとめて処理する（Drain）</li>
+<li>検証済みの単位から順にマージする（Land）</li>
+<li>記録を照合して閉じる（Close）</li>
+</ol>
+<p>ここからは、各手順を1つずつ見ていきます。</p>
+<h4 id="1-frame">1. 終了条件を決める（Frame）</h4>
+<p>終了条件は「126個の単位がすべてマージされ、それぞれが台帳で検証済み」のように、作業が完了したかを記録から判定できる形で書く。1体のエージェントが、決めた作業時間の予算内に終えられるなら、『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/autonomous-run.md"><strong>Autonomous run</strong></a>』（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/7d7609">第15章</a>）に切り替える。</p>
+<h4 id="2-install-the-runtime">2. 状態を置く場所を用意する（Install the runtime）</h4>
+<p><code>orch init</code> でストア（作業状況や判断記録を保存する領域）を作り、判断記録を開き、常設の指示を書く。</p>
+<h4 id="3-1pilot">3. 1つの単位で試運転する（Pilot）</h4>
+<p>まず1つの作業を、指示書の作成から実装、検証、PRのスタックへの登録、台帳への記録、マージまで一通り進める。その結果をもとに指示書や検証方法を見直してから、残りの作業に広げる。</p>
+<p>試運転（Pilot）を1体のエージェントと1件の作業で行うのは、指示書や検証手順、作業単位の大きさの問題をここで直してから他の作業に広げ、<strong>同じ不備が多数のエージェントに広がって手戻りになるのを防ぐため</strong>です。</p>
+<h4 id="4-workersscale">4. Workersを増やす（Scale）</h4>
+<p>同時に動かせる上限の数までWorkersを起動し、終わった分だけ新しいWorkersを起動して補充する。</p>
+<h4 id="5-drain">5. 完了の知らせをまとめて処理する（Drain）</h4>
+<p>Workersからの完了の知らせは受信箱（<code>inbox/</code>）に貯めておき、決まった区切りでまとめて処理する。</p>
+<h4 id="6-land">6. 検証済みの単位から順にマージする（Land）</h4>
+<p>マージは最後にまとめず、最初の検証済みのマージから順次、継続的に行う。</p>
+<h4 id="7-close">7. 記録を照合して閉じる（Close）</h4>
+<p>起動したすべてのエージェントが、完了や放棄などの終わった状態として表に記録されているかを照合する。終了条件が満たされたことを実物で確かめ、何度も繰り返した指示の訂正や繰り返し必要になった指示は、次のエージェントにも伝わるよう、<code>preferences.md</code> や指示書のテンプレートに残す。</p>
+<h4 id="_6">返答に書く項目</h4>
+<p>返答には、次の内容を報告します。PRに関する項目には、該当するPRのリンクを添えます。</p>
+<ul>
+<li><code>units.tsv</code> と <code>ledger.tsv</code> から数えた、終了条件に対する進捗</li>
+<li>マージされたPR</li>
+<li>放棄した作業と、その理由</li>
+<li>運用者の判断待ち</li>
+</ul>
+<p>進捗の数字は、各作業の状態を記録した <code>units.tsv</code> と、検証結果を記録した<code>ledger.tsv</code> から集計します。</p>
+<h3 id="3_1">役割は3つのレイヤー</h3>
+<ul>
+<li><strong>コーディネーターエージェント</strong>（Orchestrate での呼び名はコーディネーター）・・・ 主エージェント。枠組み、指示書、受信箱の処理、運用者への報告といったタスクのオーケストレーターで、コードは書きません。</li>
+<li><strong>サブコーディネーター</strong>・・・ 作業規模が大きく、コーディネーターエージェントの処理量を超えたときのみ、ビルドや検証といったトラックと呼ばれる作業の種別ごとに1体置かれるサブエージェント。</li>
+<li><strong>Workers（作業担当）と検証者</strong>・・・ Workersは割り当てられた作業を実行し、検証者はWorkerの成果を検証します。どちらも原則クラウドで動かし、検証にはWorkerとは別系列のモデルを使います。同じworktreeやブランチを編集するWorkerは1体にします。</li>
+</ul>
+<p>!</p>
+<ul>
+<li><strong>worktree</strong>・・・ gitの機能で、1つのリポジトリから複数の作業ディレクトリを作り、別々のブランチを同時にチェックアウトできるようにするもの</li>
+</ul>
+<h3 id="_7">ストア、指示書、台帳が状態を持つ</h3>
+<p>コーディネーターエージェントは、エージェントのストア（作業状況や判断記録を保存する領域）に <code>orchestrate/&lt;project-slug&gt;/</code> を作り、記帳用のCLI <a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/scripts/orch/orch.ts"><code>orch</code></a> で表のファイルに状態を書きます。主なファイルは次のとおりです。</p>
+<table>
+<thead>
+<tr>
+<th>ファイル</th>
+<th>中身</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>preferences.md</code></td>
+<td>すべてのエージェントに守らせる共通指示。1行に1つのルールを書き、起動時と再開時に毎回渡す</td>
+</tr>
+<tr>
+<td><code>units.tsv</code></td>
+<td>作業単位ごとのID、トラック（並行して進む作業の系列）、状態、ブランチ、PR、head SHA（PRの最新のコミットID）、指示書の場所</td>
+</tr>
+<tr>
+<td><code>ledger.tsv</code></td>
+<td>PRごとの検証結果を記録する台帳</td>
+</tr>
+<tr>
+<td><code>inbox/</code></td>
+<td>Workerから届いた完了通知と、報告の保存先を記録する場所</td>
+</tr>
+<tr>
+<td><code>gates.md</code></td>
+<td>運用者の判断が必要な事項。質問、選択肢、返答がない場合の扱いを記録する</td>
+</tr>
+<tr>
+<td><code>decisions.tsv</code></td>
+<td>作業中に下した判断と、その理由の記録</td>
+</tr>
+</tbody>
+</table>
+<h4 id="workers">指示書は、Workersが受け取る唯一の説明</h4>
+<p>コーディネーターエージェントは、Workersに作業を頼むとき、作業単位ごとに指示書（brief）を書きます。Workersは作業の途中でコーディネーターエージェントに質問できません。そのため、<strong>指示書に書かれていないことは、Workersが推測で補うしかありません</strong>。</p>
+<p>推測で進んだ作業は、的外れな結果になりやすくなります。そこで指示書には、書くべき欄があらかじめ決まっています。主な欄は次のとおりです。</p>
+<ul>
+<li><strong>GOAL（目的）</strong>・・・ 作業の目的を1文で書きます。チャットの経緯を知らない人でも実行できるように書きます。</li>
+<li><strong>SCOPE（範囲）</strong>・・・ 書き換えてよいファイル、書き換えてはいけないファイル、専用に使うブランチを書きます。</li>
+<li><strong>CONTEXT（文脈）</strong>・・・ 参照するファイルやPRを書きます。Workersは、ほかのWorkersの作業を見られないため、前の作業の結果に作業が依存する場合、前のWorkerの報告全文をそのまま貼ります。</li>
+<li><strong>ACCEPTANCE（完了の条件）</strong>・・・ 完了とみなす条件を、確かめられる形で1行ずつ書きます。</li>
+<li><strong>VERIFY（確かめ方）</strong>・・・ 確かめるときに実行するコマンドや手順を書きます。</li>
+<li><strong>TIMEBOX（時間の上限）</strong>・・・ 作業時間のおおよその上限を書きます。上限が来たら、途中までの結果を返して止まります。</li>
+<li><strong>FORBIDDEN（禁止事項）</strong>・・・ してはいけないことを書きます（例：範囲外の修正、force-push）。</li>
+<li><strong>REPORT（報告の中身）</strong>・・・ 作業後に返す報告の項目を書きます。</li>
+<li><strong>STANDING（共通の指示）</strong>・・・ <code>preferences.md</code> の内容をそのまま貼ります。</li>
+</ul>
+<p><strong>欄を1つでも埋められない作業単位の場合は、Workersを起動しません</strong>。たとえばACCEPTANCEを書けないなら、何をもって完了とするかが決まっていません。そのままWorkersを起動すると、Workersは完了の基準を推測するしかなく、結果がばらつきます。埋められない欄は、作業の範囲がまだ決まっていない証拠なので、先にそれらを決め直してからWorkersを起動します。</p>
+<p>ただし、指示書の長さは作業の大きさに合わせます。数行を直すだけの作業に、すべての欄を細かく書いた長い指示書を付けると、指示書を書く手間と読む手間のほうが、作業そのものより大きくなるからです。そうした小さな作業では、目的、範囲、確かめるコマンド、報告の形だけを1段落で書きます。</p>
+<h4 id="pr">台帳には、PRをどこまで確かめたかを記録する</h4>
+<p>PRが本当に確かめられたかは、台帳（<code>ledger.tsv</code>）に記録します。台帳には、PRごとに、どこまで確かめたかを表す判定を1行ずつ書きます。判定は次の5つです。</p>
+<table>
+<thead>
+<tr>
+<th>判定</th>
+<th>意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>live-ui-verified</code></td>
+<td>実際の画面やCLIを操作して、動作を確かめた</td>
+</tr>
+<tr>
+<td><code>unit-test-verified</code></td>
+<td>単体テストで確かめた</td>
+</tr>
+<tr>
+<td><code>type-check-only</code></td>
+<td>型チェックが通っただけ</td>
+</tr>
+<tr>
+<td><code>verifier-blocked</code></td>
+<td>環境の問題などで、検証を実行できなかった</td>
+</tr>
+<tr>
+<td><code>verifier-failed</code></td>
+<td>検証で問題が見つかった</td>
+</tr>
+</tbody>
+</table>
+<p>たとえば、画面や動作を変える作業では、<code>type-check-only</code> の型チェックだけでは足りず、それより確かな判定が必要です。型チェックは、実際の動作までは確かめないからです。</p>
+<p>また、<code>verifier-blocked</code> は合格ではないので、コーディネーターエージェントは環境が直ったら検証をやり直します。<code>verifier-failed</code> になったら、同じ検証を繰り返さず、問題を直す作業単位を新しく作ります。</p>
+<p>CIについては、CIがパスしたことは、判定を出すときの一つの材料として扱い、<strong>CIがパスしたというだけでは、判定にはならない</strong>ようにしています。CIが確かめるのは用意されたテストだけで、実際の動作までは確かめないからです。</p>
+<p>判定は、PR番号とhead SHA（PRの最新のコミットID）のセットごとに記録します。PRにコミットを追加したり、rebase（ブランチのコミットを、別のコミットの上に付け直すgitの操作）をしたりすると、head SHAは変わります。</p>
+<p>head SHAが変わったPRは、判定を記録したときとは中身が異なっている可能性があります。そのため、<strong>古いhead SHAで記録した判定は使わず</strong>、コミットが変わったら検証をやり直し、新しいhead SHAで判定を記録し直します。</p>
+<h4 id="stacker-1">スタックの付け直しは、stacker 1体だけが行う</h4>
+<p>スタック（親子関係でつながったPRの列）では、下にあるPRの中身が変わると、その上に積んだPRも、変わったPRの上に付け直す必要があります（以下の図を参照）。この付け直しを restack と呼びます。</p>
+<pre><code>更新前
+main
+└─ PR #1（親はmain）
+   └─ PR #2（親はPR #1）
+      └─ PR #3（親はPR #2）
+
+PR #1に変更Aを加えた後の更新順
+PR #1 → PR #2 → PR #3
+
+更新後
+main
+└─ PR #1（変更A）
+   └─ PR #2（更新後の親PR #1を反映）
+      └─ PR #3（更新後の親PR #2を反映）
+</code></pre>
+<p>『Orchestrate』では、スタックごとに、restackを行うエージェントを1体だけ置きます。このエージェントを stacker（スタックの管理役）と呼びます。</p>
+<p>stackerは、スタックしたPRをまとめて扱うツール Graphite のコマンド（<code>gt</code>）を使って restack します。</p>
+<p>!</p>
+<ul>
+<li><strong>Graphite</strong>・・・ PRを親子関係のあるスタックとして作成・管理するツール</li>
+</ul>
+<p>Workersは、<code>gt</code> もrebaseも使いません。複数のエージェントが同じスタックを同時に付け直すと、互いの変更を上書きしたり、PRの親子関係を壊したりするためです。<strong>付け直しをstackerの1体に限定する</strong>ことで、スタックを書き換えるエージェントが常に1体になり、こうした衝突が起きなくなります。</p>
+<h4 id="_8">様子を見るために、エージェントを再開しない</h4>
+<p>作業の進捗状況を確かめたいときも、待機中のエージェントを再開して聞くことはしません。そのエージェントに聞いてしまうと、そのエージェントが作業を再開してしまうからです。代わりに、コーディネーターエージェントが台帳、<code>units.tsv</code>、pushされたブランチのように、エージェントが残した記録を読み取り専用で調べます。</p>
+<h4 id="4_1">運用者に判断を求めるのは4種類だけ</h4>
+<p>このPlaybookはエージェントが長時間自律して作業する前提で、運用者は1日2回しか確認しない想定です。そのため、エージェントで決められることまで尋ねると、返事が来るまで作業が止まってしまいます。そこで、運用者に判断を求めるのは、次の4種類だけにしています。</p>
+<ul>
+<li>元に戻せない操作（共有ブランチへのforce-push、デプロイ、削除など）</li>
+<li>試しても答えが出ない、プロダクトや好みの判断</li>
+<li><code>preferences.md</code> の共通指示が、実際の状況と食い違っている場合</li>
+<li>計画を組み直しても残った行き詰まり</li>
+</ul>
+<p>尋ねる前に、その内容を <code>gates.md</code> に記録し、返事を待つ間もほかの作業を進めます。</p>
+<p>!</p>
+<ul>
+<li><strong>force-push</strong>・・・ リモートのブランチの履歴を、手元の履歴で強制的に上書きするpush</li>
+</ul>
+<h3 id="3_2">要点は、完了、常設の指示、指示書についての3つの規則</h3>
+<p>このPlaybookは冒頭に次の3つの規則を置き、以降の手順はこの3つを前提にしています。</p>
+<ul>
+<li><strong>完了の知らせは、届くたびに処理せず、貯めてまとめて処理する</strong>・・・ Workersは数十体が同時に動くので、完了の知らせが届くたびに手を止めていると、コーディネーターエージェント自身の作業が進みません。そこで知らせは受信箱（<code>inbox/</code>）に貯め、区切りのよいところでまとめて処理します（手順5）。</li>
+<li><strong>起動のときも再開のときも、共通の指示を必ず渡す</strong>・・・ エージェントは、再開をまたぐと前に受けた指示を落とすことがあります。指示が1つ抜けるたびに、運用者が同じことを言い直す手間が生まれます。そのため、<code>preferences.md</code> の内容を、起動と再開のたびにそのまま渡します。</li>
+<li><strong>指示書の出来が、そのまま成果の出来になる</strong>・・・ Workersは作業中に質問できないので、指示書があいまいでも誰も気づかず、的外れな成果が返ってきます。</li>
+</ul>
+<h3 id="_9">依頼の書き方：終了条件と、確認する頻度を書く</h3>
+<p>同梱ガイドの <a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/07-overnight.md"><code>07-overnight.md</code></a> にある依頼例は、すべてのパッケージが変換されてマージされるまでという終了条件と、運用者が1日2回確認することを伝えています。</p>
+<pre><code>/poteto-mode orchestrate the store migration. own it until every package is converted and merged. i'll check in twice a day.
+// ストアの移行を orchestrate して。すべてのパッケージが変換されてマージされるまで持っていて。1日2回確認する。
+</code></pre>
+<h2 id="autopilot-fullpr">『Autopilot-full』は、PRごとのオーナーがマージまで進め、コーディネーターエージェントは検証の判定だけを受け持つ</h2>
+<p>『<strong>Autopilot-full</strong>』は、互いに独立したPRを並べたキュー（処理を待つ作業の列）を、運用者の確認なしでマージまで進めるPlaybookです。</p>
+<p>PRごとに、1体のエージェントを担当に付けます。この担当を<strong>オーナー</strong>と呼びます。オーナーは、自分のPRを作るところからマージまでを受け持ちます。</p>
+<p>一方、<strong>コーディネーターエージェントは、PRそのものには手を出さず、検証の判定だけを受け持ちます</strong>。オーナーは、コーディネーターエージェントの合格の判定がなければマージできません。オーナーも自分の作業を確かめますが、書いた本人の確認だけでは見落としが残るため、別のエージェントによる検証を合格の条件にしています。</p>
+<p>合格の判定には条件があります。複数の検証担当を並列に動かして確かめる <code>/swarm</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/2ad346">第24章</a>）で検証し、その中に、実際の画面やCLIを操作して動作を確かめる担当（live のレーン）が含まれていることです。レーンとは、並列に動く検証担当、1本1本のことです。live のレーンは最低限の条件で、live のレーンがない判定は合格になりません。そのうえで、レーンが見つけた指摘は、メモとして出されたものも含めて、オーナーがすべて直します。こうして合格とされた判定を、<strong>clean verdict</strong>（直訳すると「きれいな判定」）と呼びます。</p>
+<h3 id="7_3">7つの手順</h3>
+<p>手順は次のとおりです。</p>
+<ol>
+<li>運用者の開始の指示を待つ（state-then-wait）</li>
+<li>PRごとに1体のオーナーを起動する</li>
+<li>オーナー同士は並列に動かし、PRを積み重ねない</li>
+<li>ラウンドごとに <code>/swarm</code> で検証する</li>
+<li>clean verdict が出たら、オーナーが自分でマージし、次の作業は新しいオーナーが受け持つ</li>
+<li>コーディネーターエージェントは、1時間ごとに全体を点検する</li>
+<li>運用者が止めたら、すべてのオーナーを止める</li>
+</ol>
+<p>ここからは、各手順を1つずつ見ていきます。</p>
+<h4 id="1-state-then-wait">1. 運用者の開始の指示を待つ（state-then-wait）</h4>
+<p>計画の説明を求められたら、説明して止まる。運用者から明示的に開始の指示をされてから始める。運用者が自分で扱うと指定したPRについては、オーナーがマージせず、運用者に任せる。</p>
+<h4 id="2-pr1">2. PRごとに1体のオーナーを起動する</h4>
+<p>オーナーはCursorのクラウド上で動くエージェント（Cloud Agents）で、PRの作成、実物での動作確認、Bugbotのコメントの振り分け、trunk（マージ先の本流のブランチ）へのrebase、『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/babysit.md"><strong>Babysit</strong></a>』（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/45a56e">第14章</a>）でCIが通るまでの対応、マージまでを受け持つ。</p>
+<p>オーナーは、最初のpushの後も、検証できる単位を1つ終えるたびに、自分のブランチをpushし直す。このとき、フックは有効なままにするが、コミットは作業途中のWIPコミットでもよい。</p>
+<p>細かくpushするのは、コーディネーターエージェントが、<a href="#6.-%E3%82%B3%E3%83%BC%E3%83%87%E3%82%A3%E3%83%8D%E3%83%BC%E3%82%BF%E3%83%BC%E3%82%A8%E3%83%BC%E3%82%B8%E3%82%A7%E3%83%B3%E3%83%88%E3%81%AF%E3%80%811%E6%99%82%E9%96%93%E3%81%94%E3%81%A8%E3%81%AB%E5%85%A8%E4%BD%93%E3%82%92%E7%82%B9%E6%A4%9C%E3%81%99%E3%82%8B">手順6</a>の点検で、pushされたブランチと判断の記録を見て、オーナーの進捗具合を判断するためである。たとえば、3つの画面を直すPRなら、オーナーは、1つ目の画面を直して確認が通った時点で、そこまでをpushする。</p>
+<p>!</p>
+<ul>
+<li><strong>フック</strong>（Gitフック）・・・ コミットやpushの直前などに、Gitが自動で実行するスクリプト。たとえば、pushの前に lint やテストを実行し、失敗したらpushを止める。「フックを有効のままにする」とは、<code>git push --no-verify</code> のようにフックを飛ばさず、フックのチェックを通してからpushすることを指す</li>
+<li><strong>WIPコミット</strong>・・・ WIP は Work In Progress（作業中）の略。機能が完成する前の、作業途中の状態を記録したコミット</li>
+</ul>
+<h4 id="3-pr">3. オーナー同士は並列に動かし、PRを積み重ねない</h4>
+<p>PRが互いに独立していれば、同時に進めてもコンフリクトが起きないため、スタックせず、それぞれ trunk から作業を始める。</p>
+<h4 id="4-swarm">4. ラウンドごとに <code>/swarm</code> で検証する</h4>
+<p>ラウンドは、オーナーがコードを確定させて検証を受ける1回分のフローのことで、修正をpushするたびに新しいラウンドになる。確定した時点のコミットで複数の検証担当を並列に動かし、結果を1つの判定にまとめる。live のレーンがない判定は、clean verdictとみなさない。</p>
+<h4 id="5-clean-verdict">5. clean verdict が出たら、オーナーが自分でマージし、次の作業は新しいオーナーが受け持つ</h4>
+<p>オーナーは、マージする前に、自分のPRのコミットを、最新の trunk（マージ先の本流のブランチ）の上に付け直す（rebase する）。オーナーがマージしてよいのは、rebase し直した後のコミットからだけである。</p>
+<p>PRの作業をしている間にも、ほかのPRが trunk にマージされれば、trunk は先に進むことになる。</p>
+<p>rebase する前後を図にすると、次のようになる。</p>
+<pre><code>rebase する前：PRは、古い trunk（B）から分かれたまま
+
+trunk:  A---B---C---D      C と D は、ほかのPRがマージしたコミット
+             \
+PR:           X---Y        オーナーのコミット
+
+rebase した後：PRのコミットを、最新の trunk（D）の上に付け直した
+
+trunk:  A---B---C---D
+                     \
+PR:                   X'---Y'    差分は X、Y と同じで、コミットIDだけが変わる
+</code></pre>
+<p>これは、最新の trunk の上で確かめた変更だけをマージするための決まりである。</p>
+<p>rebaseした後は、次の2つを満たしていれば、その後に trunk がさらに進んでも、もう一度rebaseしなくてよい。</p>
+<ul>
+<li>rebaseした後のコミットで、CIが通っている</li>
+<li>rebaseしても、PRの差分が、clean verdict を受けたときと変わっていない</li>
+</ul>
+<p>これは、trunk が進むたびにrebaseし直し、そのたびにCIを待ち続けることを防ぐための決まりである。</p>
+<p>一方で、オーナーは、自分のPRをマージする直前に、必ず最新の trunk を取得して、次の2つを確かめる。</p>
+<ul>
+<li>rebase した後のコミットを最新の trunk とマージしても、コンフリクトが起きないこと（<code>git merge-tree</code> で確かめる。<code>git merge-tree</code> は、実際にはマージせずに、マージした結果にコンフリクトがあるかを調べるgitのコマンド）</li>
+<li>最後に rebase した後に trunk で変更されたファイルの中に、次の2種類のファイルが、どちらも含まれていないこと</li>
+<li>オーナーが自分のPRで変更したファイル</li>
+<li>CIの設定ファイルなど</li>
+</ul>
+<p>どちらかが満たされなければ、rebaseし直し、新しいコミットでCIが通るのを待ってから、再度、上記の2つを確かめ直す。</p>
+<p>オーナーは、自分のPRをスカッシュマージして、作業を終える。キュー（これから取りかかる作業の列）の次の作業は、新しく起動したオーナーが受け持つ（新しいサブエージェントを既定にする決まりについては、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/4f8911">第38章</a>を参照）。</p>
+<p>!</p>
+<ul>
+<li><strong>スカッシュマージ</strong>・・・ PRの複数のコミットを1つのコミットにまとめてから、trunk にマージする方法。たとえば、「画面を直す」「テストを足す」「誤字を直す」の3つのコミットがあるPRをスカッシュマージすると、trunk には、3つの変更をまとめた1つのコミットだけが入る</li>
+</ul>
+<h4 id="6-1">6. コーディネーターエージェントは、1時間ごとに全体を点検する</h4>
+<p>運用者の開始の指示を受けたら、この点検を実行する依頼文を付けて <code>/loop 1h</code> を設定する。</p>
+<p>点検の間隔は、エージェントが覚えておくことにも、サブエージェントの完了通知にも任せない。サブエージェントの作業が終わったときに届くはずの完了通知は、届かないこともあるからである。</p>
+<p><code>/loop 1h</code> の後には、このあと説明する点検の内容を、依頼文として続ける。たとえば、次のようになる。</p>
+<pre><code>/loop 1h 『Autopilot-full』の最新版を読み直し、運用がずれていれば、この点検の中で直して。各オーナーが止まっていないかを、pushされたブランチと判断の記録で確かめ、止まっているオーナーは、すぐに新しいオーナーと入れ替えて。
+</code></pre>
+<p>点検のたびに、このPlaybook（『Autopilot-full』）の最新版を読み直し、運用がそこからずれていれば、その場で直す。</p>
+<p>あわせて、各オーナーが止まっていないかを確かめる。止まっているかどうかは、<a href="#2.-pr%E3%81%94%E3%81%A8%E3%81%AB1%E4%BD%93%E3%81%AE%E3%82%AA%E3%83%BC%E3%83%8A%E3%83%BC%E3%82%92%E8%B5%B7%E5%8B%95%E3%81%99%E3%82%8B">手順2</a>でオーナーに残させている、pushされたブランチと判断の記録を見て判断する。次のいずれかに当てはまるオーナーは、止まっているとみなし、すぐに新しいオーナーと入れ替える。</p>
+<ul>
+<li>エラーを起こした</li>
+<li>想定していた実行時間を過ぎても、コミットやpushなどの痕跡が何も残っていない</li>
+<li>実行環境の障害などが原因で、エージェントが、次の作業を始められない状態になっている</li>
+</ul>
+<h4 id="7_4">7. 運用者が止めたら、すべてのオーナーを止める</h4>
+<p>運用者の停止指示は、すべてのオーナーに「以降は何も書き込まない」という指示としてただちに届く。</p>
+<h4 id="_10">返答に書く項目</h4>
+<p>返答に書く項目は次のとおりです。</p>
+<ul>
+<li>各PRのオーナー、状態、判定</li>
+<li>マージされたPR</li>
+<li>運用者の判断待ち</li>
+<li>判断記録の場所</li>
+</ul>
+<h3 id="_11">要点は、進捗を「副作用」だけで数えること</h3>
+<p>Autopilot-full では、多数のオーナーやサブエージェントが同時に動きます。その中には、エラーで止まったまま何も報告しないものが出てきます。止まったエージェントを放っておくと、その担当のPRはいつまでも進みません。</p>
+<p>そのためコーディネーターエージェントは、エージェントの自己申告ではなく、<strong>作業が実際に残した痕跡だけを進捗として数えます</strong>。痕跡とは、コミット、push、PRやチェックの状態の変化、ストア（作業状況や判断記録を保存する領域）への報告です。こうした、作業の結果として外から見える変化を副作用と呼びます。</p>
+<p>想定した時間を過ぎても副作用のない担当は、止まったものとみなし、返事を待たずに別のエージェントに入れ替えます（手順6の点検で行います）。この入れ替えによって、止まった担当が全体の進みを遅らせないようにしています。『<strong>Orchestrate</strong>』で、進捗確認のためだけに待機中のエージェントを再開せず、コミットやPRの状態、台帳に残された記録を調べるのも、同じ考え方です。</p>
+<h3 id="_12">依頼の書き方：各項目が独立していることと、マージの期限を書く</h3>
+<p>同梱ガイドの依頼例は、キューの各項目が互いに独立していることと、朝までにマージしてほしいことを伝えています。</p>
+<pre><code>/poteto-mode full autopilot on this queue. each item is independent. i want them merged by morning.
+// このキューを full autopilot で進めて。各項目は独立している。朝までにマージしておいて。
+</code></pre>
+<h2 id="autopilot-stackautopilot-fullpr1">『Autopilot-stack』は、Autopilot-fullと同じ手順でPRを作って検証し、マージせずに1本のスタックとして運用者に渡す</h2>
+<p>『<strong>Autopilot-stack</strong>』は、『<strong>Autopilot-full</strong>』と同じ進め方でPRを作って検証しますが、<strong>マージはしません</strong>。検証を通ったPRを1本のスタック（親子関係でつながったPRの列）に積み、そのスタックを運用者に渡します。運用者は、渡されたスタックをレビューして、自分でマージします。</p>
+<p>マージの前に人がレビューしたいとき、変更どうしが依存していて順番に積む必要があるとき、エージェントにマージの権限を渡せないときに、このPlaybookを使います。</p>
+<h3 id="autopilot-full">手順：Autopilot-full との違い</h3>
+<p>手順は『<strong>Autopilot-full</strong>』とほぼ同じです。違いは次のとおりです。</p>
+<ul>
+<li>検証を通ったら、オーナーは merge-ready（マージできる状態）ではなく、STACK-READY（スタックに積める状態）を報告します。</li>
+<li>どのオーナーもマージしません。clean verdict が出たPRだけを、1本のスタックに順に追加します。<strong>検証を通っていないPRは、スタックに入れません</strong>。</li>
+<li>スタックの並び（どのPRをどのPRの上に積むか）を変えるのは、コーディネーターエージェントだけです。オーナーは自分のブランチにだけpushします。</li>
+<li>trunk（マージ先の本流のブランチ）が進んだら、コーディネーターエージェントが、スタックを最前線のPRから順に rebase（ブランチのコミットを、別のコミットの上に付け直すgitの操作）し直します。rebaseするとhead SHA（PRの最新のコミットID）が変わるので、中身が変わったPRは検証し直します。</li>
+<li>最後に、各PRに検証の判定を付けたスタックを運用者に渡します。運用者は最前線のPRから順にレビューし、マージします。</li>
+</ul>
+<p>返答に書く項目は次のとおりです。</p>
+<ul>
+<li>スタックの最前線のPR（trunk を向くPR）と、いちばん上のPRへのリンク</li>
+<li>各PRの判定の要約</li>
+<li>スタックから外したPRと、その理由</li>
+</ul>
+<h3 id="_13">要点は、スタックの並びを書き換えるのはコーディネーターエージェントだけという分担</h3>
+<p>スタックの並びは、すべてのオーナーが共有する情報です。複数のオーナーが同時にPRの親子関係を書き換えると、ほかのオーナーの変更と食い違い、スタックが壊れます。</p>
+<p>そのため、<strong>スタックの並びを書き換えるのはコーディネーターエージェントだけにし</strong>、オーナーは自分のブランチにpushするだけにします。書き換える役を1体に絞ることで、並びの食い違いが起きなくなります。</p>
+<p>『<strong>Orchestrate</strong>』で、1つのブランチを書き換えるWorkersを1体にし、restackをstacker 1体に任せるのと同じく、原則『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-separate-before-serializing-shared-state/SKILL.md"><strong>Separate Before Serializing Shared State</strong></a>』（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/cdc49b">第18章</a>）に沿った分担と読むことができます。</p>
+<h3 id="_14">依頼の書き方：「スタックにして、本番には入れないで」と書く</h3>
+<p>同梱ガイドの依頼例は、変更をスタックに積むことと、本番には入れず、運用者が自分でスタックを入れることを伝えています。</p>
+<pre><code>/poteto-mode autopilot these five changes but stack them, don't ship. i'll land the stack in the morning.
+// この5つの変更を autopilot で進めて。ただしスタックにして、本番には入れないで。朝に自分でスタックを入れる。
+</code></pre>
+<h2 id="5">長く動く作業の5つの選択肢は、誰がマージし、何を単位にするかで選ぶ</h2>
+<p>長く動く作業を任せるときは、<strong>何を単位にし、誰がマージするか</strong>で、『Autonomous run』『Orchestrate』『Autopilot-full』『Autopilot-stack』の4つのPlaybookと、合うPlaybookがないときに監査できる手順を自分で設計する <code>/figure-it-out</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/3ce2b2">第23章</a>）から選びます。</p>
+<table>
+<thead>
+<tr>
+<th>観点</th>
+<th>『<strong>Autonomous run</strong>』</th>
+<th><code>/figure-it-out</code></th>
+<th>『<strong>Orchestrate</strong>』</th>
+<th>『<strong>Autopilot-full</strong>』</th>
+<th>『<strong>Autopilot-stack</strong>』</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>作業の単位</td>
+<td>1つのタスク</td>
+<td>1回の大きな作業</td>
+<td>何日も続く作業の全体</td>
+<td>独立したPRのキュー</td>
+<td>順序や依存のある変更のキュー</td>
+</tr>
+<tr>
+<td>誰がマージするか</td>
+<td>Playbookに定めなし</td>
+<td>設計した手順しだい</td>
+<td>コーディネーターエージェントか stacker</td>
+<td>各PRのオーナー</td>
+<td>運用者</td>
+</tr>
+<tr>
+<td>選ぶとき</td>
+<td>終了条件を1つの確かめられる条件として書け、1体のエージェントで終えられる</td>
+<td>作業が大きい、多くの箇所にまたがる、または合うPlaybookがない</td>
+<td>1体のエージェントが動ける期間では終わらない</td>
+<td>PRが独立し、マージの権限がある</td>
+<td>マージ前にレビューしたい、作業が依存し合っている、権限がない</td>
+</tr>
+</tbody>
+</table>
+<p>Autopilot の2つのPlaybookのうち、PRが独立し、マージの権限が与えられているなら『<strong>Autopilot-full</strong>』、それ以外なら『<strong>Autopilot-stack</strong>』を選びます。</p>
+<h2 id="_15">まとめ</h2>
+<ul>
+<li><strong>4つのPlaybookの分担</strong>・・・ 『<strong>Multi-phase or multi-PR plan</strong>』は計画書を作り、『<strong>Orchestrate</strong>』は何日も続く作業を管理し、『<strong>Autopilot-full</strong>』はPRごとのオーナーにマージまで進めさせ、『<strong>Autopilot-stack</strong>』はマージせずに1本のスタックを渡します。どれも、コーディネーターエージェントが持たないものを明記しています。</li>
+<li><strong>Multi-phase or multi-PR plan</strong>・・・ チェックリスト形式の計画書を作ります。unit、live、perf がそろって初めて検証済みです。</li>
+<li><strong>Orchestrate</strong>・・・ 何日も続く作業を、指示書、ストアの表、台帳で管理します。指示書の欄を埋められない作業は起動せず、判定は最新のコミットごとに記録します。</li>
+<li><strong>Autopilot-full</strong>・・・ 各オーナーがマージまで進め、コーディネーターエージェントは判定だけを持ちます。進捗は副作用だけで数えます。</li>
+<li><strong>Autopilot-stack</strong>・・・ マージせずに1本のスタックを渡します。スタックの並びを書き換えるのはコーディネーターエージェントだけです。</li>
+<li><strong>5つの選択肢</strong>・・・ 何を単位にし、誰がマージするかで選びます。</li>
+</ul>
+<p><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/72f8ee">第3部</a>では、pstackが扱うPlaybookをすべて解説してきました。<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/4b3166">第4部</a>では、作業中にどの案を採用するか、いつ作業を終えるかなど、エージェントの判断を導くPrincipleを見ていきます。</p>
+  </div>
+  <footer class="article-footer">
+    <span>取得: 2026-10-06T23:37:29+09:00</span>
+    <a href="#article-top">↑ 先頭へ戻る</a>
+  </footer>
+</main>
+<script>
+(() => {
+  const progress = document.querySelector(".reading-progress > span");
+  const updateProgress = () => {
+    const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+    const ratio = scrollable > 0 ? window.scrollY / scrollable : 0;
+    if (progress) progress.style.width = `${Math.min(1, ratio) * 100}%`;
+  };
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  document.querySelectorAll("pre").forEach((block) => {
+    const button = document.createElement("button");
+    button.className = "copy-button";
+    button.type = "button";
+    button.textContent = "コピー";
+    button.addEventListener("click", async () => {
+      const text = block.querySelector("code")?.innerText || block.innerText;
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const textarea = document.createElement("textarea");
+          textarea.value = text;
+          textarea.style.position = "fixed";
+          textarea.style.opacity = "0";
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand("copy");
+          textarea.remove();
+        }
+        button.textContent = "コピー済み";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      } catch (error) {
+        button.textContent = "失敗";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      }
+    });
+    block.appendChild(button);
+  });
+
+  const links = new Map(
+    [...document.querySelectorAll(".toc a")].map((link) => [link.hash, link])
+  );
+  const headings = [...document.querySelectorAll(
+    ".article-body h2[id], .article-body h3[id], .article-body h4[id]"
+  )];
+  if ("IntersectionObserver" in window && headings.length) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        links.forEach((link) => link.classList.remove("is-active"));
+        links.get(`#${entry.target.id}`)?.classList.add("is-active");
+      });
+    }, { rootMargin: "-12% 0px -72% 0px" });
+    headings.forEach((heading) => observer.observe(heading));
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,953 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="title" content="第31章 【TDD】修正前に失敗するテストで確かめる">
+<meta name="book_title" content="【Cursor pstack】AIエージェントに開発を任せる環境をつくる ―月2,500件のPRを支えた開発基盤とは？">
+<meta name="source_url" content="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/ad5727">
+<meta name="author" content="kaito">
+<meta name="published_at" content="2026-10-02">
+<meta name="retrieved_at" content="2026-10-06T23:37:34+09:00">
+<meta name="site" content="zenn.dev">
+<meta name="content_type" content="article">
+<meta name="chapter_position" content="37">
+<title>第31章 【TDD】修正前に失敗するテストで確かめる</title>
+<style>
+:root {
+  color-scheme: light;
+  --ink: #172033;
+  --muted: #64748b;
+  --line: #dbe4ef;
+  --accent: #2563eb;
+  --accent-dark: #1d4ed8;
+  --accent-soft: #eff6ff;
+  font-family: -apple-system, BlinkMacSystemFont, "Avenir Next",
+    "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 8% 0%, #dbeafe 0, transparent 32rem),
+    radial-gradient(circle at 100% 12%, #e0e7ff 0, transparent 28rem),
+    #f4f7fb;
+  color: var(--ink);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(120deg, transparent 0 48%, rgba(255, 255, 255, 0.4));
+}
+.article {
+  position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
+  max-width: 920px;
+  margin: clamp(1rem, 5vw, 4rem) auto;
+  padding: clamp(2rem, 6vw, 5rem) clamp(1.25rem, 7vw, 5.5rem);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  border-radius: 24px;
+  min-height: 100vh;
+  box-shadow:
+    0 24px 70px rgba(30, 64, 175, 0.1),
+    0 4px 16px rgba(15, 23, 42, 0.04);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 5px;
+  content: "";
+  background: linear-gradient(90deg, #2563eb, #7c3aed, #db2777);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin: 0 0 2.5rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.72rem;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+a {
+  color: var(--accent-dark);
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: #7c3aed;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--ink);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 18ch;
+  margin: 0 0 2.5rem;
+  font-size: clamp(2.15rem, 5vw, 3.65rem);
+  letter-spacing: -0.045em;
+}
+h2 {
+  position: relative;
+  margin: 3.8rem 0 1.25rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--line);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 4.2rem;
+  height: 3px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), #7c3aed);
+  border-radius: 999px;
+}
+h3 {
+  margin: 2.6rem 0 0.8rem;
+  color: var(--accent-dark);
+  font-size: 1.3rem;
+}
+h4, h5, h6 {
+  margin-top: 2rem;
+}
+p {
+  margin: 1.15rem 0;
+}
+ul, ol {
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.35rem 0;
+}
+li::marker {
+  color: var(--accent);
+  font-weight: 700;
+}
+strong {
+  color: #111827;
+}
+blockquote {
+  margin: 1.6rem 0;
+  padding: 0.8rem 1.25rem;
+  color: #475569;
+  background: linear-gradient(90deg, var(--accent-soft), #fff);
+  border-left: 4px solid var(--accent);
+  border-radius: 0 12px 12px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 3rem 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+img {
+  display: block;
+  max-width: 100%;
+  margin: 1.75rem auto;
+  height: auto;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+}
+pre {
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  padding: 1.15rem 1.25rem;
+  color: #e2e8f0;
+  background: #111827;
+  border: 1px solid #253047;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+}
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+:not(pre) > code {
+  padding: 0.15rem 0.4rem;
+  color: #9f1239;
+  background: #fff1f2;
+  border-radius: 5px;
+}
+table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  border-collapse: collapse;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
+  text-align: left;
+}
+th {
+  color: #1e3a8a;
+  background: #eff6ff;
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: #f8fafc;
+}
+@media (max-width: 600px) {
+  .article {
+    margin: 0;
+    padding: 2rem 1rem 4rem;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(2rem, 10vw, 2.75rem);
+  }
+  .metadata {
+    margin-bottom: 2rem;
+  }
+}
+@media print {
+  body {
+    background: #fff;
+  }
+  .article {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  a {
+    color: inherit;
+  }
+}
+</style>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0f1419;
+  --surface: #1a2332;
+  --surface-raised: #202c3f;
+  --surface-soft: rgba(26, 35, 50, 0.72);
+  --border: #2d3a4f;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #58a6ff;
+  --accent-strong: #79c0ff;
+  --green: #3fb950;
+  --purple: #bc8cff;
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+    "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  line-height: 1.75;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+  background: var(--bg);
+}
+body {
+  min-width: 320px;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 2rem 1.5rem 5rem;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(31, 111, 235, 0.18), transparent 32rem),
+    radial-gradient(circle at 100% 12%, rgba(137, 87, 229, 0.14), transparent 28rem),
+    var(--bg);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black, transparent 75%);
+}
+.reading-progress {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 20;
+  height: 3px;
+  background: rgba(45, 58, 79, 0.7);
+}
+.reading-progress > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  box-shadow: 0 0 14px rgba(88, 166, 255, 0.8);
+  transition: width 80ms linear;
+}
+.article {
+  position: relative;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  background: rgba(15, 20, 25, 0.76);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(88, 166, 255, 0.035) inset;
+  backdrop-filter: blur(16px);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  border-radius: 16px 16px 0 0;
+}
+.article-header {
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.eyebrow-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--green);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(63, 185, 80, 0.75);
+}
+.eyebrow-separator {
+  color: var(--border);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  background: rgba(32, 44, 63, 0.68);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+.source-link {
+  color: var(--text);
+  text-decoration: none;
+}
+.source-link:hover {
+  border-color: var(--accent);
+  background: rgba(88, 166, 255, 0.12);
+}
+a {
+  color: var(--accent);
+  overflow-wrap: anywhere;
+  text-decoration: none;
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 24ch;
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  background: linear-gradient(120deg, #fff 12%, #b9d8ff 58%, #bc8cff);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+h2 {
+  position: relative;
+  margin: 3.2rem 0 1.1rem;
+  padding: 0.75rem 0 0.65rem;
+  border-bottom: 1px solid var(--border);
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 3.8rem;
+  height: 2px;
+  content: "";
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(88, 166, 255, 0.7);
+}
+h3 {
+  margin: 2.25rem 0 0.7rem;
+  color: var(--accent-strong);
+  font-size: 1.2rem;
+}
+h4, h5, h6 {
+  margin-top: 1.75rem;
+}
+p {
+  margin: 0.9rem 0;
+}
+ul, ol {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.3rem 0;
+}
+li::marker {
+  color: var(--accent);
+}
+strong {
+  color: #fff;
+}
+blockquote {
+  margin: 1.4rem 0;
+  padding: 0.85rem 1.15rem;
+  color: #c9d1d9;
+  background: linear-gradient(100deg, rgba(88, 166, 255, 0.1), rgba(26, 35, 50, 0.55));
+  border: 1px solid rgba(88, 166, 255, 0.18);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 2.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+}
+pre {
+  position: relative;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  padding: 1rem 1.15rem;
+  color: #dbeafe;
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+pre code {
+  color: inherit;
+  background: transparent;
+}
+code {
+  font-family: "SF Mono", "Fira Code", ui-monospace, monospace;
+  font-size: 0.86em;
+}
+:not(pre) > code {
+  padding: 0.12em 0.38em;
+  color: #ffabbc;
+  background: rgba(248, 81, 73, 0.11);
+  border-radius: 4px;
+}
+.copy-button {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  padding: 0.25rem 0.55rem;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.72rem;
+  background: rgba(32, 44, 63, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.copy-button:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  border-spacing: 0;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.6rem 0.75rem;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+th {
+  color: var(--accent);
+  background: var(--surface);
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: rgba(26, 35, 50, 0.42);
+}
+tr:last-child td {
+  border-bottom: 0;
+}
+th:last-child, td:last-child {
+  border-right: 0;
+}
+.toc {
+  margin: 1.75rem 0 2.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.toc-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--border);
+}
+.toc-title {
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.toc-count {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.toc ol {
+  margin: 0.7rem 0 0;
+  padding-left: 1.25rem;
+}
+.toc ol ol {
+  margin: 0.2rem 0;
+}
+.toc li {
+  margin: 0.18rem 0;
+  font-size: 0.86rem;
+}
+.toc li::marker {
+  color: var(--muted);
+}
+.toc a {
+  display: inline-block;
+  max-width: 100%;
+  color: var(--muted);
+  transition: color 160ms ease, transform 160ms ease;
+}
+.toc a:hover, .toc a.is-active {
+  color: var(--accent-strong);
+  text-decoration: none;
+  transform: translateX(2px);
+}
+.article-body {
+  max-width: 78ch;
+  margin: 0 auto;
+}
+.article-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 1rem;
+  color: var(--muted);
+  font-size: 0.74rem;
+  border-top: 1px solid var(--border);
+}
+.article-footer a {
+  color: var(--muted);
+}
+@media (max-width: 720px) {
+  body {
+    padding: 0 0 3rem;
+  }
+  .article {
+    min-height: 100vh;
+    padding: 1.5rem 1rem 3rem;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+  .article::before {
+    border-radius: 0;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(1.9rem, 9vw, 2.6rem);
+  }
+  .article-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+@media print {
+  :root {
+    color-scheme: light;
+  }
+  body {
+    padding: 0;
+    color: #111;
+    background: #fff;
+  }
+  .reading-progress, .toc, .copy-button {
+    display: none;
+  }
+  .article {
+    max-width: none;
+    padding: 0;
+    background: #fff;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  h1, h2, h3, h4, h5, h6, strong {
+    color: #111;
+    -webkit-text-fill-color: initial;
+  }
+  a {
+    color: inherit;
+    text-decoration: underline;
+  }
+  pre {
+    color: #111;
+    background: #f4f4f4;
+    box-shadow: none;
+  }
+}
+</style>
+</head>
+<body>
+<div class="reading-progress" aria-hidden="true"><span></span></div>
+<main id="article-top" class="article">
+  <header class="article-header">
+    <div class="eyebrow">
+      <span class="eyebrow-dot"></span>
+      <span>ARTICLE</span>
+      <span class="eyebrow-separator">/</span>
+      <span>zenn.dev</span>
+    </div>
+    <div class="metadata" aria-label="記事メタデータ"><span class="metadata-item"><span class="metadata-label">著者</span>kaito</span><span class="metadata-item"><span class="metadata-label">公開日</span>2026-10-02</span><a class="metadata-item source-link" href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/ad5727"><span class="metadata-label">原文</span>読む</a><span class="metadata-item"><span class="metadata-label">サイト</span>zenn.dev</span><span class="metadata-item"><span class="metadata-label">形式</span>ARTICLE</span></div>
+    <h1 id="31-tdd">第31章 【TDD】修正前に失敗するテストで確かめる</h1>
+  </header>
+<nav class="toc" aria-label="目次">
+  <div class="toc-heading">
+    <span class="toc-title">目次</span>
+    <span class="toc-count">14 セクション</span>
+  </div>
+  <ol><li><a href="#_1">この章の構成</a></li><li><a href="#_2">役割：不具合を直す前に、壊れた挙動をテストで再現する</a></li><li><a href="#tdd">使いどき：利用者がTDDを頼んだときか、手軽に書けるテストの当てがあるときだけ</a><ol><li><a href="#_3">大がかりな準備が要るなら、テストを追加せず、最も近い確認手段に切り替える</a></li><li><a href="#bug-fixplaybook-tdd">『Bug fix』Playbookは、手軽なテストの当てがあるときだけ /tdd を参照する</a></li></ol></li><li><a href="#_4">手順：直す前に「正しい理由で失敗する」ことを確かめる</a><ol><li><a href="#6">6段の手順で、修正前の失敗から修正後の成功までを確かめる</a></li><li><a href="#_5">修正前の実行で、不具合のせいで失敗しているかを見分ける</a></li><li><a href="#2">例）通知が2通届く不具合で、正しい理由の失敗と別の理由の失敗を比べる</a></li><li><a href="#_6">テストが書けないときも、実行できる確認に置き換える</a></li><li><a href="#_7">最後の報告には、結果だけでなく修正前後の証拠を書く</a></li><li><a href="#_8">悪いテストを追加するくらいなら、新しいテストは追加しない</a></li></ol></li><li><a href="#_9">依頼の書き方：コマンドだけで足りる</a></li><li><a href="#_10">まとめ</a></li></ol>
+</nav>
+  <div class="article-body">
+
+<p>この章では、<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/tdd/SKILL.md"><code>/tdd</code></a> を扱います。</p>
+<p><code>/tdd</code> は、エージェントが、不具合を直す前に、その不具合があるうちは失敗するテストを先に書くためのSkillです。たとえば、「再試行すると、通知が2通届く」という不具合なら、エージェントは「通知は1通だけ届く」ことを確かめるテストを書きます。このテストは、直す前は失敗し、直した後に通ります。</p>
+<p><code>/tdd</code> は、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/4f9a46">第30章</a>から続く、コードの品質を保つ3つのSkillの2つ目です。<code>/tdd</code> で、コードを書いたエージェントの代わりに修正を確かめるのは、修正前に失敗し、修正後に通る回帰テストです。</p>
+<p>この章では、<code>/tdd</code> を、役割、使いどき、手順、依頼の書き方の4つの観点で解説します。</p>
+<h2 id="_1">この章の構成</h2>
+<p>この章の構成は次のとおりです。</p>
+<ul>
+<li>役割：不具合を直す前に、壊れた挙動をテストで再現する</li>
+<li>使いどき：利用者がTDDを頼んだときか、手軽に書けるテストの当てがあるときだけ</li>
+<li>手順：直す前に「正しい理由で失敗する」ことを確かめる</li>
+<li>依頼の書き方：コマンドだけで足りる</li>
+<li>まとめ</li>
+</ul>
+<h2 id="_2">役割：不具合を直す前に、壊れた挙動をテストで再現する</h2>
+<p><code>/tdd</code> は、不具合を直す前に回帰テスト（直した不具合が再び起きていないかを確かめるテスト）を一つ書き、そのテストが修正前に失敗し、修正後に通ることを確かめるSkillです。</p>
+<p>名前はTDD（テスト駆動開発）ですが、<code>SKILL.md</code> の題が「TDD Bug Fix」であるとおり、<strong>新機能の設計をテストから進める手引きではなく、不具合の修正だけを扱うSkill</strong>です。</p>
+<p><code>/tdd</code> は、テストを必ず先に書くことは求めません。<strong>エージェントがテストを先に書くのは、利用者が頼んだときか、手軽に書けるテストの当てがあるときだけ</strong>です。</p>
+<h2 id="tdd">使いどき：利用者がTDDを頼んだときか、手軽に書けるテストの当てがあるときだけ</h2>
+<p><code>/tdd</code> は <code>disable-model-invocation: true</code> の設定を持つので（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/46bd1f">第25章</a>）、エージェントが会話の内容から <code>/tdd</code> を選んで動かすことはありません。</p>
+<p><code>/tdd</code> を動かすのは、名前で呼ぶ利用者と、<code>/poteto-mode</code> です。<a href="https://github.com/cursor/plugins/blob/main/pstack/README.md">README</a> は、<code>/poteto-mode</code> が、手順の中で必要になったときに <code>/tdd</code> を実行すると説明しています。</p>
+<p><code>SKILL.md</code> の説明（description）は、<code>/tdd</code> を使うのを次のケースだけに絞っています。</p>
+<ul>
+<li>利用者がTDD、失敗するテスト、回帰テストのどれかの実装を依頼したとき</li>
+<li>不具合を手元ですぐ実行できるテストで確かめられると分かっているとき</li>
+</ul>
+<p>逆に言えば、以下のケースではエージェントは新しいテストを追加しません。</p>
+<ul>
+<li>テストの経路がはっきりしないとき</li>
+<li>手間がかかるとき</li>
+<li>多くの部品を組み合わせないとテストを書けないとき</li>
+<li>頼まれていないとき</li>
+</ul>
+<p>「手軽に書けるテストの当てがある」というのは、たとえば、不具合のあるコードにすでに単体テストがあり、そこへテストを1つ追加すれば済む場合などです。</p>
+<h3 id="_3">大がかりな準備が要るなら、テストを追加せず、最も近い確認手段に切り替える</h3>
+<p>前述した「手間がかかるとき」と「多くの部品を組み合わせないとテストを書けないとき」は、具体的には、テストを書くのに次のようなものが必要になるときです。</p>
+<ul>
+<li>広い範囲にわたって新しく用意する、テストを動かすための仕組み（ハーネス）</li>
+<li>実装が少し変わるだけで合わなくなる、壊れやすいモック</li>
+<li>実行に時間のかかるE2Eテスト（アプリ全体を、ユーザーの操作どおりに通して確かめるテスト）の基盤</li>
+<li>本番にしかない状態（例：本番のデータベースにだけあるデータ）</li>
+<li>あいまいな再現の手順</li>
+<li>不具合と関係のない、テスト用データ（フィクスチャ）の大がかりな変更</li>
+</ul>
+<p>こうしたものが必要なときは、エージェントは新しいテストを追加せず、最も近い確認手段（スクリプトや手動の再現コマンドなど）に切り替えます。</p>
+<p>このような場合に、エージェントがテストを追加しないのは、<strong>こうした準備をして無理に書いたテストは、直ったことの証拠として弱い</strong>からです。</p>
+<p>たとえば、壊れやすいモックを使って通したテストは、本物の部品の代わりにモックを確かめているだけなので、本物のコマンドを実行して確かめるより、直ったことを示す力が弱くなります（同梱ガイドの <a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/10-recipes-and-pitfalls.md"><code>docs/guide/10-recipes-and-pitfalls.md</code></a>）。</p>
+<h3 id="bug-fixplaybook-tdd">『Bug fix』Playbookは、手軽なテストの当てがあるときだけ <code>/tdd</code> を参照する</h3>
+<p><code>/poteto-mode</code> も <code>/tdd</code> を使います。不具合修正の進め方を定めた『<strong>Bug fix</strong>』Playbookは、手順5で、不具合を再現するコミット（修正前のコードでは失敗するテストなど）を、Gitの履歴の上で、修正のコミットより前に置くよう求めています。そのうえで、手軽なテストの当てがあるときに、<code>/tdd</code> を参照しています。</p>
+<p>ただし、このPlaybookも、テストに手間がかかるとき、多くの部品を組み合わせないとテストを書けないとき、テストの書き方がはっきりしないときは、<code>/tdd</code> を飛ばすよう定めています。</p>
+<h2 id="_4">手順：直す前に「正しい理由で失敗する」ことを確かめる</h2>
+<h3 id="6">6段の手順で、修正前の失敗から修正後の成功までを確かめる</h3>
+<p><code>/tdd</code>の手順は6段です。</p>
+<ol>
+<li><strong>不具合を理解する</strong>・・・ エージェントは、意図した挙動、現在の挙動、不具合を起こす最小の再現（最も短い操作や入力）を特定します。</li>
+<li><strong>最も狭い範囲で確かめられるテストを選ぶ</strong>・・・ エージェントは、不具合のあるコードにすでに使われているテストの中から、不具合の箇所を最も狭い範囲で確かめられるテストを選びます。手軽に使えるテストが見つからなければ、この手順をこなすためだけに、新しくテストを一から作ることはしません。</li>
+<li><strong>失敗するテストを先に書く</strong>・・・ エージェントは、この不具合を見つけられる最小のテストを1つ追加します。テストの期待値には、本来あるべき挙動を書きます。たとえば、通知が2通届く不具合なら、今のコードが2通送るからといって、期待値を2にはせず、1にします。</li>
+<li><strong>修正前にテストを実行する</strong>・・・ エージェントは、テストが、意図した理由（不具合そのもの）で失敗することを確かめます。</li>
+<li><strong>不具合を直す</strong>・・・ エージェントは、テストではないアプリ本体のコードに、意図した挙動を満たす最小の変更を入れます。そのとき、周りのコードが前提にしている約束（関数の引数や戻り値の形など）は崩しません。</li>
+<li><strong>回帰テストを再実行する</strong>・・・ エージェントは、テストが通ることを確かめます。</li>
+</ol>
+<p>手軽なテストが見つからないときと、修正前のテストが意図した理由で失敗しなかったときの分かれ道を図にすると、次のようになります。</p>
+<h3 id="_5">修正前の実行で、不具合のせいで失敗しているかを見分ける</h3>
+<p>手順4で修正前にテストを実行するのは、テストが<strong>不具合のせいで失敗しているのか、別の理由で失敗しているのかを見分けるため</strong>です。</p>
+<p>別の理由（関数名の書き間違いなど）で失敗しているテストは、不具合があってもなくても失敗します。そのため、この失敗は、そのテストが不具合を見つけられることの証拠になりません。</p>
+<p>また、修正前に通ってしまうテストも、不具合を検出できていないので、エージェントはテストのほうを直します。</p>
+<h3 id="2">例）通知が2通届く不具合で、正しい理由の失敗と別の理由の失敗を比べる</h3>
+<p>たとえば、「再試行すると、通知が2通届く」という不具合を直すケースで、手順4の修正前の実行を見てみましょう。</p>
+<p>テストは、「再試行しても、通知は1通だけ届く」という意図した挙動を確かめます。</p>
+<pre><code>declare function test(name: string, fn: () =&gt; void): void;
+declare function expect&lt;T&gt;(actual: T): { toBe(expected: T): void };
+// 確かめたい関数：通知を送り、失敗したら再試行する。送った通知の一覧を返す
+declare function sendWithRetry(message: string): string[];
+
+// 正しい理由で失敗するテスト：修正前は「1のはずが2だった」で失敗する
+test(&quot;再試行しても、通知は1通だけ届く&quot;, () =&gt; {
+  const sent = sendWithRetry(&quot;注文を受け付けました&quot;);
+  expect(sent.length).toBe(1);
+});
+
+// 別の理由で失敗するテスト：関数名を書き間違えているので、不具合と関係なく失敗する
+test(&quot;再試行しても、通知は1通だけ届く&quot;, () =&gt; {
+  const sent = sendAndRetry(&quot;注文を受け付けました&quot;);
+  expect(sent.length).toBe(1);
+});
+</code></pre>
+<p>このように、修正前のテストが不具合とは別の理由で失敗しているなら、エージェントは、実装を直す前に、テストのほうを直す必要があります。</p>
+<h3 id="_6">テストが書けないときも、実行できる確認に置き換える</h3>
+<p>テストを書くのが現実的でないときは、エージェントは、テストを、スクリプト、手動の再現コマンド、ブラウザ自動化、ログに期待した行が出たかの確認などの、実行できる確認に置き換えます。</p>
+<p><strong>エージェントは、テストを書かない場合も、確認そのものは省きません</strong>。確認を省くと、直ったことを示す証拠が何も残らないからです。</p>
+<h3 id="_7">最後の報告には、結果だけでなく修正前後の証拠を書く</h3>
+<p>エージェントは、最後の報告に、修正前にどのテスト（または確認）がどう失敗したかと、修正後に通った実行を書きます。修正前の失敗を示せなかったなら、その理由と、代わりに使った確認を書きます。</p>
+<p><strong>エージェントは、結果だけでなく、その証拠を報告します</strong>。「直りました」という結果だけでは、報告を読む人が、本当に直ったのかを確かめられないからです。</p>
+<h3 id="_8">悪いテストを追加するくらいなら、新しいテストは追加しない</h3>
+<p><code>/tdd</code> は、<strong>悪いテストを追加するくらいなら、新しいテストは追加しない</strong>という立場を取ります。</p>
+<p>悪いテストとは、モックばかりを確かめるテストや、今の実装の細部を固定するテストなどです（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/1fb019">第19章</a>の原則『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-test-behavior-not-implementation/SKILL.md"><strong>Test Behavior, Not Implementation</strong></a>』）。モックばかりを確かめるテストは本物の挙動を確かめておらず、実装の細部を固定するテストは、挙動を変えない書き換えでも壊れます。</p>
+<p>2種類の悪いテストと良いテストを、通知が2通届く不具合の例で比べると、次のようになります。</p>
+<pre><code>declare function test(name: string, fn: () =&gt; void): void;
+declare function expect&lt;T&gt;(actual: T): { toBe(expected: T): void };
+type Transport = { send(message: string): void };
+// 確かめたい関数：通知を送り、失敗したら再試行する。送った通知の一覧を返す
+declare function sendWithRetry(message: string, transport?: Transport): string[];
+// 送信の部品の偽物（モック）。send が呼ばれた回数を数える
+declare const mockTransport: Transport &amp; { calls: number };
+// 関数の内部で使っている、再試行の回数を数える変数
+declare const retryState: { attempts: number };
+
+// 悪いテスト1（モックばかりを確かめる）：偽物の send が呼ばれた回数しか見ておらず、
+// 実際に届いた通知の数を確かめていない
+test(&quot;送信の部品を1回呼ぶ&quot;, () =&gt; {
+  sendWithRetry(&quot;注文を受け付けました&quot;, mockTransport);
+  expect(mockTransport.calls).toBe(1);
+});
+
+// 悪いテスト2（実装の細部を固定する）：内部の変数の値に頼るので、
+// 届く通知の数を変えない書き換え（例：変数名の変更など）でも壊れる
+test(&quot;再試行の回数が1回になる&quot;, () =&gt; {
+  sendWithRetry(&quot;注文を受け付けました&quot;);
+  expect(retryState.attempts).toBe(1);
+});
+
+// 良いテスト：外から見える挙動（届いた通知の数）を確かめる
+test(&quot;再試行しても、通知は1通だけ届く&quot;, () =&gt; {
+  const sent = sendWithRetry(&quot;注文を受け付けました&quot;);
+  expect(sent.length).toBe(1);
+});
+</code></pre>
+<p>エージェントは、テストを意図した挙動に合わせます。間違った実装に合わせてテストを変えることはしません。また、期待する挙動そのものが本当に変わり、その理由がはっきりしている場合を除き、既存のアサーション（<code>expect(sent.length).toBe(1)</code> のような、結果が期待どおりかを判定する記述）を弱めません。</p>
+<pre><code>declare const sent: string[];
+declare function expect&lt;T&gt;(actual: T): {
+  toBe(expected: T): void;
+  toBeGreaterThanOrEqual(expected: number): void;
+};
+
+// 前：意図した挙動（通知は1通だけ届く）を確かめる
+expect(sent.length).toBe(1);
+
+// 後（してはいけない書き換え）：2通届く間違った実装でも通るよう、アサーションを弱めた
+expect(sent.length).toBeGreaterThanOrEqual(1);
+</code></pre>
+<h2 id="_9">依頼の書き方：コマンドだけで足りる</h2>
+<p>直したい不具合を確かめる手軽なテストが書けて、その不具合について会話ですでに話していれば、利用者の依頼はコマンドだけで足ります（<a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/05-build-and-clean.md"><code>docs/guide/05-build-and-clean.md</code></a>）。</p>
+<pre><code>/tdd implement
+// /tdd で実装して
+</code></pre>
+<p>手軽に書けるテストがあるときだけ <code>/tdd</code> を使ってほしいなら、<code>docs/guide/10-recipes-and-pitfalls.md</code> にある次の依頼のように、条件を付けて書きます。</p>
+<pre><code>/poteto-mode repro the duplicate write first. if there's a cheap test path, /tdd it. then fix and rerun.
+// まず二重書き込みを再現して。手軽なテストの経路があれば /tdd で。それから直して、再実行して。
+</code></pre>
+<p>「if there's a cheap test path」（手軽なテストの経路があれば）という条件が付いているので、手軽なテストがなければ、エージェントは <code>/tdd</code> を飛ばして、最も近い確認手段を使えます。</p>
+<h2 id="_10">まとめ</h2>
+<ul>
+<li><strong>確かめる役</strong>・・・ 修正前に失敗し、修正後に通る回帰テストが、修正を確かめます。</li>
+<li><strong>使いどき</strong>・・・ 利用者が頼んだときか、手軽に書けるテストの当てがあるときだけ、失敗するテストを修正より先に書きます。</li>
+<li><strong>手順</strong>・・・ 修正前にテストを実行し、不具合のせいで失敗することを確かめてから直します。</li>
+</ul>
+<p>次の<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/8960d3">第32章</a>では、コードの品質を保つ3つのSkillの3つ目として、差分のコメントを、書いた本人ではないエージェントに審査させる <a href="https://github.com/cursor/plugins/blob/main/pstack/skills/no-comments/SKILL.md"><code>/no-comments</code></a> を扱います。</p>
+  </div>
+  <footer class="article-footer">
+    <span>取得: 2026-10-06T23:37:34+09:00</span>
+    <a href="#article-top">↑ 先頭へ戻る</a>
+  </footer>
+</main>
+<script>
+(() => {
+  const progress = document.querySelector(".reading-progress > span");
+  const updateProgress = () => {
+    const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+    const ratio = scrollable > 0 ? window.scrollY / scrollable : 0;
+    if (progress) progress.style.width = `${Math.min(1, ratio) * 100}%`;
+  };
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  document.querySelectorAll("pre").forEach((block) => {
+    const button = document.createElement("button");
+    button.className = "copy-button";
+    button.type = "button";
+    button.textContent = "コピー";
+    button.addEventListener("click", async () => {
+      const text = block.querySelector("code")?.innerText || block.innerText;
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const textarea = document.createElement("textarea");
+          textarea.value = text;
+          textarea.style.position = "fixed";
+          textarea.style.opacity = "0";
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand("copy");
+          textarea.remove();
+        }
+        button.textContent = "コピー済み";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      } catch (error) {
+        button.textContent = "失敗";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      }
+    });
+    block.appendChild(button);
+  });
+
+  const links = new Map(
+    [...document.querySelectorAll(".toc a")].map((link) => [link.hash, link])
+  );
+  const headings = [...document.querySelectorAll(
+    ".article-body h2[id], .article-body h3[id], .article-body h4[id]"
+  )];
+  if ("IntersectionObserver" in window && headings.length) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        links.forEach((link) => link.classList.remove("is-active"));
+        links.get(`#${entry.target.id}`)?.classList.add("is-active");
+      });
+    }, { rootMargin: "-12% 0px -72% 0px" });
+    headings.forEach((heading) => observer.observe(heading));
+  }
+})();
+</script>
+</body>
+</html>

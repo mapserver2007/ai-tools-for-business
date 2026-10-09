@@ -1,0 +1,1059 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="title" content="第11章 不具合を直し、性能を改善する">
+<meta name="book_title" content="【Cursor pstack】AIエージェントに開発を任せる環境をつくる ―月2,500件のPRを支えた開発基盤とは？">
+<meta name="source_url" content="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/6fcb42">
+<meta name="author" content="kaito">
+<meta name="published_at" content="2026-10-02">
+<meta name="retrieved_at" content="2026-10-06T23:37:28+09:00">
+<meta name="site" content="zenn.dev">
+<meta name="content_type" content="article">
+<meta name="chapter_position" content="15">
+<title>第11章 不具合を直し、性能を改善する</title>
+<style>
+:root {
+  color-scheme: light;
+  --ink: #172033;
+  --muted: #64748b;
+  --line: #dbe4ef;
+  --accent: #2563eb;
+  --accent-dark: #1d4ed8;
+  --accent-soft: #eff6ff;
+  font-family: -apple-system, BlinkMacSystemFont, "Avenir Next",
+    "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 8% 0%, #dbeafe 0, transparent 32rem),
+    radial-gradient(circle at 100% 12%, #e0e7ff 0, transparent 28rem),
+    #f4f7fb;
+  color: var(--ink);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(120deg, transparent 0 48%, rgba(255, 255, 255, 0.4));
+}
+.article {
+  position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
+  max-width: 920px;
+  margin: clamp(1rem, 5vw, 4rem) auto;
+  padding: clamp(2rem, 6vw, 5rem) clamp(1.25rem, 7vw, 5.5rem);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  border-radius: 24px;
+  min-height: 100vh;
+  box-shadow:
+    0 24px 70px rgba(30, 64, 175, 0.1),
+    0 4px 16px rgba(15, 23, 42, 0.04);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 5px;
+  content: "";
+  background: linear-gradient(90deg, #2563eb, #7c3aed, #db2777);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin: 0 0 2.5rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.72rem;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+a {
+  color: var(--accent-dark);
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: #7c3aed;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--ink);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 18ch;
+  margin: 0 0 2.5rem;
+  font-size: clamp(2.15rem, 5vw, 3.65rem);
+  letter-spacing: -0.045em;
+}
+h2 {
+  position: relative;
+  margin: 3.8rem 0 1.25rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--line);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 4.2rem;
+  height: 3px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), #7c3aed);
+  border-radius: 999px;
+}
+h3 {
+  margin: 2.6rem 0 0.8rem;
+  color: var(--accent-dark);
+  font-size: 1.3rem;
+}
+h4, h5, h6 {
+  margin-top: 2rem;
+}
+p {
+  margin: 1.15rem 0;
+}
+ul, ol {
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.35rem 0;
+}
+li::marker {
+  color: var(--accent);
+  font-weight: 700;
+}
+strong {
+  color: #111827;
+}
+blockquote {
+  margin: 1.6rem 0;
+  padding: 0.8rem 1.25rem;
+  color: #475569;
+  background: linear-gradient(90deg, var(--accent-soft), #fff);
+  border-left: 4px solid var(--accent);
+  border-radius: 0 12px 12px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 3rem 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+img {
+  display: block;
+  max-width: 100%;
+  margin: 1.75rem auto;
+  height: auto;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+}
+pre {
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  padding: 1.15rem 1.25rem;
+  color: #e2e8f0;
+  background: #111827;
+  border: 1px solid #253047;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+}
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+:not(pre) > code {
+  padding: 0.15rem 0.4rem;
+  color: #9f1239;
+  background: #fff1f2;
+  border-radius: 5px;
+}
+table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  border-collapse: collapse;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
+  text-align: left;
+}
+th {
+  color: #1e3a8a;
+  background: #eff6ff;
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: #f8fafc;
+}
+@media (max-width: 600px) {
+  .article {
+    margin: 0;
+    padding: 2rem 1rem 4rem;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(2rem, 10vw, 2.75rem);
+  }
+  .metadata {
+    margin-bottom: 2rem;
+  }
+}
+@media print {
+  body {
+    background: #fff;
+  }
+  .article {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  a {
+    color: inherit;
+  }
+}
+</style>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0f1419;
+  --surface: #1a2332;
+  --surface-raised: #202c3f;
+  --surface-soft: rgba(26, 35, 50, 0.72);
+  --border: #2d3a4f;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #58a6ff;
+  --accent-strong: #79c0ff;
+  --green: #3fb950;
+  --purple: #bc8cff;
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+    "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  line-height: 1.75;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+  background: var(--bg);
+}
+body {
+  min-width: 320px;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 2rem 1.5rem 5rem;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(31, 111, 235, 0.18), transparent 32rem),
+    radial-gradient(circle at 100% 12%, rgba(137, 87, 229, 0.14), transparent 28rem),
+    var(--bg);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black, transparent 75%);
+}
+.reading-progress {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 20;
+  height: 3px;
+  background: rgba(45, 58, 79, 0.7);
+}
+.reading-progress > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  box-shadow: 0 0 14px rgba(88, 166, 255, 0.8);
+  transition: width 80ms linear;
+}
+.article {
+  position: relative;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  background: rgba(15, 20, 25, 0.76);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(88, 166, 255, 0.035) inset;
+  backdrop-filter: blur(16px);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  border-radius: 16px 16px 0 0;
+}
+.article-header {
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.eyebrow-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--green);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(63, 185, 80, 0.75);
+}
+.eyebrow-separator {
+  color: var(--border);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  background: rgba(32, 44, 63, 0.68);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+.source-link {
+  color: var(--text);
+  text-decoration: none;
+}
+.source-link:hover {
+  border-color: var(--accent);
+  background: rgba(88, 166, 255, 0.12);
+}
+a {
+  color: var(--accent);
+  overflow-wrap: anywhere;
+  text-decoration: none;
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 24ch;
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  background: linear-gradient(120deg, #fff 12%, #b9d8ff 58%, #bc8cff);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+h2 {
+  position: relative;
+  margin: 3.2rem 0 1.1rem;
+  padding: 0.75rem 0 0.65rem;
+  border-bottom: 1px solid var(--border);
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 3.8rem;
+  height: 2px;
+  content: "";
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(88, 166, 255, 0.7);
+}
+h3 {
+  margin: 2.25rem 0 0.7rem;
+  color: var(--accent-strong);
+  font-size: 1.2rem;
+}
+h4, h5, h6 {
+  margin-top: 1.75rem;
+}
+p {
+  margin: 0.9rem 0;
+}
+ul, ol {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.3rem 0;
+}
+li::marker {
+  color: var(--accent);
+}
+strong {
+  color: #fff;
+}
+blockquote {
+  margin: 1.4rem 0;
+  padding: 0.85rem 1.15rem;
+  color: #c9d1d9;
+  background: linear-gradient(100deg, rgba(88, 166, 255, 0.1), rgba(26, 35, 50, 0.55));
+  border: 1px solid rgba(88, 166, 255, 0.18);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 2.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+}
+pre {
+  position: relative;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  padding: 1rem 1.15rem;
+  color: #dbeafe;
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+pre code {
+  color: inherit;
+  background: transparent;
+}
+code {
+  font-family: "SF Mono", "Fira Code", ui-monospace, monospace;
+  font-size: 0.86em;
+}
+:not(pre) > code {
+  padding: 0.12em 0.38em;
+  color: #ffabbc;
+  background: rgba(248, 81, 73, 0.11);
+  border-radius: 4px;
+}
+.copy-button {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  padding: 0.25rem 0.55rem;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.72rem;
+  background: rgba(32, 44, 63, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.copy-button:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  border-spacing: 0;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.6rem 0.75rem;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+th {
+  color: var(--accent);
+  background: var(--surface);
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: rgba(26, 35, 50, 0.42);
+}
+tr:last-child td {
+  border-bottom: 0;
+}
+th:last-child, td:last-child {
+  border-right: 0;
+}
+.toc {
+  margin: 1.75rem 0 2.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.toc-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--border);
+}
+.toc-title {
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.toc-count {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.toc ol {
+  margin: 0.7rem 0 0;
+  padding-left: 1.25rem;
+}
+.toc ol ol {
+  margin: 0.2rem 0;
+}
+.toc li {
+  margin: 0.18rem 0;
+  font-size: 0.86rem;
+}
+.toc li::marker {
+  color: var(--muted);
+}
+.toc a {
+  display: inline-block;
+  max-width: 100%;
+  color: var(--muted);
+  transition: color 160ms ease, transform 160ms ease;
+}
+.toc a:hover, .toc a.is-active {
+  color: var(--accent-strong);
+  text-decoration: none;
+  transform: translateX(2px);
+}
+.article-body {
+  max-width: 78ch;
+  margin: 0 auto;
+}
+.article-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 1rem;
+  color: var(--muted);
+  font-size: 0.74rem;
+  border-top: 1px solid var(--border);
+}
+.article-footer a {
+  color: var(--muted);
+}
+@media (max-width: 720px) {
+  body {
+    padding: 0 0 3rem;
+  }
+  .article {
+    min-height: 100vh;
+    padding: 1.5rem 1rem 3rem;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+  .article::before {
+    border-radius: 0;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(1.9rem, 9vw, 2.6rem);
+  }
+  .article-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+@media print {
+  :root {
+    color-scheme: light;
+  }
+  body {
+    padding: 0;
+    color: #111;
+    background: #fff;
+  }
+  .reading-progress, .toc, .copy-button {
+    display: none;
+  }
+  .article {
+    max-width: none;
+    padding: 0;
+    background: #fff;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  h1, h2, h3, h4, h5, h6, strong {
+    color: #111;
+    -webkit-text-fill-color: initial;
+  }
+  a {
+    color: inherit;
+    text-decoration: underline;
+  }
+  pre {
+    color: #111;
+    background: #f4f4f4;
+    box-shadow: none;
+  }
+}
+</style>
+</head>
+<body>
+<div class="reading-progress" aria-hidden="true"><span></span></div>
+<main id="article-top" class="article">
+  <header class="article-header">
+    <div class="eyebrow">
+      <span class="eyebrow-dot"></span>
+      <span>ARTICLE</span>
+      <span class="eyebrow-separator">/</span>
+      <span>zenn.dev</span>
+    </div>
+    <div class="metadata" aria-label="記事メタデータ"><span class="metadata-item"><span class="metadata-label">著者</span>kaito</span><span class="metadata-item"><span class="metadata-label">公開日</span>2026-10-02</span><a class="metadata-item source-link" href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/6fcb42"><span class="metadata-label">原文</span>読む</a><span class="metadata-item"><span class="metadata-label">サイト</span>zenn.dev</span><span class="metadata-item"><span class="metadata-label">形式</span>ARTICLE</span></div>
+    <h1 id="11">第11章 不具合を直し、性能を改善する</h1>
+  </header>
+<nav class="toc" aria-label="目次">
+  <div class="toc-heading">
+    <span class="toc-title">目次</span>
+    <span class="toc-count">15 セクション</span>
+  </div>
+  <ol><li><a href="#_1">この章の構成</a></li><li><a href="#3playbook">3つのPlaybookは実行時の証拠をもとに直し、何を直したいかで選ぶ</a></li><li><a href="#bug-fix">『Bug fix』は、不具合を再現してから、証拠で必要と確かめた最小限の変更で直す</a><ol><li><a href="#_2">役割：不具合を再現して根本原因を突き止める</a></li><li><a href="#pr6">手順：再現、二分探索、計画、検証、コミット、PRの6つの手順</a></li><li><a href="#_3">依頼の書き方：「まず再現して」と書く</a></li></ol></li><li><a href="#perf-issue">『Perf issue』は、修正前の測定から始め、修正後の測定で改善を示す</a><ol><li><a href="#_4">役割：遅さを測って直す</a></li><li><a href="#6">手順：ベースラインのトレースに始まる6つの手順</a></li><li><a href="#_5">依頼の書き方：「遅い気がする」ではなく測った数値を書く</a></li></ol></li><li><a href="#hillclimb11">『Hillclimb』は、一つの指標を「1つの変更、1回の測定、採用か取り消し」の繰り返しで改善する</a><ol><li><a href="#_6">役割：一つの指標を目標までループで改善する</a></li><li><a href="#118">手順：1回に1つの仮説でループする8つの手順</a></li><li><a href="#3">依頼の書き方：指標、目標、試行回数の下限の3点を渡す</a></li></ol></li><li><a href="#_7">まとめ</a></li></ol>
+</nav>
+  <div class="article-body">
+
+<p>この章では、次の3つのPlaybookを扱います。</p>
+<ol>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/bug-fix.md">Bug fix</a></li>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/perf-issue.md">Perf issue</a></li>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/hillclimb.md">Hillclimb</a></li>
+</ol>
+<p>3つとも、コードを直すためのPlaybookです。直すときは、<strong>プログラムを実際に動かして得た出力、ログ、計測（実行時の証拠）を根拠にします</strong>。</p>
+<p>どのPlaybookを使うかは、何を直したいかで決まります。結果そのものが間違っているのか、動作に誤りはないが処理が遅いのか、一つの数値を目標まで繰り返し押し上げたいのかによって、使い分けます。</p>
+<p>この章では、3つに共通する決まりと、それぞれの使い方を順に解説します。</p>
+<h2 id="_1">この章の構成</h2>
+<p>この章の構成は次のとおりです。</p>
+<ul>
+<li>3つのPlaybookは実行時の証拠をもとに直し、何を直したいかで選ぶ</li>
+<li>『Bug fix』は、不具合を再現してから、証拠で必要と確かめた最小限の変更で直す</li>
+<li>『Perf issue』は、修正前の測定から始め、修正後の測定で改善を示す</li>
+<li>『Hillclimb』は、一つの指標を「1つの変更、1回の測定、採用か取り消し」の繰り返しで改善する</li>
+<li>まとめ</li>
+</ul>
+<h2 id="3playbook">3つのPlaybookは実行時の証拠をもとに直し、何を直したいかで選ぶ</h2>
+<p>3つのPlaybookは、<strong>実行時の証拠で裏づけられない変更は残さない</strong>という決まりを共有し、次のように選び分けます。</p>
+<ul>
+<li><strong>利用者が受け取る結果そのものが間違っている</strong>・・・ 『<strong>Bug fix</strong>』</li>
+<li><strong>動作に誤りはないが処理が遅く、パフォーマンスを1回の修正で改善したい</strong>・・・ 『<strong>Perf issue</strong>』</li>
+<li><strong>一つの数値を目標まで繰り返し押し上げたい</strong>・・・ 『<strong>Hillclimb</strong>』</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>項目</th>
+<th>『<strong>Bug fix</strong>』</th>
+<th>『<strong>Perf issue</strong>』</th>
+<th>『<strong>Hillclimb</strong>』</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>出発点</td>
+<td>不具合を自分で再現する</td>
+<td>ベースライン（修正前の基準）のトレースを取る</td>
+<td>結果を左右する条件と対象の仕組みを把握し、指標と停止条件を決める</td>
+</tr>
+<tr>
+<td>回数</td>
+<td>一度の修正</td>
+<td>一度の修正</td>
+<td>停止条件を満たすまでループ</td>
+</tr>
+<tr>
+<td>返答の中心</td>
+<td>失敗から成功に変わった再現の出力</td>
+<td>ベースライン、修正後、差分</td>
+<td>指標の開始時と終了時の値、採用した変更と取り消した変更の数</td>
+</tr>
+</tbody>
+</table>
+<p>原因だけ知りたく、修正は必要ないなら、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/ea525d">第10章</a>の『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/runtime-forensics.md"><strong>Runtime forensics</strong></a>』か『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/trace-forensics.md"><strong>Trace forensics</strong></a>』を選びます。</p>
+<p>3つとも、実装はサブエージェントに任せ、<strong>主エージェントは修正の計画と差分のレビューに回ります</strong>。</p>
+<h2 id="bug-fix">『Bug fix』は、不具合を再現してから、証拠で必要と確かめた最小限の変更で直す</h2>
+<h3 id="_2">役割：不具合を再現して根本原因を突き止める</h3>
+<p>『<strong>Bug fix</strong>』は、報告された不具合を再現して根本原因を突き止め、<strong>実行時の証拠で必要だと確かめた、最小限の変更だけを入れるPlaybook</strong>です。</p>
+<p>「効くかもしれない」という念のための対策は、<strong>まだ確かめていない仮説であって修正ではない</strong>ので、変更は入れません。実行時の証拠が仮説を否定したら、その仮説に基づいて入れた変更は戻します。</p>
+<p><a href="https://x.com/poteto/status/2102050467505430555">講演</a>では、場当たり的な回避策を残すと、次のエージェントがそれを正しい実装例としてコピーしてしまう、と述べられています（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/dc9141">第4章</a>）。本書では、否定された仮説に基づく変更を戻す規則は、<strong>こうした回避策がコードに残り、次のエージェントに真似されるのを防ぐ</strong>ものだと読みます。</p>
+<h3 id="pr6">手順：再現、二分探索、計画、検証、コミット、PRの6つの手順</h3>
+<ol>
+<li><strong>自分で再現する</strong>
+   - 症状が現れる場所に合ったcontrol系Skill（<a href="https://github.com/cursor/plugins/tree/main/cursor-team-kit"><code>cursor-team-kit</code></a> の <code>control-ui</code> か <code>control-cli</code>）を使う
+   - 利用者に再現を頼むのは、そのSkillでは操作できない具体的な理由があり、操作できるところまで自分で進めたあとに限定する
+   - すぐに再現しないときは、不具合のきっかけを人工的に作る、不具合が起きやすい条件に絞る、計測のコードを入れる、のいずれかで、不具合が起きるまで試す</li>
+<li><strong>原因を二分探索する</strong>
+   - 原因の仮説を並べ、残っている候補を最も大きく減らせる確かめ方から順に試して、一つに絞る
+   - 仮説の候補は、影響するサブシステムの仕組みを <code>/how</code> で説明させ、以前は動いていたものが壊れた経緯を <code>/why</code> で履歴から調べさせて集める（どちらも<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/788746">第22章</a>）
+   - プログラムの状態が分からなければ計測やログを追加し、推測はしない
+   - 次に進む前に、最後に残った仮説が示す仕組みを実行時の証拠で確かめる</li>
+<li><strong>修正を計画する</strong>
+   - 修正が関数の境界をまたぐなら、先に <code>/architect</code>（型やモジュール構成をコードより先に設計するSkill、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/2ad346">第24章</a>）を使う
+   - 実装は、範囲を具体的に絞ってサブエージェントに任せる</li>
+<li><strong>症状が出たのと同じ画面やコマンドで検証する</strong>
+   - 元の再現の手順が、今度は成功することを確かめる
+   - 別の画面やコマンドで確かめた場合や、確かめても結論が出なかった場合は、合格としない
+   - 単体テストが示すのは個々の処理の振る舞いで、不具合がなくなったことではない。そのため、単体テストに合格しただけでは直ったと判断しない</li>
+<li><strong>不具合を再現するテストを、修正より先にコミットする</strong>
+   - 修正前は失敗するテストを先にコミットし、その上に修正を重ねる
+   - 手元で手軽に実行できるテストが書けるなら、失敗するテストを先に書いて進める <code>/tdd</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/ad5727">第31章</a>）に従う
+   - テストの作成に手間がかかる、複数のサービスをつないだ環境に大きく依存する、何を確かめるテストかが不明確、のいずれかに該当するなら、この手順は省ける</li>
+<li><strong>PRを作る手順を定めた『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/opening-a-pr.md">Opening a PR</a>』を実行する（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/45a56e">第14章</a>）</strong></li>
+</ol>
+<p>返答に書く項目は次のとおりです。</p>
+<ul>
+<li>何が壊れていたか</li>
+<li>根本原因</li>
+<li>修正</li>
+<li>検証の方法</li>
+</ul>
+<p>あわせて、失敗してから成功に変わった再現の出力を、<strong>要約せずそのまま貼ります</strong>。</p>
+<p>本書では、手順とPrincipleの対応を次のように読みます。原則『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-fix-root-causes/SKILL.md"><strong>Fix Root Causes</strong></a>』は手順1から3に、原則『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-prove-it-works/SKILL.md"><strong>Prove It Works</strong></a>』は手順4と返答に、原則『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-sequence-verifiable-units/SKILL.md"><strong>Sequence Work into Verifiable Units</strong></a>』は手順5に対応します（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/1fb019">第19章</a>）。このうち、Playbookの原文が名前を挙げているのは、手順5の『Sequence Work into Verifiable Units』だけです。</p>
+<h3 id="_3">依頼の書き方：「まず再現して」と書く</h3>
+<p>依頼には「まず再現して」と書き、テストを求めるなら「手軽に書けるテストがあれば」と条件をつけます。同梱ガイド（<a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/10-recipes-and-pitfalls.md">docs/guide/10-recipes-and-pitfalls.md</a>）の例は、次のとおりです。</p>
+<pre><code>/poteto-mode repro the duplicate write first. if there's a cheap test path, /tdd it. then fix and rerun.
+// まず重複書き込みを再現して。手軽に書けるテストがあれば /tdd で進めて。それから直して、もう一度流して。
+</code></pre>
+<p>壊れやすいモック（本物の部品の代わりに使う偽の部品）でテストを無理に作るより、<strong>本物のコマンドを実行するほうが、直ったことを正確に示せます</strong>。手順5で、テストの作成に手間がかかるなら省略できるとしているのは、このためです。</p>
+<h2 id="perf-issue">『Perf issue』は、修正前の測定から始め、修正後の測定で改善を示す</h2>
+<h3 id="_4">役割：遅さを測って直す</h3>
+<p>『<strong>Perf issue</strong>』は、実際に測った遅さについてトレース（処理ごとの実行時間などを記録したもの）を取り、ベースラインと比べて改善するPlaybookです。測る代わりにソースを読んで済ませることを禁じ、<strong>すべての修正を測定に結びつけます</strong>。</p>
+<h3 id="6">手順：ベースラインのトレースに始まる6つの手順</h3>
+<ol>
+<li><strong>ベースラインのトレースを取る</strong>・・・ 症状に合ったcontrol系Skillを使う。ベースラインと、その後に出る数値はすべて、<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/benchmark-checklist/SKILL.md"><code>/benchmark-checklist</code></a>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/167c91">第27章</a>）で点検する</li>
+<li><strong><code>/how</code> でコードの仕組みを調べ、仮説の根拠にする</strong>・・・ 実際に動かして測る前に、「これ以上は速くならない」と決めつけない。直し方は、7つの performance mantras（直し方の候補を、安いものから順に並べた7つの指針）を、上から順に試す</li>
+<li><strong>トレースから修正を計画する</strong>・・・ 実装はサブエージェントに任せ、差分をレビューし、修正後のトレースを取る</li>
+<li><strong>修正前後のトレースを解析して比べる</strong>・・・ トレースをsqliteに取り込むなどして差分を取る。別の画面やコマンドで測った場合や、測っても結論が出なかった場合は、合格としない</li>
+<li><strong>PRに測定の結果を引用する</strong></li>
+<li><strong>『Opening a PR』を実行する</strong></li>
+</ol>
+<p>返答に含める4項目は次のとおりです。</p>
+<ul>
+<li>ベースラインの数値</li>
+<li>修正後の数値</li>
+<li>差分</li>
+<li>成果物のパス</li>
+</ul>
+<p>どれも実際に測らなければ書けないので、<strong>返答の形そのものが「測らずに済ませる」ことを防いでいます</strong>。</p>
+<p>手順2の performance mantras は、次の7つです。エージェントは、上から順に、安いものから試します。</p>
+<blockquote>
+<ol>
+<li>Don't do it. Stop work whose result nothing uses rather than cheapening it.</li>
+<li>Do it, but don't do it again.</li>
+<li>Do it less.</li>
+<li>Do it later.</li>
+<li>Do it when they're not looking.</li>
+<li>Do it concurrently.</li>
+<li>Do it cheaper.</li>
+<li>やらない。誰も結果を使わない作業は、軽くするのではなく、やめる。</li>
+<li>やる。ただし、二度はやらない。</li>
+<li>減らす。</li>
+<li>後でやる。</li>
+<li>ユーザーが見ていないときにやる。</li>
+<li>並行してやる。</li>
+<li>安くやる。</li>
+</ol>
+</blockquote>
+<p>7つの mantra が、それぞれどんな直し方を指すかは、次のとおりです。各例は、本書で付けたものです。</p>
+<table>
+<thead>
+<tr>
+<th>mantra</th>
+<th>どんな直し方か</th>
+<th>例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1. やらない</td>
+<td>誰も結果を使わない処理を、やめる</td>
+<td>画面に表示しない項目まで、毎回計算している処理をやめる</td>
+</tr>
+<tr>
+<td>2. やる。ただし、二度はやらない</td>
+<td>一度出した結果を保存して、使い回す</td>
+<td>リクエストのたびに設定ファイルを読み直すのをやめ、1回読んだ結果を使い回す</td>
+</tr>
+<tr>
+<td>3. 減らす</td>
+<td>処理する量を減らす</td>
+<td>1万件すべてではなく、画面に表示する50件だけを取得する</td>
+</tr>
+<tr>
+<td>4. 後でやる</td>
+<td>必要になるまで、処理を後回しにする</td>
+<td>起動時にすべての画面を準備せず、開かれた画面だけを準備する</td>
+</tr>
+<tr>
+<td>5. ユーザーが見ていないときにやる</td>
+<td>ユーザーが待っていない時間に、処理を済ませておく</td>
+<td>ユーザーが操作していない間に、次に開かれそうな画面のデータを読み込んでおく</td>
+</tr>
+<tr>
+<td>6. 並行してやる</td>
+<td>互いを待つ必要のない処理を、同時に進める</td>
+<td>3つのAPIを1つずつ順に呼ばず、同時に呼ぶ</td>
+</tr>
+<tr>
+<td>7. 安くやる</td>
+<td>同じ処理を、より速い方法で行う</td>
+<td>全件を1件ずつ調べる検索を、インデックス（検索を速くするための索引）を使う検索に変える</td>
+</tr>
+</tbody>
+</table>
+<p><strong>上から順に試し、目標に届いた時点で、残りの mantra は試さずに止めます</strong>。たとえば、誰も結果を使わない計算をやめるだけで目標に届いたなら、ほかの計算を速くする工夫は試しません。</p>
+<h3 id="_5">依頼の書き方：「遅い気がする」ではなく測った数値を書く</h3>
+<p>依頼には、「遅い気がする」ではなく、測った数値を書きます。同梱ガイド（<a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/05-build-and-clean.md">docs/guide/05-build-and-clean.md</a>）の例は、次のとおりです。</p>
+<pre><code>/poteto-mode startup takes 1.8s on this fixture. trace it, fix the measured cause, show me before and after.
+// このフィクスチャ（計測に使う決まった入力）で起動に1.8秒かかる。トレースして、測った原因を直して、前後を見せて。
+</code></pre>
+<p>改善の確かさまで求めたいときは、検証スキル（アプリを利用者と同じように操作して確かめるSkill、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a88ea5">第3章</a>）を <code>/swarm</code> で並列に走らせて改善を確かめるよう、依頼に含めます。『The Complete Guide to pstack』<a href="https://x.com/poteto/status/2094457600259842065">Part 1</a>の例は、次のとおりです。</p>
+<pre><code>spawn a cloud agent to use /poteto-mode to improve the initial loading time of our app. first use /control-app to take a trace of the status quo, and identify opportunities for improvement. then do a targeted fix and use /control-app + a /swarm to confirm the win
+// クラウドエージェントを起動して、/poteto-mode でアプリの初回読み込み時間を改善させて。まず /control-app で現状のトレースを取り、改善の余地を見つけて。それから狙いを絞って直し、/control-app と /swarm で改善を確かめて。
+</code></pre>
+<p><code>/control-app</code> は、記事で作った検証スキルの呼び名です（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/7d7081">第39章</a>）。<code>/swarm</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/2ad346">第24章</a>）は、並列でWorkers（複数のエージェント）を走らせて1つの報告にまとめるSkillです。多数のエージェントに検証スキルを実行させるので、十分なサンプル数で改善を確かめられます。1回の計測のばらつきを、改善と取り違えないためです。</p>
+<h2 id="hillclimb11">『Hillclimb』は、一つの指標を「1つの変更、1回の測定、採用か取り消し」の繰り返しで改善する</h2>
+<h3 id="_6">役割：一つの指標を目標までループで改善する</h3>
+<p>『<strong>Hillclimb</strong>』は、一つの指標を目標に向けて<strong>ループで継続的に改善する</strong>Playbookです。一度きりの修正は『<strong>Bug fix</strong>』か『<strong>Perf issue</strong>』の担当です。</p>
+<p>中心の規律は「one change, one measurement, keep or revert」、つまり<strong>1つの変更、1回の測定、採用か取り消し</strong>です。試していない変更を積み重ねず、コードを読んだだけで改善したと主張しません（原則『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-prove-it-works/SKILL.md"><strong>Prove It Works</strong></a>』）。</p>
+<h3 id="118">手順：1回に1つの仮説でループする8つの手順</h3>
+<ol>
+<li><strong>指標を選ぶ前に、結果を左右する条件と対象の仕組みを把握する</strong>
+   - 対象に <code>/how</code> をかけ、指標の値を左右する現実的な条件（データ量、履歴、状態、並行度）を挙げる
+   - ユーザーの不満を再現するケースを選ぶ
+   - 指標1つと停止条件を決める
+   - 停止条件は、「ベースラインより50%以上よく、かつ10回以上試す」のように、目標と試行回数の下限をセットにする。下限を設けるのは、序盤にたまたま良い結果が出ただけで終わらせないため</li>
+<li><strong>測定ハーネスを作り、違いを見分けられることを確かめてから固定する</strong>
+   - 目標のケースが症状を再現し、症状の出ない易しいケースと測定値で区別できることを確かめる
+   - 確かめたら、測定方法を固定する。固定とは、測る対象のケース、指標、測定のコマンドを、以降のループの間は変えないことを指す
+   - 固定する前に、<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/benchmark-checklist/SKILL.md"><code>/benchmark-checklist</code></a>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/167c91">第27章</a>）で測定ハーネスを点検し、測定ハーネスにエラーの数と、行った作業の数を出力させる
+   - 固定したあとは、決まった1つのコマンドで指標を出せるようにし、1回ではなく複数回の中央値をとる
+   - 変更を入れる前に、ベースラインの指標と、回帰ゲート（通り続けなければならない必須のテスト）がすべて通った結果を記録しておく（原則『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-build-the-lever/SKILL.md"><strong>Build the Lever</strong></a>』、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a8e80b">第17章</a>）</li>
+<li><strong>判断の記録を開く</strong>
+   - 判断の記録を残す <code>/show-me-your-work</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/724887">第29章</a>）で <code>decision.tsv</code> を作る
+   - <code>decision.tsv</code> は、試すたびに、仮説、変更、前後の数値、採用か取り消しかを1行ずつ書く表
+   - 次の試行の前に読み返す</li>
+<li><strong>仮説は、手順1で把握した仕組みに基づいて立てる</strong>
+   - 「Xが最初の描画を遅らせているので、起動時の処理から外す」のように、具体的な仕組みを仮説として立てる
+   - 「何かをメモ化してみる」のような仮説は認められない
+   - 指標が性能なら、仮説を、『Perf issue』の<a href="#%E6%89%8B%E9%A0%86%EF%BC%9A%E3%83%99%E3%83%BC%E3%82%B9%E3%83%A9%E3%82%A4%E3%83%B3%E3%81%AE%E3%83%88%E3%83%AC%E3%83%BC%E3%82%B9%E3%81%AB%E5%A7%8B%E3%81%BE%E3%82%8B6%E3%81%A4%E3%81%AE%E6%89%8B%E9%A0%86">手順2</a>の performance mantras の順に並べる。借りるのは並べる順番だけで、「目標に届いた時点で、残りの mantra は試さずに止める」という『Perf issue』の止め方は借りない</li>
+<li><strong>1回に1つの仮説でループする</strong>
+   - 変更はサブエージェントに渡す（原則『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-guard-the-context-window/SKILL.md"><strong>Guard the Context Window</strong></a>』）
+   - 独立した仮説が複数あれば、worktreeごとの並列のサブエージェントに配る（原則『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-separate-before-serializing-shared-state/SKILL.md"><strong>Separate Before Serializing Shared State</strong></a>』）
+   - 手順2で固定したハーネスで変更の前後を測る
+   - 採用するのは、指標の改善が偶然とは言えないほどはっきりしていて、回帰ゲートがすべて通ったときだけ
+   - それ以外は変更を丸ごと取り消す
+   - 採用でも取り消しでも、<code>decision.tsv</code> の行は必ず書く
+   - 無人で走らせるなら、長いタスクを止まらずに完了まで運ぶ『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/autonomous-run.md"><strong>Autonomous run</strong></a>』（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/7d7609">第15章</a>）から、時間やイベントをきっかけにエージェントを起こし直す仕組みだけを借りる。停止条件は、手順1で決めたものに従う</li>
+<li><strong>改善が止まっても、すぐには終わらせない</strong>
+   - 取り消しが続いたら、仮説の系統（取り組み方の種類）を切り替える、惜しかった案を組み合わせる、より大胆な案を試す、などをしてから結論する
+   - 指標は良くなっても振る舞いを壊す変更は取り消す
+   - 指標を保ったままコードを単純にする変更は残す（原則『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-laziness-protocol/SKILL.md"><strong>Laziness Protocol</strong></a>』）</li>
+<li><strong>停止条件を満たすか、残りの案の効果が手間に見合わなくなったら止める</strong>
+   - 停止条件を緩めて満たしたことにはしない
+   - 低コストで試せる仮説が残っているうちはやめない
+   - 行き詰まったら空回りせずに報告する</li>
+<li><strong>『Opening a PR』を実行する</strong>
+   - 採用したコミットを、入った順に積み重ねる</li>
+</ol>
+<p>!</p>
+<p><strong>「偶然とは言えないほどはっきりした改善」とは</strong></p>
+<p>たとえば処理時間を測り、コードを変えなくても100ミリ秒前後で数ミリ秒揺れるとします。変更後に80ミリ秒前後まで下がれば、揺れ幅を超えた改善と判断できます。一方、数ミリ秒しか変わらなければ、測定の揺れかもしれず、改善とは言い切れません。</p>
+<p>手順2で1回ではなく複数回の中央値をとるのも、この揺れの影響を小さくするためです。</p>
+<p>!</p>
+<ul>
+<li><strong>ハーネス</strong>・・・ 計測やテストを、毎回同じ条件で走らせるための仕組み</li>
+<li><strong>メモ化</strong>・・・ 関数の計算結果を入力ごとに保存しておき、同じ入力で呼ばれたときに保存した結果を返す手法</li>
+<li><strong>worktree</strong>・・・ Gitの機能で、1つのリポジトリから複数の作業ディレクトリを作り、別々のブランチを同時に扱えるようにするもの</li>
+</ul>
+<h3 id="3">依頼の書き方：指標、目標、試行回数の下限の3点を渡す</h3>
+<p>同梱ガイド（<a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/05-build-and-clean.md">docs/guide/05-build-and-clean.md</a>）によれば、<strong>指標、目標、試行回数の下限を渡せば</strong>、『<strong>Hillclimb</strong>』は測定方法を固定したハーネスを使い、1回に1つの仮説を試す流れを繰り返します。</p>
+<h2 id="_7">まとめ</h2>
+<ul>
+<li><strong>共通の規律と選び方</strong>・・・ 3つのPlaybookは、入れる変更のすべてに実行時の証拠という根拠があること、という規律を共有しています。振る舞いの誤りなら『<strong>Bug fix</strong>』、処理の遅さを1回の修正で改善するなら『<strong>Perf issue</strong>』、一つの指標を目標まで繰り返し改善するなら『<strong>Hillclimb</strong>』を選びます。</li>
+<li><strong>Bug fix</strong>・・・ 自分で再現し、原因の仮説を二分探索で一つに絞り込んでから直します。返答には失敗から成功に変わった出力をそのまま貼ります。</li>
+<li><strong>Perf issue</strong>・・・ ベースラインのトレースから始め、<code>/benchmark-checklist</code> で数値を点検しながら、7つの performance mantras を安い順に試し、修正前後の数値で改善を示します。</li>
+<li><strong>Hillclimb</strong>・・・ <code>/benchmark-checklist</code> で点検してから測定方法を固定したハーネスを作り、目標と試行回数の下限を組にした停止条件のもとで「1つの変更、1回の測定、採用か取り消し」を繰り返します。</li>
+</ul>
+<p>次の<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/f1e85b">第12章</a>では、振る舞いを「追加する」「保つ」「試す」、見た目を「そろえる」Playbook、『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/feature.md"><strong>Feature</strong></a>』、『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/refactoring.md"><strong>Refactoring</strong></a>』、『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/prototype.md"><strong>Prototype</strong></a>』、『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/visual-parity.md"><strong>Visual parity</strong></a>』の4つを、「何を変えてはいけないか」という観点から見ていきます。</p>
+  </div>
+  <footer class="article-footer">
+    <span>取得: 2026-10-06T23:37:28+09:00</span>
+    <a href="#article-top">↑ 先頭へ戻る</a>
+  </footer>
+</main>
+<script>
+(() => {
+  const progress = document.querySelector(".reading-progress > span");
+  const updateProgress = () => {
+    const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+    const ratio = scrollable > 0 ? window.scrollY / scrollable : 0;
+    if (progress) progress.style.width = `${Math.min(1, ratio) * 100}%`;
+  };
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  document.querySelectorAll("pre").forEach((block) => {
+    const button = document.createElement("button");
+    button.className = "copy-button";
+    button.type = "button";
+    button.textContent = "コピー";
+    button.addEventListener("click", async () => {
+      const text = block.querySelector("code")?.innerText || block.innerText;
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const textarea = document.createElement("textarea");
+          textarea.value = text;
+          textarea.style.position = "fixed";
+          textarea.style.opacity = "0";
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand("copy");
+          textarea.remove();
+        }
+        button.textContent = "コピー済み";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      } catch (error) {
+        button.textContent = "失敗";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      }
+    });
+    block.appendChild(button);
+  });
+
+  const links = new Map(
+    [...document.querySelectorAll(".toc a")].map((link) => [link.hash, link])
+  );
+  const headings = [...document.querySelectorAll(
+    ".article-body h2[id], .article-body h3[id], .article-body h4[id]"
+  )];
+  if ("IntersectionObserver" in window && headings.length) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        links.forEach((link) => link.classList.remove("is-active"));
+        links.get(`#${entry.target.id}`)?.classList.add("is-active");
+      });
+    }, { rootMargin: "-12% 0px -72% 0px" });
+    headings.forEach((heading) => observer.observe(heading));
+  }
+})();
+</script>
+</body>
+</html>

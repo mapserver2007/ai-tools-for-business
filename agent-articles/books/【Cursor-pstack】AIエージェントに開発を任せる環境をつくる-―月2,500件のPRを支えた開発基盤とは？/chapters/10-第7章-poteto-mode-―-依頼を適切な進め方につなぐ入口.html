@@ -1,0 +1,1032 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="title" content="第7章 /poteto-mode ― 依頼を適切な進め方につなぐ入口">
+<meta name="book_title" content="【Cursor pstack】AIエージェントに開発を任せる環境をつくる ―月2,500件のPRを支えた開発基盤とは？">
+<meta name="source_url" content="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/4fda7d">
+<meta name="author" content="kaito">
+<meta name="published_at" content="2026-10-02">
+<meta name="retrieved_at" content="2026-10-06T23:37:27+09:00">
+<meta name="site" content="zenn.dev">
+<meta name="content_type" content="article">
+<meta name="chapter_position" content="10">
+<title>第7章 /poteto-mode ― 依頼を適切な進め方につなぐ入口</title>
+<style>
+:root {
+  color-scheme: light;
+  --ink: #172033;
+  --muted: #64748b;
+  --line: #dbe4ef;
+  --accent: #2563eb;
+  --accent-dark: #1d4ed8;
+  --accent-soft: #eff6ff;
+  font-family: -apple-system, BlinkMacSystemFont, "Avenir Next",
+    "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 8% 0%, #dbeafe 0, transparent 32rem),
+    radial-gradient(circle at 100% 12%, #e0e7ff 0, transparent 28rem),
+    #f4f7fb;
+  color: var(--ink);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(120deg, transparent 0 48%, rgba(255, 255, 255, 0.4));
+}
+.article {
+  position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
+  max-width: 920px;
+  margin: clamp(1rem, 5vw, 4rem) auto;
+  padding: clamp(2rem, 6vw, 5rem) clamp(1.25rem, 7vw, 5.5rem);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  border-radius: 24px;
+  min-height: 100vh;
+  box-shadow:
+    0 24px 70px rgba(30, 64, 175, 0.1),
+    0 4px 16px rgba(15, 23, 42, 0.04);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 5px;
+  content: "";
+  background: linear-gradient(90deg, #2563eb, #7c3aed, #db2777);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin: 0 0 2.5rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.72rem;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+a {
+  color: var(--accent-dark);
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: #7c3aed;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--ink);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 18ch;
+  margin: 0 0 2.5rem;
+  font-size: clamp(2.15rem, 5vw, 3.65rem);
+  letter-spacing: -0.045em;
+}
+h2 {
+  position: relative;
+  margin: 3.8rem 0 1.25rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--line);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 4.2rem;
+  height: 3px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), #7c3aed);
+  border-radius: 999px;
+}
+h3 {
+  margin: 2.6rem 0 0.8rem;
+  color: var(--accent-dark);
+  font-size: 1.3rem;
+}
+h4, h5, h6 {
+  margin-top: 2rem;
+}
+p {
+  margin: 1.15rem 0;
+}
+ul, ol {
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.35rem 0;
+}
+li::marker {
+  color: var(--accent);
+  font-weight: 700;
+}
+strong {
+  color: #111827;
+}
+blockquote {
+  margin: 1.6rem 0;
+  padding: 0.8rem 1.25rem;
+  color: #475569;
+  background: linear-gradient(90deg, var(--accent-soft), #fff);
+  border-left: 4px solid var(--accent);
+  border-radius: 0 12px 12px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 3rem 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+img {
+  display: block;
+  max-width: 100%;
+  margin: 1.75rem auto;
+  height: auto;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+}
+pre {
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  padding: 1.15rem 1.25rem;
+  color: #e2e8f0;
+  background: #111827;
+  border: 1px solid #253047;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+}
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+:not(pre) > code {
+  padding: 0.15rem 0.4rem;
+  color: #9f1239;
+  background: #fff1f2;
+  border-radius: 5px;
+}
+table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  border-collapse: collapse;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
+  text-align: left;
+}
+th {
+  color: #1e3a8a;
+  background: #eff6ff;
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: #f8fafc;
+}
+@media (max-width: 600px) {
+  .article {
+    margin: 0;
+    padding: 2rem 1rem 4rem;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(2rem, 10vw, 2.75rem);
+  }
+  .metadata {
+    margin-bottom: 2rem;
+  }
+}
+@media print {
+  body {
+    background: #fff;
+  }
+  .article {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  a {
+    color: inherit;
+  }
+}
+</style>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0f1419;
+  --surface: #1a2332;
+  --surface-raised: #202c3f;
+  --surface-soft: rgba(26, 35, 50, 0.72);
+  --border: #2d3a4f;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #58a6ff;
+  --accent-strong: #79c0ff;
+  --green: #3fb950;
+  --purple: #bc8cff;
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+    "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  line-height: 1.75;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+  background: var(--bg);
+}
+body {
+  min-width: 320px;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 2rem 1.5rem 5rem;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(31, 111, 235, 0.18), transparent 32rem),
+    radial-gradient(circle at 100% 12%, rgba(137, 87, 229, 0.14), transparent 28rem),
+    var(--bg);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black, transparent 75%);
+}
+.reading-progress {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 20;
+  height: 3px;
+  background: rgba(45, 58, 79, 0.7);
+}
+.reading-progress > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  box-shadow: 0 0 14px rgba(88, 166, 255, 0.8);
+  transition: width 80ms linear;
+}
+.article {
+  position: relative;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  background: rgba(15, 20, 25, 0.76);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(88, 166, 255, 0.035) inset;
+  backdrop-filter: blur(16px);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  border-radius: 16px 16px 0 0;
+}
+.article-header {
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.eyebrow-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--green);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(63, 185, 80, 0.75);
+}
+.eyebrow-separator {
+  color: var(--border);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  background: rgba(32, 44, 63, 0.68);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+.source-link {
+  color: var(--text);
+  text-decoration: none;
+}
+.source-link:hover {
+  border-color: var(--accent);
+  background: rgba(88, 166, 255, 0.12);
+}
+a {
+  color: var(--accent);
+  overflow-wrap: anywhere;
+  text-decoration: none;
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 24ch;
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  background: linear-gradient(120deg, #fff 12%, #b9d8ff 58%, #bc8cff);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+h2 {
+  position: relative;
+  margin: 3.2rem 0 1.1rem;
+  padding: 0.75rem 0 0.65rem;
+  border-bottom: 1px solid var(--border);
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 3.8rem;
+  height: 2px;
+  content: "";
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(88, 166, 255, 0.7);
+}
+h3 {
+  margin: 2.25rem 0 0.7rem;
+  color: var(--accent-strong);
+  font-size: 1.2rem;
+}
+h4, h5, h6 {
+  margin-top: 1.75rem;
+}
+p {
+  margin: 0.9rem 0;
+}
+ul, ol {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.3rem 0;
+}
+li::marker {
+  color: var(--accent);
+}
+strong {
+  color: #fff;
+}
+blockquote {
+  margin: 1.4rem 0;
+  padding: 0.85rem 1.15rem;
+  color: #c9d1d9;
+  background: linear-gradient(100deg, rgba(88, 166, 255, 0.1), rgba(26, 35, 50, 0.55));
+  border: 1px solid rgba(88, 166, 255, 0.18);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 2.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+}
+pre {
+  position: relative;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  padding: 1rem 1.15rem;
+  color: #dbeafe;
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+pre code {
+  color: inherit;
+  background: transparent;
+}
+code {
+  font-family: "SF Mono", "Fira Code", ui-monospace, monospace;
+  font-size: 0.86em;
+}
+:not(pre) > code {
+  padding: 0.12em 0.38em;
+  color: #ffabbc;
+  background: rgba(248, 81, 73, 0.11);
+  border-radius: 4px;
+}
+.copy-button {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  padding: 0.25rem 0.55rem;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.72rem;
+  background: rgba(32, 44, 63, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.copy-button:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  border-spacing: 0;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.6rem 0.75rem;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+th {
+  color: var(--accent);
+  background: var(--surface);
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: rgba(26, 35, 50, 0.42);
+}
+tr:last-child td {
+  border-bottom: 0;
+}
+th:last-child, td:last-child {
+  border-right: 0;
+}
+.toc {
+  margin: 1.75rem 0 2.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.toc-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--border);
+}
+.toc-title {
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.toc-count {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.toc ol {
+  margin: 0.7rem 0 0;
+  padding-left: 1.25rem;
+}
+.toc ol ol {
+  margin: 0.2rem 0;
+}
+.toc li {
+  margin: 0.18rem 0;
+  font-size: 0.86rem;
+}
+.toc li::marker {
+  color: var(--muted);
+}
+.toc a {
+  display: inline-block;
+  max-width: 100%;
+  color: var(--muted);
+  transition: color 160ms ease, transform 160ms ease;
+}
+.toc a:hover, .toc a.is-active {
+  color: var(--accent-strong);
+  text-decoration: none;
+  transform: translateX(2px);
+}
+.article-body {
+  max-width: 78ch;
+  margin: 0 auto;
+}
+.article-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 1rem;
+  color: var(--muted);
+  font-size: 0.74rem;
+  border-top: 1px solid var(--border);
+}
+.article-footer a {
+  color: var(--muted);
+}
+@media (max-width: 720px) {
+  body {
+    padding: 0 0 3rem;
+  }
+  .article {
+    min-height: 100vh;
+    padding: 1.5rem 1rem 3rem;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+  .article::before {
+    border-radius: 0;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(1.9rem, 9vw, 2.6rem);
+  }
+  .article-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+@media print {
+  :root {
+    color-scheme: light;
+  }
+  body {
+    padding: 0;
+    color: #111;
+    background: #fff;
+  }
+  .reading-progress, .toc, .copy-button {
+    display: none;
+  }
+  .article {
+    max-width: none;
+    padding: 0;
+    background: #fff;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  h1, h2, h3, h4, h5, h6, strong {
+    color: #111;
+    -webkit-text-fill-color: initial;
+  }
+  a {
+    color: inherit;
+    text-decoration: underline;
+  }
+  pre {
+    color: #111;
+    background: #f4f4f4;
+    box-shadow: none;
+  }
+}
+</style>
+</head>
+<body>
+<div class="reading-progress" aria-hidden="true"><span></span></div>
+<main id="article-top" class="article">
+  <header class="article-header">
+    <div class="eyebrow">
+      <span class="eyebrow-dot"></span>
+      <span>ARTICLE</span>
+      <span class="eyebrow-separator">/</span>
+      <span>zenn.dev</span>
+    </div>
+    <div class="metadata" aria-label="記事メタデータ"><span class="metadata-item"><span class="metadata-label">著者</span>kaito</span><span class="metadata-item"><span class="metadata-label">公開日</span>2026-10-02</span><a class="metadata-item source-link" href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/4fda7d"><span class="metadata-label">原文</span>読む</a><span class="metadata-item"><span class="metadata-label">サイト</span>zenn.dev</span><span class="metadata-item"><span class="metadata-label">形式</span>ARTICLE</span></div>
+    <h1 id="7-poteto-mode">第7章 /poteto-mode ― 依頼を適切な進め方につなぐ入口</h1>
+  </header>
+<nav class="toc" aria-label="目次">
+  <div class="toc-heading">
+    <span class="toc-title">目次</span>
+    <span class="toc-count">19 セクション</span>
+  </div>
+  <ol><li><a href="#_1">この章の構成</a></li><li><a href="#poteto-mode">/poteto-mode は、依頼の先頭に付けて呼び出す</a><ol><li><a href="#_2">基本は、依頼文の頭に付けるだけ</a></li><li><a href="#cursorcustom-mode">Cursorでは、Custom Modeとして固定できる</a></li><li><a href="#_3">有効になるのは、付けたメッセージのみ</a></li></ol></li><li><a href="#3">呼び出すと、3つのことが起きる</a><ol><li><a href="#1-playbooktodo">1. Playbookの手順を、そのままTODOリストに写す</a></li><li><a href="#2-skill">2. 手順が求めるときに、ほかのSkillを呼ぶ</a></li><li><a href="#3_1">3. 返答は、決まった書き方で書く</a></li></ol></li><li><a href="#playbook">依頼は、決まった規則でPlaybookに振り分けられる</a><ol><li><a href="#5playbook1">よくある振り分け先は5つのPlaybookと例外1つ</a></li><li><a href="#figure-it-out-orchestrate">大きな作業は /figure-it-out へ、プロジェクト規模の作業は『Orchestrate』へ回る</a></li></ol></li><li><a href="#_4">良い依頼は、目的と完了条件を自分の言葉で書く</a><ol><li><a href="#_5">手順ではなく、ゴールを書く</a></li><li><a href="#5">依頼文に入れると良い5つの項目</a></li><li><a href="#skill">Skillを列挙しない</a></li><li><a href="#_6">「何時間続けるか」は、完了条件にならない</a></li><li><a href="#_7">話題を変えるときは「新しいタスク」と言う</a></li></ol></li><li><a href="#_8">まとめ</a></li></ol>
+</nav>
+  <div class="article-body">
+
+<p><code>/poteto-mode</code> は、pstackの入口です。<strong>依頼を読み、23件のPlaybookから1冊を選び、その手順に沿って作業を進めます</strong>。</p>
+<p>利用者は、どのPlaybookを使うかも、どのSkillをどの順で呼ぶかも指定しなくて済みます。利用者がするのは、<strong>ゴールとそれを確かめる方法を、自分の言葉で渡すことだけ</strong>です。</p>
+<p>この章では、<code>/poteto-mode</code> の呼び出し方、呼び出したときに起きること、依頼をPlaybookに振り分ける規則、良い依頼の書き方を解説していきます。</p>
+<h2 id="_1">この章の構成</h2>
+<p>この章の構成は次のとおりです。</p>
+<ul>
+<li><code>/poteto-mode</code> は、依頼の先頭に付けて呼び出す</li>
+<li>呼び出すと、3つのことが起きる</li>
+<li>依頼は、決まった規則でPlaybookに振り分けられる</li>
+<li>良い依頼は、目的と完了条件を自分の言葉で書く</li>
+<li>まとめ</li>
+</ul>
+<h2 id="poteto-mode"><code>/poteto-mode</code> は、依頼の先頭に付けて呼び出す</h2>
+<p><code>/poteto-mode</code> は、<strong>作業の依頼の先頭に付けて呼び出します</strong>。</p>
+<p><strong><code>/poteto-mode</code> が有効になるのは、<code>/poteto-mode</code> を付けたメッセージのみです</strong>。そのため、毎ターン有効にしたいなら、メッセージのたびに <code>/poteto-mode</code> を付ける必要があります（<a href="#%E6%9C%89%E5%8A%B9%E3%81%AB%E3%81%AA%E3%82%8B%E3%81%AE%E3%81%AF%E3%80%81%E4%BB%98%E3%81%91%E3%81%9F%E3%83%A1%E3%83%83%E3%82%BB%E3%83%BC%E3%82%B8%E3%81%AE%E3%81%BF">後の項</a>）。毎ターン付けるのが手間なら、<code>/poteto-mode</code> を<a href="https://cursor.com/docs/skills">Custom Mode</a>として固定できます。</p>
+<p>!</p>
+<p>0.15.9までのREADMEは、<code>/poteto-mode</code> を sticky mode（一度呼ぶと、後のターンでも有効なままになるモード）と説明していました。</p>
+<blockquote>
+<p><code>/poteto-mode</code> is also a sticky mode: once entered it stays on across turns, applying itself when a playbook matches or the task needs rigor and staying out of the way otherwise. opt out any time by saying so.</p>
+<p><code>/poteto-mode</code> は持続するモードでもある。一度入ると、ターンをまたいで有効なままになり、Playbookに当てはまるときや厳密さが必要なときに自ら適用され、それ以外では邪魔をしない。やめたいときは、いつでもそう言えばよい。</p>
+</blockquote>
+<p>0.15.10以降のREADME（本書が扱う0.15.15を含む）では、この説明が消え、Custom Modeにしない場合、<strong><code>/poteto-mode</code> が有効になるのは、付けたメッセージのみ</strong>、と記載されています。</p>
+<blockquote>
+<p>plain enter attaches it to one message only.</p>
+<p>普通のEnterでは、1つのメッセージにだけ付く。</p>
+</blockquote>
+<p>そのため、0.15.15では、Custom Modeにしない限り、一度付けただけの <code>/poteto-mode</code> が、後のターンまで有効なままになることはありません。</p>
+<h3 id="_2">基本は、依頼文の頭に付けるだけ</h3>
+<p>pstackの<a href="https://github.com/cursor/plugins/blob/main/pstack/README.md">README</a>は、<code>/poteto-mode</code> を自明でない作業に対する、すべての既定の入口と位置づけ、次のような例を挙げています。</p>
+<pre><code>/poteto-mode this pr has a subtle bug where the scroll drifts every 750ms even when idle. repro first, then fix and verify.
+// このPRには気づきにくいバグがある。アイドル中でも750msごとにスクロールがずれる。まず再現して、それから直して、確かめて。
+</code></pre>
+<p>この依頼には、どのPlaybookやSkillを使うかは書かれていません。書かれているのは、起きている症状（アイドル中でも750msごとにスクロールがずれる）と、してほしい作業（まず再現し、直し、確かめる）だけです。</p>
+<p>どのPlaybookやSkillを使うかは <code>/poteto-mode</code> が依頼の内容から選ぶので、<strong>利用者は、症状と、してほしい作業を書けばよいだけです</strong>。</p>
+<p><code>/poteto-mode</code> を適用するかどうかは、<a href="#cursor%E3%81%A7%E3%81%AF%E3%80%81custom-mode%E3%81%A8%E3%81%97%E3%81%A6%E5%9B%BA%E5%AE%9A%E3%81%A7%E3%81%8D%E3%82%8B">次の項</a>で見る <code>reminder</code> が決めています。<code>reminder</code> は、新しいタスクで、Playbookに当てはまるときや厳密さが必要なときだけ <code>/poteto-mode</code> を適用し、雑談などの軽い依頼や質問には適用しないと定めています。</p>
+<p>そのため、<code>/poteto-mode</code> を付けるか迷ったときは、付けておくと良いと私は考えています。軽い依頼や質問なら、エージェントはPlaybookの手順を踏まずに答えます。</p>
+<h3 id="cursorcustom-mode">Cursorでは、Custom Modeとして固定できる</h3>
+<p>依頼のたびに <code>/poteto-mode</code> を入力するのが手間なら、<code>/poteto-mode</code> を<a href="https://cursor.com/docs/skills">Custom Mode</a>として固定できます。Custom Modeとは、Skillを、毎ターン、エージェントのコンテキストに入れ続けるCursorの機能です。</p>
+<p><code>/poteto-mode</code> を補完するときに、Enterではなく <code>Option + Enter</code>（Mac）か <code>Alt + Enter</code>（Windows）を押すと、Skillが<a href="https://cursor.com/docs/skills">Custom Mode</a>として追加されます。</p>
+<p>Skillの一覧から <code>Use as Mode</code> を選んでも、同じようにCustom Modeにすることができます。</p>
+<p>Custom Modeにすると、<strong>利用者がモードを抜けるまで、<code>/poteto-mode</code> が毎ターンコンテキストに入ります</strong>。どのターンで使うかは、次の <code>reminder</code>（新しいターンのたびにエージェントに渡される、短い指示）が決めます。</p>
+<p>!</p>
+<p>READMEは、Custom Modeを、Cursorの Agents Window（複数のエージェントを並べて管理する画面）とCLI（ターミナルから使うCursor）で使える機能と説明しています。<code>/poteto-help</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/77207a">第37章</a>）は、それ以外の場所では、新しい作業のたびに <code>/poteto-mode</code> を付けるよう案内しています。</p>
+<p>リマインダーの文面は、<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/SKILL.md"><code>/poteto-mode</code></a> の frontmatter に <code>reminder</code> として書かれています。</p>
+<pre><code>mode: true
+reminder: New task? Playbook match or rigor needed -&gt; apply /poteto-mode. Casual turn or user opts out -&gt; don't.
+# 新しいタスクで、Playbookに当てはまるか厳密さが必要なら /poteto-mode を適用する。雑談のターンや、利用者がやめると言った場合は適用しない。
+</code></pre>
+<p><strong>この1行があるので、<a href="https://cursor.com/docs/skills">Custom Mode</a>で固定したままでも、雑談などの軽い依頼・質問のターンや、利用者がモードをやめると言った場合には、エージェントはPlaybookの手順を踏みません</strong>。</p>
+<h3 id="_3">有効になるのは、付けたメッセージのみ</h3>
+<p><code>/poteto-mode</code> が有効になるのは、<code>/poteto-mode</code> を付けたメッセージのみです。同梱ガイドの<a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/01-setup.md"><code>01-setup.md</code></a>は、会話が進むにつれて、<strong><code>/poteto-mode</code> の効き目が薄れていく</strong>、と記載しています（原文は it fades as the chat moves on）。</p>
+<p>エージェントは会話が進むほど、前のメッセージのことを忘れる傾向があるためです。</p>
+<p>同じ会話で作業を続けるときに、毎ターン <code>/poteto-mode</code> を有効にしておきたいなら、前の項のCustom Modeにします。Custom Modeをやめるときは、モードを抜けます。その場でだけ外したいときは、やめたいと伝えます。</p>
+<p>Custom Modeにしておけば、同じ会話の中で作業を続けるときは、依頼が短くても構いません。同梱ガイドの<a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/02-poteto-mode.md"><code>02-poteto-mode.md</code></a>には、次のような例が並んでいます。</p>
+<pre><code>/poteto-mode do it
+// それで進めて
+</code></pre>
+<pre><code>continue
+// 続けて
+</code></pre>
+<pre><code>keep going until done
+// 終わるまで続けて
+</code></pre>
+<p>同ページでは、短い依頼で足りるのは、作業の組み立て（手順）をPlaybookが持ち、Custom Modeが「<code>/poteto-mode</code> を毎ターンコンテキストに入れておくからだ」と説明しています。<strong>利用者の言葉は何をしたいか（意図）を伝え、手順どおりに厳密に進める役目はSkillが受け持ちます</strong>。</p>
+<p>ただし、Custom Modeで <code>/poteto-mode</code> が有効なままだと、同じ会話で別の話題に移ったときに、前のタスクの続きとして扱われることがあります。話題を変えるときの頼み方は、この章の「<a href="#%E8%A9%B1%E9%A1%8C%E3%82%92%E5%A4%89%E3%81%88%E3%82%8B%E3%81%A8%E3%81%8D%E3%81%AF%E3%80%8C%E6%96%B0%E3%81%97%E3%81%84%E3%82%BF%E3%82%B9%E3%82%AF%E3%80%8D%E3%81%A8%E8%A8%80%E3%81%86">話題を変えるときは『新しいタスク』と言う</a>」で扱います。</p>
+<h2 id="3">呼び出すと、3つのことが起きる</h2>
+<p><code>/poteto-mode</code> を呼び出すと、<strong>Playbookの手順をTODOリストに写し、手順に応じてほかのSkillを呼び、決まった書き方で返答する</strong>、という3つのことが起きます。</p>
+<p>!</p>
+<p><strong>TODOリスト</strong>・・・ エージェントが作業の始めに作る、その作業でやることの一覧（計画）です。Cursorでは、チャットの画面に表示されます。利用者は、この一覧を見て、エージェントがどの手順を進め、どの手順を飛ばしたか（<code>skip: &lt;理由&gt;</code>）を確かめられます（同梱ガイド <a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/01-setup.md"><code>01-setup.md</code></a>）。</p>
+<p>READMEは、3つを次のように説明しています。</p>
+<ol>
+<li>依頼をPlaybookに照らし合わせ、TODOリストを開く。最初の項目は、そのPlaybookの手順を一字一句写したものになる</li>
+<li>手順が進むにつれて、必要なほかのSkillへ振り分ける</li>
+<li>利用者に向けて、AIらしさを取り除いた返答を書く</li>
+</ol>
+<h3 id="1-playbooktodo">1. Playbookの手順を、そのままTODOリストに写す</h3>
+<p><code>/poteto-mode</code> の中心にある規則です。<code>/poteto-mode</code> の節『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/SKILL.md#playbooks">Playbooks</a>』は、最初にこう定めています。</p>
+<blockquote>
+<p>Open a todolist whose first items are the matched playbook's steps, copied in verbatim, before any task-specific todos. A step you choose not to do stays in the list with a one-line <code>skip: &lt;reason&gt;</code>.</p>
+<p>TODOリストを開き、その最初の項目には、選んだPlaybookの手順を一字一句写す。タスク固有のTODOはその後ろに置く。やらないと決めた手順もリストに残し、<code>skip: &lt;理由&gt;</code> を1行添える。</p>
+</blockquote>
+<p>エージェントは、<strong>Playbookの手順を要約せずにそのまま作業の一覧にし、やらない手順も理由を添えて残します</strong>。</p>
+<p>この規則には、以下の2つの効き目があります。</p>
+<ul>
+<li><strong>Playbookの順序が、そのまま作業の骨組みになること</strong>・・・ エージェントが自分の判断で手順を要約したり、組み立て直したりする余地が小さくなります。</li>
+<li><strong>飛ばした手順が見えること</strong>・・・ やらない手順も <code>skip: &lt;理由&gt;</code> として残るので、人間は結果だけでなく、途中のエージェントの判断も点検できます。同梱ガイドの<a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/01-setup.md"><code>01-setup.md</code></a>も、TODOリストを見れば、エージェントが何をやらないと決めたかが分かると書いています。</li>
+</ul>
+<h3 id="2-skill">2. 手順が求めるときに、ほかのSkillを呼ぶ</h3>
+<p>Playbookの各手順には、どこでどのSkillを使うかが書かれています。<code>/how</code> や <code>/architect</code> は、起動時にまとめて呼ばれるのではなく、手順がその場面に来たときに呼ばれます。この仕組みは<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/096f3d">第8章</a>と<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/6b7496">第9章</a>で扱います。</p>
+<h3 id="3_1">3. 返答は、決まった書き方で書く</h3>
+<p>返答の書き方は、<code>/poteto-mode</code> の節『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/SKILL.md#writing-the-reply">Writing the reply</a>』が定めています。たとえば以下のような規則です。</p>
+<ul>
+<li>一文一義の短い断定文にする</li>
+<li>誰のための作業で何が変わるかを先に書く</li>
+<li>主張には証拠か「測定した・推論した・推測」のラベルを付ける</li>
+</ul>
+<p>すべてのPlaybookはこの書き方の返答で終わり、各Playbookの末尾にある「Reply」行には、そのPlaybookで報告する内容が書かれています。規則の全体は<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/4f8911">第38章</a>で扱います。</p>
+<h2 id="playbook">依頼は、決まった規則でPlaybookに振り分けられる</h2>
+<p>振り分けの基本は、<strong>依頼の種類（調べるだけの質問、不具合、新しい振る舞いなど）を見て、合うPlaybookを1冊選ぶこと</strong>です。</p>
+<p>ただし、<strong>作業が大きいときは、依頼の種類より作業の大きさで振り分け先が決まります</strong>。『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/feature.md"><strong>Feature</strong></a>』などのPlaybookに当てはまる依頼でも、<code>/figure-it-out</code> や『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/orchestrate.md"><strong>Orchestrate</strong></a>』へ回ります。</p>
+<h3 id="5playbook1">よくある振り分け先は5つのPlaybookと例外1つ</h3>
+<p>振り分けの全体像は、まず代表的なPlaybook5つと、当てはまるPlaybookがない場合の例外1つ（<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/figure-it-out/SKILL.md"><code>/figure-it-out</code></a>）を押さえれば十分です。同梱ガイドの<code>02-poteto-mode.md</code>にある振り分けの図を、日本語にして描き直すと次のようになります。</p>
+<p>図にあるのは代表的な振り分け先だけです。ほかに、以下の作業のPlaybookがあります。</p>
+<ul>
+<li>指標の継続的な改善</li>
+<li>実行時の症状や取得済みトレースの診断</li>
+<li>プロトタイプ</li>
+<li>見た目の一致</li>
+<li>Skillの作成と評価</li>
+<li>長時間の自律実行</li>
+<li>PRの作成</li>
+<li>PRの見守りと本番への反映</li>
+<li>PRキューの自動運転</li>
+<li>プロジェクト規模の統括</li>
+<li>作業の引き継ぎと中断</li>
+<li>複数フェーズの計画</li>
+<li>worktree（1つのリポジトリから、作業用のコピーを複数作るgitの機能）の掃除</li>
+</ul>
+<p>23件の詳細は<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/72f8ee">第3部</a>で扱います。</p>
+<p>図では、依頼の種類を判定する前に、「Principlesの一覧を読む」段があります。Principleの読み方は<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/6b7496">第9章</a>で扱います。</p>
+<h3 id="figure-it-out-orchestrate">大きな作業は <code>/figure-it-out</code> へ、プロジェクト規模の作業は『Orchestrate』へ回る</h3>
+<p>作業が大きいときは、個別のPlaybookより優先して、<code>/figure-it-out</code> か『<strong>Orchestrate</strong>』Playbookへ回ります。<code>/poteto-mode</code> の『Playbooks』にある2つの規則で、どちらも作業の大きさで振り分け先を変えるものです。</p>
+<p>1つ目は <code>/figure-it-out</code> です。規則の原文は次のとおりです。</p>
+<blockquote>
+<p>A large or cross-cutting effort (a migration across many call sites, an ambitious multi-part change), or work the user steps away from to trust later, routes to the <strong>figure-it-out</strong> skill even when a narrower playbook like Feature fits.</p>
+<p>大きく横断的な作業（多くの呼び出し箇所にまたがる移行、野心的な複数部分からなる変更）や、利用者が席を外してあとで信頼したい作業は、『Feature』のような狭いPlaybookが当てはまっても、figure-it-out のSkillへ回る。</p>
+</blockquote>
+<p>エージェントは、<strong>依頼の言葉より作業の大きさを優先して、振り分け先を決めます</strong>。</p>
+<p>どのPlaybookにも当てはまらない作業も <code>/figure-it-out</code> へ回ります。</p>
+<p><code>/figure-it-out</code> は、そのタスクのための厳密で監査可能なPlaybookを設計するSkillです。</p>
+<p>2つ目は『<strong>Orchestrate</strong>』です。対象は、何日も続くプロジェクト規模の作業で、積み重なった多数のPRを、1体のコーディネーターエージェントと多数のサブエージェントで進めるものです。</p>
+<p>2つの違いは、<code>/figure-it-out</code> がその作業1回分の進め方（Playbook）を設計するのに対し、『<strong>Orchestrate</strong>』は何日も続く作業全体を運営する点です。</p>
+<p>ただし『<strong>Orchestrate</strong>』の説明には、1体のエージェントがセッションの予算内で終えられる作業は『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/autonomous-run.md"><strong>Autonomous run</strong></a>』へ回すよう、明示されています。</p>
+<p>これらの規則をまとめると、次のとおりです。</p>
+<table>
+<thead>
+<tr>
+<th>依頼の性質</th>
+<th>振り分け先</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1つのPlaybookに当てはまる、通常の規模の作業</td>
+<td>該当するPlaybook</td>
+</tr>
+<tr>
+<td>大きく横断的な作業、席を外してあとで確認したい作業、該当するPlaybookがない作業</td>
+<td><code>/figure-it-out</code></td>
+</tr>
+<tr>
+<td>複数日、多数のPR、多数のサブエージェントを使う継続的なプログラム</td>
+<td>『<strong>Orchestrate</strong>』</td>
+</tr>
+<tr>
+<td>1体で終えられる長いタスク（「終わるまで続けて」など）</td>
+<td>『<strong>Autonomous run</strong>』</td>
+</tr>
+</tbody>
+</table>
+<h2 id="_4">良い依頼は、目的と完了条件を自分の言葉で書く</h2>
+<p>同梱ガイド（<a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/README.md"><code>docs/guide/</code></a>）の勧めをまとめると、良い依頼の書き方は以下の4つです。</p>
+<ol>
+<li><strong>ゴールと確かめ方を書く</strong></li>
+<li><strong>Skillを列挙しない</strong></li>
+<li><strong>作業時間を完了条件にしない</strong></li>
+<li><strong>話題を変えるときは「新しいタスク」と言う</strong></li>
+</ol>
+<h3 id="_5">手順ではなく、ゴールを書く</h3>
+<p>同梱ガイドの<code>02-poteto-mode.md</code>は、依頼に詳しい仕様書は必要ないと説明しています。何が問題になっているか、何を実現したいか、そしてすでに分かっていることで作業の助けになる情報を伝えれば足ります。</p>
+<p>ガイドには、次の不具合の依頼例があります。</p>
+<pre><code>/poteto-mode users get two notifications after a retry. repro first, then fix and verify.
+// 再試行の後、ユーザーに通知が2回届く。まず再現して、それから直して、確かめて。
+</code></pre>
+<p>ガイドは、この「まず再現して」を丁寧さの飾りではなく、<strong>Playbookが守る本物の制約</strong>として扱うと説明しています。実際、この依頼は『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/bug-fix.md"><strong>Bug fix</strong></a>』Playbookに振り分けられ、TODOリストは再現の手順から始まります。</p>
+<p>同梱ガイドの目次も、覚えておくことを一つだけ挙げるなら、<strong>ゴールとそれを確かめる方法を自分の言葉で渡すこと</strong>だ、とまとめています。</p>
+<p>確かめ方の書き方は、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/27a183">第2章</a>で見た同梱ガイドの例（「テキスト出力は1バイトも変えない。JSONはパースできる」）が参考になります。どちらも、エージェント自身が実行して合否を判定できる形になっています。</p>
+<p>依頼に書くとよいものは、確かめ方だけではありません。『The Complete Guide to pstack』<a href="https://x.com/poteto/status/2097732320606507506">Part 2</a>の依頼例には、受け取りたい結果の形（分かっていること、使ったデータ、有力な仮説を分けて示す）や、レビューのタイミング（進める前に確認させて）まで書かれたものがあります。</p>
+<h3 id="5">依頼文に入れると良い5つの項目</h3>
+<p>同梱ガイドの<code>02-poteto-mode.md</code>は、依頼文に入れると良いものを、次の5つにまとめています。<strong>全部を入れる必要はなく、どれも1文で書けます</strong>。</p>
+<ul>
+<li><strong>目的</strong>・・・ 何が問題になっているか、何を実現したいか</li>
+<li><strong>完了条件</strong>・・・ 合否が出る形で書く。たとえば「6万行のテスト用データの全行がエクスポートされること」は、合否が出る。「もっと良くして」や「1時間取り組んで」は、合否が出ないので、完了条件にならない</li>
+<li><strong>確認したい証拠</strong>・・・ 実際のコマンドの出力、操作の流れの動画、保存された値、変更前と変更後の数値</li>
+<li><strong>すでに分かっていること</strong>・・・ 症状、再現の手順、ログの1行、リンク。エージェントが探す手間を省ける</li>
+<li><strong>本物の制約</strong>・・・ エージェントが必ず守る条件。たとえば、「まず再現して」「まだコードを変えないで」「振る舞いは変えないで」「進める前に確認させて」のように、エージェントの動きを変える言葉</li>
+</ul>
+<p>ガイドは、5つをすべて含む依頼として、次の例を挙げています。</p>
+<pre><code>/poteto-mode the csv export drops its last row since yesterday's deploy. failing job id is 4812. repro first, then fix. done means the 60k-row fixture exports every row. show me the row counts before and after.
+// 昨日のデプロイ以降、CSVのエクスポートで最後の行が抜ける。失敗したジョブのIDは4812。まず再現して、それから直して。完了条件は、6万行のテスト用データの全行がエクスポートされること。変更前と変更後の行数を見せて。
+</code></pre>
+<p>また、ガイドは、<strong>次の2つは書かないよう</strong>勧めています。</p>
+<ul>
+<li><strong>やり方</strong>・・・ 何を実現するかなどの目的だけを書き、エージェントが利用者の思いつくやり方より、良い方法を見つける余地を残す</li>
+<li><strong>原因についての自分の推測</strong>・・・ 最初の依頼には書かない。推測を書くと、エージェントは、利用者が指した場所だけを探すようになる。エージェントに問題を自分の言葉で言い直させてから、推測を伝える</li>
+</ul>
+<p>2つを書かない理由は、『The Complete Guide to pstack』<a href="https://x.com/poteto/status/2097732320606507506">Part 2</a>に書かれています。poteto氏は、最新のモデルは人よりうまくコードを書けるので、<strong>何を実現したいかは伝えつつ、利用者が思いつかない方法で解く自由を残したい</strong>、と述べています。やり方を細かく指示すると、この自由がなくなります。</p>
+<p>推測を後回しにして、先にエージェントに言い直させるのも、同じ考えからです。Part 2は、言い直させると、次の3つが得られると説明しています。</p>
+<ul>
+<li>雑多な会話を、整理された問題の説明にまとめさせられる</li>
+<li><strong>エージェントの誤解に、コードを書き始める前に気づいて直せる</strong></li>
+<li>利用者の思い込みや、間違っているかもしれない仮説で、エージェントを誤った方向に導かずに済む</li>
+</ul>
+<p>この節の内容についての詳細は<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/b4b9a1#%E8%A6%81%E7%82%B92%EF%BC%9A%E5%AE%9F%E8%A3%85%E5%89%8D%E3%81%AB%E3%80%81%E5%95%8F%E9%A1%8C%E3%82%92%E8%A8%80%E3%81%84%E7%9B%B4%E3%81%95%E3%81%9B%E3%82%8B">第40章</a>で詳しく解説します。</p>
+<h3 id="skill">Skillを列挙しない</h3>
+<p>同梱ガイドの<code>02-poteto-mode.md</code>は、依頼でSkillを列挙することを落とし穴に挙げています。</p>
+<blockquote>
+<p><strong>Pitfall:</strong> don't enumerate skills in your prompt ("use /how, then /architect, then /arena..."). The playbook already sequences them, and a hand-written sequence usually reorders or drops steps the playbook would have kept. Name a skill only when you want to override a specific choice.</p>
+<p><strong>落とし穴：</strong> 依頼でSkillを列挙しない（「/howを使って、次に/architect、次に/arena……」）。順番はPlaybookがすでに決めていて、手書きの順番は、Playbookなら残したはずの手順を入れ替えたり落としたりしがちだ。Skillの名前を書くのは、特定の選択を上書きしたいときだけにする。</p>
+</blockquote>
+<p>たとえば、不具合の依頼に「/howで調べて、/architectで設計して」と書くと、『<strong>Bug fix</strong>』Playbookが最初に置いている「自分で再現する」手順が、手書きの順番から抜け落ちるおそれがあります。ガイドの目次も冒頭で、<strong>pstackはエージェントを細かく管理するのをやめたときに最もよく働く</strong>、と書いています。</p>
+<p>「<a href="#%E6%89%8B%E9%A0%86%E3%81%A7%E3%81%AF%E3%81%AA%E3%81%8F%E3%80%81%E3%82%B4%E3%83%BC%E3%83%AB%E3%82%92%E6%9B%B8%E3%81%8F">手順ではなく、ゴールを書く</a>」の項で見た「まず再現して」のような言葉は、Playbookが守る制約として扱われます。<strong>制約は依頼に書き、どう進めるかという手順はPlaybookに任せる</strong>、という分担です。</p>
+<h3 id="_6">「何時間続けるか」は、完了条件にならない</h3>
+<p>席を外すときは、「完了条件」を書いてから離れます。同梱ガイドの<code>02-poteto-mode.md</code>には、次の例があります。</p>
+<pre><code>/poteto-mode im stepping away. keep going until the migration check reports zero old callers. log your decisions.
+// 席を外す。移行チェックが古い呼び出し元ゼロを報告するまで続けて。判断を記録して。
+</code></pre>
+<p>同梱ガイドの夜間実行のページ（<a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/07-overnight.md"><code>07-overnight.md</code></a>）は、<strong>時間を完了条件にすることを落とし穴に挙げています</strong>。</p>
+<p>「4時間これに取り組んで」はエージェントに確かめるものを何も与えず、朝には結果ではなく4時間分の動きが残るだけだからです。夜間の実行は<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/7d7609">第15章</a>で取り上げます。</p>
+<p>上の例のゴール「移行チェックが古い呼び出し元ゼロを報告する」は、エージェント自身が実行して合否を出せる判定です。このように、<strong>完了条件には、時間の代わりに、実行して合否が出る判定を書きます</strong>。</p>
+<h3 id="_7">話題を変えるときは「新しいタスク」と言う</h3>
+<p>長い会話には、前のタスクのコンテキストがたまります。そのため同梱ガイドの<code>02-poteto-mode.md</code>は、話題を変えるときに「新しいタスク」と言うよう勧めています。</p>
+<pre><code>/poteto-mode new task. figure out why the cache entry survives logout. don't change any code yet.
+// 新しいタスク。ログアウト後もキャッシュのエントリが残る理由を突き止めて。まだコードは変えないで。
+</code></pre>
+<p>つまり、<strong>「新しいタスク」はPlaybookを選び直させる合図</strong>です。</p>
+<p>これを言わずに話題を変えると、進行中のPlaybookが新しい質問を前の作業の続きとして扱うことがあります。</p>
+<h2 id="_8">まとめ</h2>
+<ul>
+<li><strong>呼び出し方</strong>・・・ <code>/poteto-mode</code> は、依頼の先頭に付けて呼ぶpstackの入口で、自明でない作業すべての既定の入口です。有効になるのは、<code>/poteto-mode</code> を付けたメッセージのみです。毎ターン有効にしたいときは、Cursorでは <code>Option + Enter</code>（Windowsでは <code>Alt + Enter</code>）で<a href="https://cursor.com/docs/skills">Custom Mode</a>として固定します。</li>
+<li><strong>呼び出したときに起きること</strong>・・・ Playbookを選んでその手順をTODOリストに一字一句写し、手順に応じてSkillを呼び、決まった書き方で返答します。飛ばした手順は <code>skip: &lt;理由&gt;</code> として残るので、途中で点検できます。</li>
+<li><strong>振り分けの規則</strong>・・・ 基本は依頼の種類で1冊を選びます。大きな作業は <code>/figure-it-out</code>、継続的なプロジェクト規模の作業は『<strong>Orchestrate</strong>』へ回ります。</li>
+<li><strong>良い依頼の書き方</strong>・・・ ゴールと確かめ方を自分の言葉で書き、Skillを列挙せず、作業時間を完了条件にせず、話題を変えるときは「新しいタスク」と言います。</li>
+</ul>
+<p>次の<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/096f3d">第8章</a>では、<code>/poteto-mode</code> の中で働く3つの部品、Playbook、Skill、Principleを扱います。3つの役割の違いを解説し、本書の実例の依頼を例に、『<strong>Bug fix</strong>』Playbookの各手順でSkillとPrincipleがどこで働くかをたどります。</p>
+  </div>
+  <footer class="article-footer">
+    <span>取得: 2026-10-06T23:37:27+09:00</span>
+    <a href="#article-top">↑ 先頭へ戻る</a>
+  </footer>
+</main>
+<script>
+(() => {
+  const progress = document.querySelector(".reading-progress > span");
+  const updateProgress = () => {
+    const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+    const ratio = scrollable > 0 ? window.scrollY / scrollable : 0;
+    if (progress) progress.style.width = `${Math.min(1, ratio) * 100}%`;
+  };
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  document.querySelectorAll("pre").forEach((block) => {
+    const button = document.createElement("button");
+    button.className = "copy-button";
+    button.type = "button";
+    button.textContent = "コピー";
+    button.addEventListener("click", async () => {
+      const text = block.querySelector("code")?.innerText || block.innerText;
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const textarea = document.createElement("textarea");
+          textarea.value = text;
+          textarea.style.position = "fixed";
+          textarea.style.opacity = "0";
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand("copy");
+          textarea.remove();
+        }
+        button.textContent = "コピー済み";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      } catch (error) {
+        button.textContent = "失敗";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      }
+    });
+    block.appendChild(button);
+  });
+
+  const links = new Map(
+    [...document.querySelectorAll(".toc a")].map((link) => [link.hash, link])
+  );
+  const headings = [...document.querySelectorAll(
+    ".article-body h2[id], .article-body h3[id], .article-body h4[id]"
+  )];
+  if ("IntersectionObserver" in window && headings.length) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        links.forEach((link) => link.classList.remove("is-active"));
+        links.get(`#${entry.target.id}`)?.classList.add("is-active");
+      });
+    }, { rootMargin: "-12% 0px -72% 0px" });
+    headings.forEach((heading) => observer.observe(heading));
+  }
+})();
+</script>
+</body>
+</html>

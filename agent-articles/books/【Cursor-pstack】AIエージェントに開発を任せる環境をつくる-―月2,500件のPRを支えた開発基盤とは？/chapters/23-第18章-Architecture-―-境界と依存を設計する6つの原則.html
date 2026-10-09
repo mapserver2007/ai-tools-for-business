@@ -1,0 +1,1538 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="title" content="第18章 Architecture ― 境界と依存を設計する6つの原則">
+<meta name="book_title" content="【Cursor pstack】AIエージェントに開発を任せる環境をつくる ―月2,500件のPRを支えた開発基盤とは？">
+<meta name="source_url" content="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/cdc49b">
+<meta name="author" content="kaito">
+<meta name="published_at" content="2026-10-02">
+<meta name="retrieved_at" content="2026-10-06T23:37:30+09:00">
+<meta name="site" content="zenn.dev">
+<meta name="content_type" content="article">
+<meta name="chapter_position" content="23">
+<title>第18章 Architecture ― 境界と依存を設計する6つの原則</title>
+<style>
+:root {
+  color-scheme: light;
+  --ink: #172033;
+  --muted: #64748b;
+  --line: #dbe4ef;
+  --accent: #2563eb;
+  --accent-dark: #1d4ed8;
+  --accent-soft: #eff6ff;
+  font-family: -apple-system, BlinkMacSystemFont, "Avenir Next",
+    "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 8% 0%, #dbeafe 0, transparent 32rem),
+    radial-gradient(circle at 100% 12%, #e0e7ff 0, transparent 28rem),
+    #f4f7fb;
+  color: var(--ink);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(120deg, transparent 0 48%, rgba(255, 255, 255, 0.4));
+}
+.article {
+  position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
+  max-width: 920px;
+  margin: clamp(1rem, 5vw, 4rem) auto;
+  padding: clamp(2rem, 6vw, 5rem) clamp(1.25rem, 7vw, 5.5rem);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  border-radius: 24px;
+  min-height: 100vh;
+  box-shadow:
+    0 24px 70px rgba(30, 64, 175, 0.1),
+    0 4px 16px rgba(15, 23, 42, 0.04);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 5px;
+  content: "";
+  background: linear-gradient(90deg, #2563eb, #7c3aed, #db2777);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin: 0 0 2.5rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.72rem;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+a {
+  color: var(--accent-dark);
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: #7c3aed;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--ink);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 18ch;
+  margin: 0 0 2.5rem;
+  font-size: clamp(2.15rem, 5vw, 3.65rem);
+  letter-spacing: -0.045em;
+}
+h2 {
+  position: relative;
+  margin: 3.8rem 0 1.25rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--line);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 4.2rem;
+  height: 3px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), #7c3aed);
+  border-radius: 999px;
+}
+h3 {
+  margin: 2.6rem 0 0.8rem;
+  color: var(--accent-dark);
+  font-size: 1.3rem;
+}
+h4, h5, h6 {
+  margin-top: 2rem;
+}
+p {
+  margin: 1.15rem 0;
+}
+ul, ol {
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.35rem 0;
+}
+li::marker {
+  color: var(--accent);
+  font-weight: 700;
+}
+strong {
+  color: #111827;
+}
+blockquote {
+  margin: 1.6rem 0;
+  padding: 0.8rem 1.25rem;
+  color: #475569;
+  background: linear-gradient(90deg, var(--accent-soft), #fff);
+  border-left: 4px solid var(--accent);
+  border-radius: 0 12px 12px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 3rem 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+img {
+  display: block;
+  max-width: 100%;
+  margin: 1.75rem auto;
+  height: auto;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+}
+pre {
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  padding: 1.15rem 1.25rem;
+  color: #e2e8f0;
+  background: #111827;
+  border: 1px solid #253047;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+}
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+:not(pre) > code {
+  padding: 0.15rem 0.4rem;
+  color: #9f1239;
+  background: #fff1f2;
+  border-radius: 5px;
+}
+table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  border-collapse: collapse;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
+  text-align: left;
+}
+th {
+  color: #1e3a8a;
+  background: #eff6ff;
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: #f8fafc;
+}
+@media (max-width: 600px) {
+  .article {
+    margin: 0;
+    padding: 2rem 1rem 4rem;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(2rem, 10vw, 2.75rem);
+  }
+  .metadata {
+    margin-bottom: 2rem;
+  }
+}
+@media print {
+  body {
+    background: #fff;
+  }
+  .article {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  a {
+    color: inherit;
+  }
+}
+</style>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0f1419;
+  --surface: #1a2332;
+  --surface-raised: #202c3f;
+  --surface-soft: rgba(26, 35, 50, 0.72);
+  --border: #2d3a4f;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #58a6ff;
+  --accent-strong: #79c0ff;
+  --green: #3fb950;
+  --purple: #bc8cff;
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+    "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  line-height: 1.75;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+  background: var(--bg);
+}
+body {
+  min-width: 320px;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 2rem 1.5rem 5rem;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(31, 111, 235, 0.18), transparent 32rem),
+    radial-gradient(circle at 100% 12%, rgba(137, 87, 229, 0.14), transparent 28rem),
+    var(--bg);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black, transparent 75%);
+}
+.reading-progress {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 20;
+  height: 3px;
+  background: rgba(45, 58, 79, 0.7);
+}
+.reading-progress > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  box-shadow: 0 0 14px rgba(88, 166, 255, 0.8);
+  transition: width 80ms linear;
+}
+.article {
+  position: relative;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  background: rgba(15, 20, 25, 0.76);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(88, 166, 255, 0.035) inset;
+  backdrop-filter: blur(16px);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  border-radius: 16px 16px 0 0;
+}
+.article-header {
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.eyebrow-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--green);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(63, 185, 80, 0.75);
+}
+.eyebrow-separator {
+  color: var(--border);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  background: rgba(32, 44, 63, 0.68);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+.source-link {
+  color: var(--text);
+  text-decoration: none;
+}
+.source-link:hover {
+  border-color: var(--accent);
+  background: rgba(88, 166, 255, 0.12);
+}
+a {
+  color: var(--accent);
+  overflow-wrap: anywhere;
+  text-decoration: none;
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 24ch;
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  background: linear-gradient(120deg, #fff 12%, #b9d8ff 58%, #bc8cff);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+h2 {
+  position: relative;
+  margin: 3.2rem 0 1.1rem;
+  padding: 0.75rem 0 0.65rem;
+  border-bottom: 1px solid var(--border);
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 3.8rem;
+  height: 2px;
+  content: "";
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(88, 166, 255, 0.7);
+}
+h3 {
+  margin: 2.25rem 0 0.7rem;
+  color: var(--accent-strong);
+  font-size: 1.2rem;
+}
+h4, h5, h6 {
+  margin-top: 1.75rem;
+}
+p {
+  margin: 0.9rem 0;
+}
+ul, ol {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.3rem 0;
+}
+li::marker {
+  color: var(--accent);
+}
+strong {
+  color: #fff;
+}
+blockquote {
+  margin: 1.4rem 0;
+  padding: 0.85rem 1.15rem;
+  color: #c9d1d9;
+  background: linear-gradient(100deg, rgba(88, 166, 255, 0.1), rgba(26, 35, 50, 0.55));
+  border: 1px solid rgba(88, 166, 255, 0.18);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 2.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+}
+pre {
+  position: relative;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  padding: 1rem 1.15rem;
+  color: #dbeafe;
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+pre code {
+  color: inherit;
+  background: transparent;
+}
+code {
+  font-family: "SF Mono", "Fira Code", ui-monospace, monospace;
+  font-size: 0.86em;
+}
+:not(pre) > code {
+  padding: 0.12em 0.38em;
+  color: #ffabbc;
+  background: rgba(248, 81, 73, 0.11);
+  border-radius: 4px;
+}
+.copy-button {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  padding: 0.25rem 0.55rem;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.72rem;
+  background: rgba(32, 44, 63, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.copy-button:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  border-spacing: 0;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.6rem 0.75rem;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+th {
+  color: var(--accent);
+  background: var(--surface);
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: rgba(26, 35, 50, 0.42);
+}
+tr:last-child td {
+  border-bottom: 0;
+}
+th:last-child, td:last-child {
+  border-right: 0;
+}
+.toc {
+  margin: 1.75rem 0 2.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.toc-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--border);
+}
+.toc-title {
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.toc-count {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.toc ol {
+  margin: 0.7rem 0 0;
+  padding-left: 1.25rem;
+}
+.toc ol ol {
+  margin: 0.2rem 0;
+}
+.toc li {
+  margin: 0.18rem 0;
+  font-size: 0.86rem;
+}
+.toc li::marker {
+  color: var(--muted);
+}
+.toc a {
+  display: inline-block;
+  max-width: 100%;
+  color: var(--muted);
+  transition: color 160ms ease, transform 160ms ease;
+}
+.toc a:hover, .toc a.is-active {
+  color: var(--accent-strong);
+  text-decoration: none;
+  transform: translateX(2px);
+}
+.article-body {
+  max-width: 78ch;
+  margin: 0 auto;
+}
+.article-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 1rem;
+  color: var(--muted);
+  font-size: 0.74rem;
+  border-top: 1px solid var(--border);
+}
+.article-footer a {
+  color: var(--muted);
+}
+@media (max-width: 720px) {
+  body {
+    padding: 0 0 3rem;
+  }
+  .article {
+    min-height: 100vh;
+    padding: 1.5rem 1rem 3rem;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+  .article::before {
+    border-radius: 0;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(1.9rem, 9vw, 2.6rem);
+  }
+  .article-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+@media print {
+  :root {
+    color-scheme: light;
+  }
+  body {
+    padding: 0;
+    color: #111;
+    background: #fff;
+  }
+  .reading-progress, .toc, .copy-button {
+    display: none;
+  }
+  .article {
+    max-width: none;
+    padding: 0;
+    background: #fff;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  h1, h2, h3, h4, h5, h6, strong {
+    color: #111;
+    -webkit-text-fill-color: initial;
+  }
+  a {
+    color: inherit;
+    text-decoration: underline;
+  }
+  pre {
+    color: #111;
+    background: #f4f4f4;
+    box-shadow: none;
+  }
+}
+</style>
+</head>
+<body>
+<div class="reading-progress" aria-hidden="true"><span></span></div>
+<main id="article-top" class="article">
+  <header class="article-header">
+    <div class="eyebrow">
+      <span class="eyebrow-dot"></span>
+      <span>ARTICLE</span>
+      <span class="eyebrow-separator">/</span>
+      <span>zenn.dev</span>
+    </div>
+    <div class="metadata" aria-label="記事メタデータ"><span class="metadata-item"><span class="metadata-label">著者</span>kaito</span><span class="metadata-item"><span class="metadata-label">公開日</span>2026-10-02</span><a class="metadata-item source-link" href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/cdc49b"><span class="metadata-label">原文</span>読む</a><span class="metadata-item"><span class="metadata-label">サイト</span>zenn.dev</span><span class="metadata-item"><span class="metadata-label">形式</span>ARTICLE</span></div>
+    <h1 id="18-architecture-6">第18章 Architecture ― 境界と依存を設計する6つの原則</h1>
+  </header>
+<nav class="toc" aria-label="目次">
+  <div class="toc-heading">
+    <span class="toc-title">目次</span>
+    <span class="toc-count">47 セクション</span>
+  </div>
+  <ol><li><a href="#_1">この章の構成</a></li><li><a href="#6">6原則の一覧</a></li><li><a href="#model-the-domain">『Model the Domain』は、ドメインを条件分岐ではなく構造で表す</a><ol><li><a href="#_2">散らばった真偽値、繰り返される前提、広がる分岐は、不要な複雑さである</a></li><li><a href="#3">3つの複雑さを含むコードでは、ありえない状態が書けてしまう</a></li><li><a href="#_3">ドメインを表す構造を選ぶと、ありえない状態が書けなくなり、分岐も減る</a></li><li><a href="#_4">構造は、後から入れ直すのではなく、コードを書くときに選ぶ</a></li><li><a href="#_5">ルール：散らばった書き方ごとに、代わりの構造が決まっている</a><ol><li><a href="#_6">真偽値の代わりに、状態機械を使う</a></li><li><a href="#_7">ばらばらの引数の代わりに、型付きのオブジェクトを使う</a></li><li><a href="#discriminated-union">広がった条件分岐の代わりに、参照表や discriminated union を使う</a></li><li><a href="#reducer">その場の書き換えの代わりに、reducer を使う</a></li><li><a href="#_8">無理に構造を入れない</a></li></ol></li><li><a href="#_9">発火条件</a></li></ol></li><li><a href="#boundary-discipline">『Boundary Discipline』は、入力の検証を外との境界に集め、内側は型を信じる</a><ol><li><a href="#_10">ルール：外から入るデータを境界で検証する</a><ol><li><a href="#_11">外から入ってきたデータだけを確かめる</a></li><li><a href="#_12">シェルが呼ぶだけの純粋関数に切り出す</a></li></ol></li><li><a href="#_13">発火条件</a></li></ol></li><li><a href="#type-system-discipline">『Type System Discipline』は、型で不正な状態を作れなくする</a><ol><li><a href="#_14">ルール：不正な状態を、型の定義の時点で書けなくする</a><ol><li><a href="#_15">ありえない状態を書けなくする</a></li><li><a href="#_16">意味の違う値に印を付ける</a></li><li><a href="#_17">型システムに嘘をつかない</a></li><li><a href="#_18">扱い漏れの確認はコンパイラに任せる</a></li><li><a href="#_19">型を強めるのは、弱すぎると分かった場所だけにする</a></li></ol></li><li><a href="#_20">発火条件</a></li></ol></li><li><a href="#make-operations-idempotent">『Make Operations Idempotent』は、操作を何度実行しても同じ結果になるように作る</a><ol><li><a href="#3_1">ルール：3つの問いで収束を確かめる</a></li><li><a href="#_21">発火条件</a></li></ol></li><li><a href="#migrate-callers-then-delete-legacy-apisapi">『Migrate Callers Then Delete Legacy APIs』は、呼び出し元をすべて移し、その変更の中で古いAPIも消す</a><ol><li><a href="#api">ルール：呼び出し元を洗い出して移し、古いAPIをすぐ消す</a><ol><li><a href="#api_1">呼び出し元が残っていることを、古いAPIを残す理由にしない</a></li><li><a href="#_22">一時的なつなぎの層は例外にする</a></li><li><a href="#api_2">テストを新しいAPIに合わせる</a></li></ol></li><li><a href="#_23">発火条件</a></li></ol></li><li><a href="#separate-before-serializing-shared-state">『Separate Before Serializing Shared State』は、書き込み先の共有をなくすのが先で、ロックは最後の手段</a><ol><li><a href="#_24">ロックは共有をなくさないので、書き込みの直列化は最後の手段にする</a></li><li><a href="#_25">分けられないときも、順番は指示ではなく仕組みで守らせる</a></li><li><a href="#_26">ルール：ロックの前に書き込み先を分ける</a><ol><li><a href="#1">1. 複数の主体が書き換える、共有の場所を見つける</a></li><li><a href="#2">2. 書き込み先の共有をなくす</a></li><li><a href="#3_2">3. 分けられないときだけ、書き込みを直列化する</a></li></ol></li><li><a href="#_27">発火条件</a></li><li><a href="#worktree">依頼の例：並行する試行に、それぞれ専用のworktreeを与える</a></li></ol></li><li><a href="#architecture6">Architectureの6原則は、構造そのものをエージェントへの説明書にする</a></li><li><a href="#_28">まとめ</a></li></ol>
+</nav>
+  <div class="article-body">
+
+<p>この章では、次の6つの原則を扱います。</p>
+<ol>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-model-the-domain/SKILL.md">Model the Domain</a></li>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-boundary-discipline/SKILL.md">Boundary Discipline</a></li>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-type-system-discipline/SKILL.md">Type System Discipline</a></li>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-make-operations-idempotent/SKILL.md">Make Operations Idempotent</a></li>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-migrate-callers-then-delete-legacy-apis/SKILL.md">Migrate Callers Then Delete Legacy APIs</a></li>
+<li><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-separate-before-serializing-shared-state/SKILL.md">Separate Before Serializing Shared State</a></li>
+</ol>
+<p>6件はArchitecture（設計）のグループの原則で、どれも<strong>エージェントがコードをどんな形（状態の持ち方や、検証を置く場所など）に組み立てるか</strong>を決めます。同梱ガイドのページ <a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/08-principles.md"><code>docs/guide/08-principles.md</code></a> は、6件を「状態、検証、互換性をどこに置くか」を決める原則とまとめています。</p>
+<p>6件を使うと、エージェントは、次のように動作します。</p>
+<ul>
+<li>状態を、いくつもの真偽値の組み合わせではなく、状態機械で持つ</li>
+<li>外から受け取るデータの検証を、境界に集める</li>
+<li>呼び出し元をすべて新しいAPIに移したら、その同じ変更の中で古いAPIを消す</li>
+</ul>
+<p>!</p>
+<ul>
+<li><strong>状態機械</strong>・・・ 取りうる状態と、状態から状態への移り方を、あらかじめ決めておく書き方。ある時点では、決められた状態のどれか一つだけを取る<br />
+  たとえば、信号機は、青、黄、赤のどれか一つだけを示し、青→黄→赤の決まった順に移ります。「青と赤が同時につく」ことも、「青から赤へ飛ぶ」こともありません。状態機械は、このような決まりをコードで表します。</li>
+<li><strong>境界</strong>・・・ フォームの入力やAPIの応答のように、外からデータが入ってくる場所</li>
+</ul>
+<p>この章では、6原則を、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a8e80b">第17章</a>と同じく、ルールと発火条件の観点で1件ずつ解説し、最後に、構造そのものをエージェントへの説明書にするという見方でまとめます。</p>
+<p>本章の依頼例も、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a8e80b">第17章</a>と同じく、原則名を入れた一行の指示にしています。原則名を書かなくても、作業が発火条件に当てはまればエージェントが原則を自分で読んで適用することは、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a8e80b">第17章</a>の前提で見たとおりです。</p>
+<p>!</p>
+<p>本章で依頼例を載せているのは、6件のうち『Separate Before Serializing Shared State』の1件だけです。</p>
+<p>本書では、依頼例を、pstackの同梱ガイドや<a href="https://github.com/cursor/plugins/blob/main/pstack/README.md">README</a>に記載があるものだけにとどめるものとします。原文に依頼例がない原則について本書で依頼例を作ると、pstackが想定していない使い方を示してしまうおそれがあるためです。</p>
+<h2 id="_1">この章の構成</h2>
+<p>この章の構成は次のとおりです。</p>
+<ul>
+<li>6原則の一覧</li>
+<li>『Model the Domain』は、ドメインを条件分岐ではなく構造で表す</li>
+<li>『Boundary Discipline』は、入力の検証を外との境界に集め、内側は型を信じる</li>
+<li>『Type System Discipline』は、型で不正な状態を作れなくする</li>
+<li>『Make Operations Idempotent』は、操作を何度実行しても同じ結果になるように作る</li>
+<li>『Migrate Callers Then Delete Legacy APIs』は、呼び出し元をすべて移し、その変更の中で古いAPIも消す</li>
+<li>『Separate Before Serializing Shared State』は、書き込み先の共有をなくすのが先で、ロックは最後の手段</li>
+<li>Architectureの6原則は、構造そのものをエージェントへの説明書にする</li>
+<li>まとめ</li>
+</ul>
+<h2 id="6">6原則の一覧</h2>
+<table>
+<thead>
+<tr>
+<th>Principle</th>
+<th>一文の結論</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>『<strong>Model the Domain</strong>』</td>
+<td>ドメインを、散らばった条件分岐ではなく構造で表す</td>
+</tr>
+<tr>
+<td>『<strong>Boundary Discipline</strong>』</td>
+<td>検証とエラー処理を、外からデータが入る境界に集める。境界の内側のコードは型を信じる</td>
+</tr>
+<tr>
+<td>『<strong>Type System Discipline</strong>』</td>
+<td>型の検査を使い、ありえない状態をコンパイルの時点で作れなくする</td>
+</tr>
+<tr>
+<td>『<strong>Make Operations Idempotent</strong>』</td>
+<td>状態を変える操作を、何度実行しても、途中から実行し直しても、最後は同じ状態になるように作る</td>
+</tr>
+<tr>
+<td>『<strong>Migrate Callers Then Delete Legacy APIs</strong>』</td>
+<td>呼び出し元を新しいAPIに移し、その変更の中で古いAPIも消す</td>
+</tr>
+<tr>
+<td>『<strong>Separate Before Serializing Shared State</strong>』</td>
+<td>書き込み先の共有をなくすのが先。ロックで書き込みを順番待ちにするのは、本当に必要なときだけ</td>
+</tr>
+</tbody>
+</table>
+<h2 id="model-the-domain">『Model the Domain』は、ドメインを条件分岐ではなく構造で表す</h2>
+<p>原則『<strong>Model the Domain</strong>』は、実際のドメインを、あちこちの条件分岐の中にばらばらに書くのではなく、データの構造で表すよう求めます。<br />
+エージェントは、状態や分岐が増えそうなとき、<strong>条件分岐（if/else）を追加する前に、ドメインを表す構造を選びます</strong>。</p>
+<p>!</p>
+<ul>
+<li><strong>ドメイン</strong>・・・ そのソフトウェアが扱う業務や対象（例：ネットショップなら注文、在庫、配送）</li>
+<li><strong>データの構造</strong>・・・ データが持つ項目と、各項目が取る値の型（以下の例の<code>Order</code>・<code>OrderFlags</code>）</li>
+<li><strong>ドメインを表す構造</strong>・・・ 業務の実際の決まりと同じ形をした、データの構造</li>
+</ul>
+<p>たとえば、実際の注文は、「支払い待ち」「発送待ち」「発送済み」「キャンセル済み」のどれか一つの状態だけを取ります。</p>
+<p>上記の注文データの構造を2通りに書くと、次のようになります。</p>
+<pre><code>// ドメインを表す構造：状態は、status の4つのうちどれか一つだけを取る
+type Order = {
+  address: string;
+  status: &quot;unpaid&quot; | &quot;paid&quot; | &quot;shipped&quot; | &quot;canceled&quot;;
+};
+
+// ドメインを表していない構造：3つの真偽値で持つ
+// isShipped: true と isCanceled: true のような、実際にはない組み合わせも取れてしまう
+type OrderFlags = {
+  address: string;
+  isPaid: boolean;
+  isShipped: boolean;
+  isCanceled: boolean;
+};
+</code></pre>
+<p>どちらも、注文が持つ項目と、各項目が取る値を決めているので、データの構造です。<br />
+このうち、実際の注文の決まりと同じ形をしている <code>Order</code> だけが、ドメインを表す構造です。</p>
+<h3 id="_2">散らばった真偽値、繰り返される前提、広がる分岐は、不要な複雑さである</h3>
+<p>原則は、次の3つを、本来は不要な複雑さと呼びます。</p>
+<ul>
+<li>散らばった真偽値</li>
+<li>ファイルごとに繰り返される「このデータはこの形のはず」という前提</li>
+<li>ファイルをまたいで広がる分岐</li>
+</ul>
+<h3 id="3">3つの複雑さを含むコードでは、ありえない状態が書けてしまう</h3>
+<p>たとえば、ネットショップの注文を、発送ラベルを作るファイルと、お知らせメールを作るファイルの2つで扱うケースを考えてみましょう。</p>
+<p>3つの複雑さをすべて含むコードは、次のようになります。</p>
+<pre><code>// order.ts：注文の状態を、3つの真偽値で持つ（散らばった真偽値）
+type Order = {
+  address: string;
+  isPaid: boolean;
+  isShipped: boolean;
+  isCanceled: boolean;
+  trackingNo?: string;
+};
+
+// label.ts：発送ラベルを作る
+function labelText(order: any): string {
+  // 「注文には住所があるはず」という前提を、ここで確かめる
+  if (!order.address) throw new Error(&quot;住所がありません&quot;);
+  // 状態の分岐
+  if (order.isCanceled) return &quot;キャンセル済み&quot;;
+  if (order.isShipped) return &quot;発送済み&quot;;
+  if (order.isPaid) return &quot;発送待ち&quot;;
+  return &quot;支払い待ち&quot;;
+}
+
+// mail.ts：お知らせメールの件名を作る
+function mailSubject(order: any): string {
+  // 同じ前提を、別のファイルでもう一度確かめる
+  if (!order.address) throw new Error(&quot;住所がありません&quot;);
+  // 同じ分岐が、ファイルをまたいで繰り返される
+  if (order.isCanceled) return &quot;ご注文をキャンセルしました&quot;;
+  if (order.isShipped) return &quot;商品を発送しました&quot;;
+  if (order.isPaid) return &quot;お支払いを確認しました&quot;;
+  return &quot;お支払いをお待ちしています&quot;;
+}
+</code></pre>
+<p>このコードでは、<code>isShipped</code> と <code>isCanceled</code> が同時に <code>true</code> という値も書けてしまいます。<br />
+これが<strong>ありえない状態</strong>で、「発送済み」と「キャンセル済み」は、実際の注文では同時に成り立ちません。<br />
+また、<code>isShipped</code> が <code>true</code> なのに <code>trackingNo</code>（追跡番号）がない値も書けてしまいます。</p>
+<h3 id="_3">ドメインを表す構造を選ぶと、ありえない状態が書けなくなり、分岐も減る</h3>
+<p>エージェントがドメインを表す構造を選ぶと、<strong>ありえない状態はそもそも書けなくなり、条件分岐も減ります</strong>。ドメインを表す構造には、状態機械や、項目を決めた型付きのオブジェクトなどがあります。</p>
+<p>同じ注文を、ドメインを表す構造で書くと、次のようになります。</p>
+<pre><code>// order.ts：注文の形と、取りうる状態を一か所で決める
+type OrderStatus =
+  | { state: &quot;unpaid&quot; }
+  | { state: &quot;paid&quot; }
+  | { state: &quot;shipped&quot;; trackingNo: string }
+  | { state: &quot;canceled&quot; };
+
+type Order = { address: string; status: OrderStatus };
+
+// 状態ごとの文言を、一つの表にまとめる
+const LABEL_TEXT: Record&lt;OrderStatus[&quot;state&quot;], string&gt; = {
+  unpaid: &quot;支払い待ち&quot;,
+  paid: &quot;発送待ち&quot;,
+  shipped: &quot;発送済み&quot;,
+  canceled: &quot;キャンセル済み&quot;,
+};
+
+// label.ts：状態ごとの文言を表にまとめ、型を信じて表を引くだけにする
+function labelText(order: Order): string {
+  return LABEL_TEXT[order.status.state];
+}
+
+// mail.ts：状態ごとの件名を表にまとめ、型を信じて表を引くだけにする
+const MAIL_SUBJECT: Record&lt;OrderStatus[&quot;state&quot;], string&gt; = {
+  unpaid: &quot;お支払いをお待ちしています&quot;,
+  paid: &quot;お支払いを確認しました&quot;,
+  shipped: &quot;商品を発送しました&quot;,
+  canceled: &quot;ご注文をキャンセルしました&quot;,
+};
+
+function mailSubject(order: Order): string {
+  return MAIL_SUBJECT[order.status.state];
+}
+</code></pre>
+<p>このコードでは、3つの複雑さが次のように消えます。</p>
+<ul>
+<li><strong>散らばった真偽値</strong>・・・ 3つの真偽値の代わりに、<code>OrderStatus</code> が4つの状態のどれか一つだけを取ります。「発送済みかつキャンセル済み」は書けません。また、追跡番号は <code>shipped</code> のときだけ持ち、<code>shipped</code> なら必ず持ちます。</li>
+<li><strong>繰り返される前提</strong>・・・ 「注文には住所がある」という前提は、<code>Order</code> 型に一度だけ書きます。各ファイルは型を信じるので、住所を確かめ直すことはしません。</li>
+<li><strong>ファイルをまたぐ分岐</strong>・・・ 状態ごとの文言は、表を引くだけで決まります。状態を追加するときは、表に1行追加すれば済み、追加し忘れるとコンパイルの時点でエラーになります。</li>
+</ul>
+<h3 id="_4">構造は、後から入れ直すのではなく、コードを書くときに選ぶ</h3>
+<p>エージェントは、<strong>コードを書くときに構造を選びます</strong>。書くときなら、構造を選ぶ手間はほとんどかかりません。</p>
+<p>一方、条件分岐で書き終えたコードに後から構造を入れ直す作業は、後回しにされがちです。</p>
+<p>後回しにされるのは、入れ直してもコードの挙動は何も変わらず、入れ直す作業がリファクタリングに該当するからです。<br />
+リファクタリングは、新しい機能と違って目に見える成果がないため、開発者もエージェントも、機能の追加を先に行い、リファクタリングを後に回しがちです。</p>
+<p>たとえば、送料を決める条件分岐が3つのファイルに広がった後で、参照表に置き換えるケースでは、置き換えても、送料の金額も画面の表示も変わりません。そのため、この置き換えは「今すぐでなくてよい作業」として後に回され、その間にも、新しい機能のたびに条件分岐が増えていきます。</p>
+<h3 id="_5">ルール：散らばった書き方ごとに、代わりの構造が決まっている</h3>
+<p>この原則が挙げる代表的な置き換えは、次のとおりです。</p>
+<table>
+<thead>
+<tr>
+<th>散らばった書き方</th>
+<th>代わりの構造</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>状態を表す真偽値（<code>isLoading</code>、<code>isError</code> など）や、「今どの段階か」の確認が、コードのあちこちにある</td>
+<td>状態機械（取りうる状態と移り方を定めた表し方）</td>
+</tr>
+<tr>
+<td>関数にばらばらの引数を渡し、「このデータにはこの項目があるはず」という同じ前提があちこちで繰り返される</td>
+<td>項目を決めた型付きのオブジェクト（例：<code>User</code> 型）</td>
+</tr>
+<tr>
+<td>種類ごとに処理を分ける同じ条件分岐が、複数のファイルに広がっている</td>
+<td>マップや参照表（種類をキーにして、対応する値や処理を引く表）、discriminated union（種類を示すフィールドで見分けられる、型の組み合わせ）</td>
+</tr>
+<tr>
+<td>状態を、その場その場で直接書き換えている</td>
+<td>reducer（今の状態と操作から、次の状態を計算する関数）</td>
+</tr>
+</tbody>
+</table>
+<p>表の各行を、例とコードで1つずつ見ていきます。</p>
+<h4 id="_6">真偽値の代わりに、状態機械を使う</h4>
+<p>状態を真偽値で持つと、<code>running</code>（実行中）と <code>failed</code>（失敗）が同時に <code>true</code> という矛盾した状態も、コンパイルでエラーにならずに書けてしまいます。<br />
+状態を状態機械で表せば、<strong>その組み合わせはそもそも書けません</strong>。</p>
+<pre><code>// 前：矛盾した組み合わせが表現できてしまう
+type ExportJobFlags = { running: boolean; failed: boolean; retrying: boolean };
+
+// 後：状態ごとに持てるデータが決まる
+type ExportJob =
+  | { state: &quot;queued&quot; }
+  | { state: &quot;running&quot;; attempt: number }
+  | { state: &quot;failed&quot;; attempt: number; error: string }
+  | { state: &quot;done&quot;; rowCount: number };
+
+// 移り方も決める：失敗したジョブだけが、次の試行として running に戻れる
+function retry(job: ExportJob): ExportJob {
+  if (job.state !== &quot;failed&quot;) return job;
+  return { state: &quot;running&quot;, attempt: job.attempt + 1 };
+}
+</code></pre>
+<h4 id="_7">ばらばらの引数の代わりに、型付きのオブジェクトを使う</h4>
+<p>たとえば、会員の名前、メールアドレス、プランを、Welcomeメールを送る関数と請求書を作る関数に、それぞればらばらの引数で渡しているケースの場合、どちらの関数も「会員には名前、メールアドレス、プランがあるはず」という同じ前提を、それぞれの引数の並びで繰り返しています。</p>
+<p>エージェントは、会員を表す <code>User</code> 型を一つ作り、2つの関数がどちらも <code>User</code> を受け取るように直します。<br />
+こうすれば、会員に項目を追加するときも、直すのは <code>User</code> 型の一か所だけで済みます。また、名前とメールアドレスを逆の順番で渡してしまう間違いも起きません。</p>
+<pre><code>// 前：同じ3つの引数を、関数ごとに並べている
+function sendWelcomeMail(name: string, email: string, plan: string) { /* ... */ }
+function createInvoice(name: string, email: string, plan: string) { /* ... */ }
+</code></pre>
+<pre><code>// 後：会員の形を User 型に一度だけ書き、2つの関数はこれを受け取る
+type User = { name: string; email: string; plan: &quot;free&quot; | &quot;paid&quot; };
+
+function sendWelcomeMail(user: User) { /* ... */ }
+function createInvoice(user: User) { /* ... */ }
+</code></pre>
+<h4 id="discriminated-union">広がった条件分岐の代わりに、参照表や discriminated union を使う</h4>
+<p>たとえば、注文の種類ごとの送料を、画面、請求、メールの3つのファイルでそれぞれ、条件分岐で決めているケースの場合、エージェントは「種類から送料を引く参照表」を一つ作り、3つのファイルがどれもその表を引くように直します。</p>
+<p>こうすれば、注文の種類が増えても、3つのファイルの条件分岐をそれぞれ直す必要はなく、表に1行追加するだけで済みます。</p>
+<pre><code>type OrderKind = &quot;standard&quot; | &quot;express&quot; | &quot;pickup&quot;;
+declare const order: { kind: OrderKind };
+
+// 前：画面、請求、メールの3つのファイルに、同じ if/else がある
+function shippingFee(kind: OrderKind): number {
+  if (kind === &quot;standard&quot;) return 500;
+  if (kind === &quot;express&quot;) return 1200;
+  return 0;
+}
+
+// 後：種類から送料を引く参照表を一つだけ作り、3つのファイルはこれを引く
+const SHIPPING_FEES: Record&lt;OrderKind, number&gt; = {
+  standard: 500,
+  express: 1200,
+  pickup: 0,
+};
+
+const fee = SHIPPING_FEES[order.kind];
+</code></pre>
+<p><code>Record&lt;OrderKind, number&gt;</code> と書いておくと、注文の種類を型（<code>OrderKind</code>）に追加したのに表（<code>SHIPPING_FEES</code>）へ行を追加し忘れた場合、コンパイルの時点でエラーになります。</p>
+<p>参照表は、種類ごとに「値」が一つ決まるときに向いています。</p>
+<p>一方、種類ごとに<strong>持つデータそのものが違う</strong>ときは、エージェントは <strong>discriminated union</strong> を使います。</p>
+<p>たとえば、支払い方法が「カード」「銀行振込」「代金引換」の3種類あり、カードのときだけカード番号の下4桁を、銀行振込のときだけ振込先の口座番号を持つケースが、これに該当します。</p>
+<p>種類を表す項目と、省略できる項目（optional型）で書くと、「カードなのに口座番号が入っている」という値も書けてしまいます。<br />
+discriminated union で書けば、<code>kind</code> の値ごとに持てる項目が決まるので、そうした値は書けません。</p>
+<pre><code>// 前：どの支払い方法でも、すべての項目を持ててしまう
+type PaymentLoose = { method: &quot;card&quot; | &quot;bank&quot; | &quot;cod&quot;; cardLast4?: string; bankAccount?: string };
+
+// 後：kind の値ごとに、持てる項目が決まる
+type Payment =
+  | { kind: &quot;card&quot;; cardLast4: string }
+  | { kind: &quot;bank&quot;; bankAccount: string }
+  | { kind: &quot;cod&quot; };
+
+function paymentLabel(p: Payment): string {
+  switch (p.kind) {
+    case &quot;card&quot;:
+      return `カード（末尾 ${p.cardLast4}）`;
+    case &quot;bank&quot;:
+      return `銀行振込（口座 ${p.bankAccount}）`;
+    case &quot;cod&quot;:
+      return &quot;代金引換&quot;;
+  }
+}
+</code></pre>
+<h4 id="reducer">その場の書き換えの代わりに、reducer を使う</h4>
+<p>たとえば、買い物かごの中身を、商品一覧の画面、商品の詳細画面、かごの画面の3か所で、それぞれ直接書き換えているケースでは <strong>reducer</strong> が向いています。<br />
+この場合、かごの中身がどこで、どう変わったのかを知るには、3か所をすべて読む必要があります。</p>
+<p>エージェントは、かごへの操作（追加、削除）を型で決め、「今のかごと操作から、次のかごを計算する」reducer を一つ作ります。3か所は、かごを直接書き換えず、操作を reducer に渡すだけにします。<br />
+こうすれば、<strong>かごの中身の変わり方は、reducer の中だけを読めば分かります</strong>。</p>
+<pre><code>type CartItem = { id: string; price: number };
+type Cart = { items: CartItem[] };
+declare let cart: Cart;
+declare const item: CartItem;
+declare const id: string;
+
+// 前：3つの画面で、それぞれ直接書き換えている
+cart.items.push(item);
+cart.items = cart.items.filter((i) =&gt; i.id !== id);
+
+// 後：操作を型で決め、次のかごの計算は reducer の中だけで行う
+type CartAction =
+  | { type: &quot;add&quot;; item: CartItem }
+  | { type: &quot;remove&quot;; id: string };
+
+function cartReducer(cart: Cart, action: CartAction): Cart {
+  switch (action.type) {
+    case &quot;add&quot;:
+      return { items: [...cart.items, action.item] };
+    case &quot;remove&quot;:
+      return { items: cart.items.filter((i) =&gt; i.id !== action.id) };
+  }
+}
+
+cart = cartReducer(cart, { type: &quot;add&quot;, item });
+</code></pre>
+<h4 id="_8">無理に構造を入れない</h4>
+<p>ただし、原則は、無理に構造を入れることは求めていません。今のコードが分かりやすく、一か所にまとまっていて、これから増える見込みもないなら、エージェントは単純なコードのままにします。</p>
+<p>また、エージェントは、<strong>呼び出しの間に1段挟むだけで何も減らさない、共通の関数や型を疑います</strong>。分岐も、重複したルールも、ありえない状態も減らさない共通の関数や型は、読み手が開いて確かめる場所を増やすだけだからです。</p>
+<h3 id="_9">発火条件</h3>
+<ul>
+<li>状態を持つロジックを書くとき</li>
+<li>分岐が多いとき</li>
+<li>「このデータにはこの項目がある」という同じ前提が、複数のファイルで繰り返されるとき</li>
+</ul>
+<p>次のようなことが起きていたら、この原則を飛ばした兆候です。</p>
+<ul>
+<li>エージェントが、新しい機能のために、既存の条件分岐の連なりに、分岐をもう一つ追加した</li>
+<li>エージェントが、既存の真偽値と常に値をそろえておく必要のある、2つ目の真偽値を追加した</li>
+</ul>
+<p>たとえば、読み込み中を表す <code>isLoading</code> があるところに、エラーを表す <code>isError</code> を追加したケースの場合、読み込みが失敗したとき、コードは <code>isError</code> を <code>true</code> にし、同時に <code>isLoading</code> を <code>false</code> に戻す必要があります。</p>
+<p><code>isLoading</code> を戻し忘れると、<code>isLoading: true</code> と <code>isError: true</code> が同時に成り立ち、画面は「読み込み中なのにエラー」という食い違った状態になります。</p>
+<p>このように、2つ目の真偽値を追加すると、どちらかの値を書き換えるたびに、もう一方の値もそろえる必要が生まれます。</p>
+<p><code>/poteto-mode</code> の『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/SKILL.md#non-negotiables">Non-negotiables</a>』も、この原則を求めています（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/096f3d">第8章</a>）。</p>
+<p>『Non-negotiables』は、どんなコードを書くときも、エージェントがまずデータの形を明らかにし、この原則に沿って構造を選ぶよう求めています。<strong>24件の原則のうち、『Non-negotiables』で名指しされているのは、この『Model the Domain』だけです</strong>。</p>
+<h2 id="boundary-discipline">『Boundary Discipline』は、入力の検証を外との境界に集め、内側は型を信じる</h2>
+<p>原則『<strong>Boundary Discipline</strong>』は、<strong>入力の検証、型の絞り込み、エラー処理を、システムの境界に置く</strong>よう求めます。この原則は、境界の例として、CLI引数、設定ファイル、外部API、ネットワークを通して届くデータを挙げています。</p>
+<p>境界で確かめた値には型が付いています。そのため、境界の内側のコードは、その型のとおりの値が来ると信頼して使い、同じ確認を繰り返しません。</p>
+<p>原則が確認を境界に集めるのは、確認がコードのあちこちに散らばると、次の2つの問題が起きるからです。</p>
+<ul>
+<li>同じ確認を、何か所にも書くことになる</li>
+<li>開発者もエージェントも、「どこかで確かめているはずだ」と思い込む。どの確認がどこで行われているかを把握しない限り、確かめていない経路が残っても気づけない可能性がある</li>
+</ul>
+<p>次のコードは、確認がコードのあちこちに散らばった例です。注文フォームから届く「数量」が1以上かどうかを、一部の関数だけが確かめています。</p>
+<pre><code>let stock = 10; // 在庫の数
+
+// 値段を計算する：数量が1以上かを確かめる
+function calcPrice(quantity: number): number {
+  if (quantity &lt; 1) throw new Error(&quot;数量は1以上にしてください&quot;);
+  return quantity * 500;
+}
+
+// 在庫を減らす：「どこかで確かめているはず」として、何も確かめない
+function reserveStock(quantity: number) {
+  stock = stock - quantity;
+}
+
+// 注文画面：calcPrice を先に呼ぶので、確かめてから在庫を減らす
+calcPrice(2);
+reserveStock(2);
+
+// 別の画面：reserveStock だけを直接呼ぶ
+reserveStock(-3); // 在庫が 8 から 11 に増えてしまう
+</code></pre>
+<p>注文画面の経路では <code>calcPrice</code> が確かめていますが、<code>reserveStock</code> だけを呼ぶ経路には確認が1つもありません。<br />
+そのため、<code>-3</code> がそのまま届き、在庫を減らすはずの処理で在庫が増えてしまいます。</p>
+<p>同じ処理を原則どおりに書くと、次のようになります。</p>
+<pre><code>let stock = 10; // 在庫の数
+
+// 境界：フォームから届いた値を、ここで一度だけ確かめる
+function parseQuantity(input: string): number {
+  const quantity = Number(input);
+  if (!Number.isInteger(quantity) || quantity &lt; 1) {
+    throw new Error(&quot;数量は1以上の整数にしてください&quot;);
+  }
+  return quantity;
+}
+
+// 内側：確かめた値だけが届くので、確認を書かない
+function calcPrice(quantity: number): number {
+  return quantity * 500;
+}
+
+function reserveStock(quantity: number) {
+  stock = stock - quantity;
+}
+
+// どの画面も、フォームの値を parseQuantity に通してから使う
+const quantity = parseQuantity(&quot;-3&quot;); // ここでエラーになり、先へ進まない
+calcPrice(quantity);
+reserveStock(quantity);
+</code></pre>
+<p>確認は <code>parseQuantity</code> の1か所だけになり、<code>calcPrice</code> の中の確認は要らなくなります。<br />
+また、どの画面もフォームの値を <code>parseQuantity</code> に通してから使うので、<code>-3</code> のような値は、<code>calcPrice</code> にも <code>reserveStock</code> にも届きません。</p>
+<p>また、原則は、ビジネスロジックを純粋関数として書き、シェルを、純粋関数を呼ぶだけの薄い作りにするよう求めます（詳細は<a href="#%E3%82%B7%E3%82%A7%E3%83%AB%E3%81%8C%E5%91%BC%E3%81%B6%E3%81%A0%E3%81%91%E3%81%AE%E7%B4%94%E7%B2%8B%E9%96%A2%E6%95%B0%E3%81%AB%E5%88%87%E3%82%8A%E5%87%BA%E3%81%99">『シェルが呼ぶだけの純粋関数に切り出す』</a>を参照）。ロジックをフレームワークから切り離しておけば、<strong>フレームワークを動かさずにロジックだけをテストできる</strong>からです。</p>
+<h3 id="_10">ルール：外から入るデータを境界で検証する</h3>
+<p>エージェントは、検証をどこに置くかを、次の2つの問いで判断します。</p>
+<h4 id="_11">外から入ってきたデータだけを確かめる</h4>
+<p>1つ目の問いは「このデータは今、システムの境界をまたいでいるか（外から入ってきたところか）」です。<br />
+<strong>またいでいないなら、確認は余分です</strong>。境界のコードは、確かめた値を型の付いた値に変えて内側の関数に渡し、内側の関数はその型を信じます。</p>
+<p>たとえば、設定ファイルを読み込む関数が、読み込み時に <code>batchSize</code> を正の数だと確かめたなら、<code>batchSize</code> を使う内側の関数で <code>batchSize &gt; 0</code> を確かめ直す必要はありません。境界で一度確かめれば、内側のすべての関数でその値を安心して使えるからです。</p>
+<pre><code>type Config = { batchSize: number };
+
+// 境界：設定ファイルを読み込むときに一度だけ確かめ、Config 型の値にする
+function parseConfig(raw: { batchSize?: unknown }): Config {
+  if (typeof raw.batchSize !== &quot;number&quot; || raw.batchSize &lt;= 0) {
+    throw new Error(&quot;batchSize は正の数にしてください&quot;);
+  }
+  return { batchSize: raw.batchSize };
+}
+
+// 内側：Config 型を信じ、batchSize &gt; 0 を確かめ直さない
+function splitIntoBatches(items: string[], config: Config): string[][] {
+  const batches: string[][] = [];
+  for (let i = 0; i &lt; items.length; i += config.batchSize) {
+    batches.push(items.slice(i, i + config.batchSize));
+  }
+  return batches;
+}
+</code></pre>
+<h4 id="_12">シェルが呼ぶだけの純粋関数に切り出す</h4>
+<p>2つ目の問いは「この処理は、シェルが呼ぶだけの純粋関数にできるか」です。<br />
+できるなら、エージェントはその処理を純粋関数として切り出します。</p>
+<p>!</p>
+<ul>
+<li><strong>純粋関数</strong>・・・ 同じ引数には常に同じ値を返し、画面やファイルの読み書きのような、プログラムの外とのやり取りをしない関数</li>
+<li><strong>シェル</strong>・・・ 画面、ファイル、ネットワーク、フレームワークなど、プログラムの外とのやり取りを受け持つ部分。外から値を受け取って純粋関数に渡し、返ってきた結果を外へ出す</li>
+</ul>
+<p>たとえば、エージェントは、注文の合計金額の計算を、ボタンを押したときの処理の中に直接書かず、<code>calcTotal(items)</code> という関数に切り出し、ボタンの処理からはそれを呼ぶだけにします。こうすれば、画面を動かさずに合計金額の計算だけをテストできるからです。</p>
+<p>一方、シェルには計算がないので、シェルの中で間違える余地はほとんどありません。</p>
+<pre><code>type Item = { price: number; quantity: number };
+declare const button: HTMLButtonElement;
+declare const totalLabel: HTMLElement;
+declare function readItemsFromCart(): Item[];
+
+// 純粋関数：同じ items には、いつも同じ合計を返す。画面には触らない
+function calcTotal(items: Item[]): number {
+  return items.reduce((sum, item) =&gt; sum + item.price * item.quantity, 0);
+}
+
+// シェル：画面から値を読み、純粋関数を呼び、結果を画面に書くだけ
+button.addEventListener(&quot;click&quot;, () =&gt; {
+  const items = readItemsFromCart(); // 画面から読む
+  const total = calcTotal(items); // 計算は純粋関数に任せる
+  totalLabel.textContent = `${total}円`; // 画面に書く
+});
+</code></pre>
+<h3 id="_13">発火条件</h3>
+<p>入力の検証やエラー処理を組み込むとき、またはフレームワークと自分のコードをつなぐ部分（アダプタ）を書くときです。</p>
+<h2 id="type-system-discipline">『Type System Discipline』は、型で不正な状態を作れなくする</h2>
+<p>原則『<strong>Type System Discipline</strong>』は、型検査器を、「この値は必ずこの形だ」と証明してくれる道具（原文では proof assistant）として扱います。</p>
+<p>エージェントは、型検査器を使って、矛盾した状態や、variant の扱い漏れを、<strong>動かしてから見つけるのではなく、コンパイルの時点でエラーとして止めます</strong>。型が見逃した扱い漏れは、コンパイラが止められたはずの、実行時のエラーになるからです。</p>
+<p>!</p>
+<ul>
+<li><strong>型検査器</strong>・・・ プログラムを動かす前に型の間違いを見つける仕組み（TypeScriptのコンパイラなど）</li>
+<li><strong>variant</strong>・・・ 直和型を構成する、一つひとつの形（たとえば、<code>type Status = "success" | "error" | "pending";</code>では <code>success</code>・<code>error</code>といった1つ1つの値が variant と呼ばれる）</li>
+<li><strong>直和型</strong>・・・ いくつかの形のうち、どれか一つを取る値を表す型。TypeScriptのユニオン型（<code>type FooBar = 'foo' | 'bar'</code> は foo か bar のいずれか1つの値となる）</li>
+</ul>
+<h3 id="_14">ルール：不正な状態を、型の定義の時点で書けなくする</h3>
+<p>主なパターンは次のとおりです。</p>
+<h4 id="_15">ありえない状態を書けなくする</h4>
+<p>タスクの型を <code>{ completed: boolean; completedAt?: Date }</code> にすると、「完了したのに完了日時がない」という意味のない組み合わせも書けてしまいます。</p>
+<p>そこでエージェントは、<code>{ kind: "open" } | { kind: "done"; at: Date }</code> のような直和型にします。直和型なら、「完了」のときは必ず日時を持つ形しか書けません。</p>
+<p>組み合わせが正しいかを後から確かめるより、<strong>ありえない組み合わせを最初から書けなくするほうが確実</strong>だからです。</p>
+<h4 id="_16">意味の違う値に印を付ける</h4>
+<p>エージェントは、<code>UserId</code> と <code>OrderId</code> をブランド型にして、中身がどちらも文字列でも、互いに取り替えて使えないようにします。</p>
+<p>!</p>
+<p><strong>ブランド型</strong>・・・ 文字列や数値のような基本的な値（プリミティブ）に、型の印を付けたもの（以下のコード例の UserId や OrderId がブランド型）</p>
+<p>たとえば、ユーザーIDを渡すべき <code>getUser()</code> に注文IDを渡したら、コンパイルでエラーになるようにします。取り替えられると、意味の違う値を取り違えてもコンパイルが通ってしまうからです。</p>
+<pre><code>type UserId = string &amp; { readonly __brand: &quot;UserId&quot; };
+type OrderId = string &amp; { readonly __brand: &quot;OrderId&quot; };
+type User = { id: UserId; name: string };
+
+declare function getUser(id: UserId): Promise&lt;User&gt;;
+declare const orderId: OrderId;
+
+// 中身はどちらも文字列だが、OrderId を渡すとコンパイルでエラーになる
+await getUser(orderId);
+</code></pre>
+<h4 id="_17">型システムに嘘をつかない</h4>
+<p>エージェントは、キャストやアサーションで、型の検査をすり抜けません。すり抜けた箇所は、実行中に落ちる危険を抱えたままになるからです。</p>
+<p>!</p>
+<ul>
+<li><strong>キャスト</strong>・・・ 値の型を強制的に別の型とみなさせる書き方（たとえば、<code>value as unknown as User</code> のように、型の検査を通らない変換を強制するなど）</li>
+<li><strong>アサーション</strong>・・・ 「この値は必ずこの型だ」とコンパイラに言い切る書き方（TypeScriptで <code>as</code> 句で <code>as User</code>などとして記述される）</li>
+</ul>
+<p>たとえば、APIから受け取った値を確かめずに <code>as User</code> と書くと、コンパイルは通ります。<br />
+しかし、実際の応答に <code>name</code> の項目が欠けていても、コードは <code>name</code> があるものとして読み進めるため、<code>user.name</code> を使うところで実行中に落ちます。</p>
+<p>コンパイラが証明できない事実は、エージェントが、値を実際に確かめたり、条件分岐で型を絞り込んだりして、自分で証明します。</p>
+<h4 id="_18">扱い漏れの確認はコンパイラに任せる</h4>
+<p>エージェントは、直和型に新しい variant が追加されたとき、それを扱っていない分岐でコンパイルがエラーになるように書きます。</p>
+<p>たとえば、タスクの種類に「キャンセル済み」（<code>canceled</code>）を追加したとき、表示する文言を決める関数がそれを扱っていなければ、コンパイルがエラーになります。<br />
+そのため、扱い漏れを人が探して回らずに済みます。</p>
+<pre><code>// タスクの種類に canceled を追加した
+type Task = { kind: &quot;open&quot; } | { kind: &quot;done&quot; } | { kind: &quot;canceled&quot; };
+
+// 前：扱っていない種類は、最後の return &quot;&quot; に流れる。コンパイルはエラーにならない
+function labelLoose(task: Task): string {
+  if (task.kind === &quot;open&quot;) return &quot;未完了&quot;;
+  if (task.kind === &quot;done&quot;) return &quot;完了&quot;;
+  return &quot;&quot;; // canceled のタスクは、文言が空のまま画面に出る
+}
+
+// 後：扱っていない種類があると、コンパイルがエラーになる
+function label(task: Task): string {
+  switch (task.kind) {
+    case &quot;open&quot;:
+      return &quot;未完了&quot;;
+    case &quot;done&quot;:
+      return &quot;完了&quot;;
+    default: {
+      // canceled を case で扱っていないので、この行でコンパイルがエラーになる
+      const unhandled: never = task;
+      return unhandled;
+    }
+  }
+}
+</code></pre>
+<p>前の <code>labelLoose</code> は、<code>canceled</code> を扱い忘れてもコンパイルが通ります。そのため、画面に空の文言が出て初めて、扱い漏れに気づきます。</p>
+<p>後の <code>label</code> の <code>never</code> は、「ここには、どの値も届かないはず」という意味の型です。</p>
+<p>すべての種類を <code>case</code> で扱っていれば、<code>default</code> に届く値はないので、コンパイルは通ります。</p>
+<p>一方、<code>canceled</code> を扱い忘れると、<code>canceled</code> のタスクが <code>default</code> に届くため、<code>never</code> の変数に代入する行でコンパイルがエラーになります。エラーの出た場所が、<code>canceled</code> の <code>case</code> を追加すべき場所です。</p>
+<h4 id="_19">型を強めるのは、弱すぎると分かった場所だけにする</h4>
+<p>ただし、原則は、型をできるだけ細かく書くことを目的にしていません。原則によれば、型の役目は、データをできるだけ細かく表すことではなく、<strong>その型を使うそれぞれの場所が扱うべきケースを、漏れなく示すこと</strong>です。</p>
+<p>そのため、エージェントは、型が弱すぎると分かった場所だけで型を強めます。その目印は、実行時のアサーションや、「起きるはずがない」としてエラーを投げる throw 文です。こうした確認を書いた場所は、型が防げたはずのケースを通してしまっている場所だからです。</p>
+<p>たとえば、完了したタスクには必ず日時があるはずなのに、<code>if (!task.completedAt) throw new Error("起きるはずがない")</code> と書いている場所は、型が「完了なのに日時がない」値を許してしまっている場所です。</p>
+<h3 id="_20">発火条件</h3>
+<ul>
+<li>型を設計するとき</li>
+<li>関数のシグネチャ（受け取る引数と返す値の型）をレビューするとき</li>
+<li>静的型付き言語（TypeScriptのように、動かす前に型を検査する言語）でコードを書くとき</li>
+</ul>
+<p>この原則が挙げる判定の問いの一つは、型を、次にこのコードを触るエージェントへの指示として扱っています。</p>
+<blockquote>
+<p>"If a new variant is added next month, will the compiler tell the next agent where to add a case?" If no, the match isn't exhaustive.</p>
+<p>「来月新しい variant が追加されたとき、コンパイラは次のエージェントに、ケースを追加する場所を教えるか」。教えないなら、その分岐は網羅的ではない。</p>
+</blockquote>
+<p>網羅的な分岐を書いておけば、コンパイラが次のエージェントに直す場所を教えます。そのため、人間が「新しい状態を追加したら、この3か所も直して」と文章で書いておく必要はありません。</p>
+<p><code>/typescript-best-practices</code> は、この原則をTypeScriptの具体的な書き方で示したSkillです（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/4f9a46">第30章</a>）。</p>
+<h2 id="make-operations-idempotent">『Make Operations Idempotent』は、操作を何度実行しても同じ結果になるように作る</h2>
+<p>原則『<strong>Make Operations Idempotent</strong>』は、状態を変える操作を、何回実行しても、途中から実行し直しても、<strong>最後には同じ正しい状態に落ち着く（収束する）ように作る</strong>よう求めます。</p>
+<p>!</p>
+<ul>
+<li><strong>冪等（idempotent）</strong>・・・ 同じ操作を何度実行しても、1回だけ実行したときと同じ結果になる性質（例：設定値を5にする操作は、何度実行しても値が5のまま）</li>
+</ul>
+<p>原則がこれを求めるのは、<strong>操作は途中で止まるものとして作る必要がある</strong>からです。</p>
+<p>コマンド、起動や終了などの手順、処理を繰り返すループは、クラッシュ、再起動、再試行によって、途中で止まったり、もう一度実行されたりすることがよくあります。</p>
+<p>そのとき、前回の実行が途中で残したデータやファイルによって次の実行の結果が変わると、開発者は、再起動のたびに「なぜ今回は結果が違うのか」を調べることになります。</p>
+<p>冪等性を担保して作っておけば、何回実行し直しても結果は同じなので、再起動のたびに調べる必要はありません。</p>
+<h3 id="3_1">ルール：3つの問いで収束を確かめる</h3>
+<p>エージェントは、操作が冪等かどうかを、次の3つの問いで確かめます。</p>
+<ol>
+<li>同じ操作を2回続けて実行したら、結果はどうなるか</li>
+<li>前の実行が途中で止まっていたら、次の実行の結果はどうなるか（止まった場所が最初でも、途中でも、終わる直前でも、同じ結果になるか）</li>
+<li>何度実行し直しても、最後は同じ状態になる（収束する）か</li>
+</ol>
+<p>3つの問いのどれか一つでも、答えが「前回の実行が何を残したかで変わる」になるなら、その操作には<strong>照合（reconciliation）の手順</strong>が必要です。</p>
+<p>たとえば、2つ目の問いについて見てみましょう。</p>
+<p>1,000行を出力ファイルに書き出す処理で、次の実行が、前回のファイルを残したまま、その末尾に1行目から追加で書き込むケースです。</p>
+<p>前回の実行が400行を書いて止まっていれば、ファイルには、前回書いた400行の後ろに、今回書いた1,000行が続きます。前回の400行は、今回の最初の400行と同じ内容なので、同じ行が重複した1,400行のファイルになります。前回の実行が1行も書かずに止まっていれば、ファイルは1,000行です。</p>
+<p>このように、前回の実行がどこで止まったかで結果が変わるなら、照合が必要です。</p>
+<p>!</p>
+<ul>
+<li><strong>照合</strong>・・・ 前の実行が残したものを確かめ、何が残っていても正しい状態へそろえる手順</li>
+</ul>
+<p>たとえば、途中で止まった実行が、1,000行中400行目までしか書かれていない出力ファイルを残していても、<strong>次の実行がまずそのファイルを見つけて消してから書き出しを始めれば</strong>、前回がどこで止まっていても、結果は毎回同じ1,000行のファイルになります。</p>
+<h3 id="_21">発火条件</h3>
+<p>途中で止まったり再試行されたりすることがあるコマンド、起動や終了などの手順、処理を繰り返すループを設計するときです。</p>
+<h2 id="migrate-callers-then-delete-legacy-apisapi">『Migrate Callers Then Delete Legacy APIs』は、呼び出し元をすべて移し、その変更の中で古いAPIも消す</h2>
+<p>原則『<strong>Migrate Callers Then Delete Legacy APIs</strong>』は、新しい内部APIのほうが正しい設計だと決めたときに使います。</p>
+<p>エージェントは、互換レイヤーを残さず、呼び出し元をすべて新しいAPIに移し、<strong>その同じ変更の中で古いAPIを消します</strong>。</p>
+<p>新旧のAPIを両方残すと、同じことをする呼び出し方が2つになり、片付けが遅れ、コードが増えるばかりで減らないからです。</p>
+<p>!</p>
+<p><strong>互換レイヤー</strong>・・・ 古いAPIの呼び出し方を使えるように残しておく層</p>
+<p>poteto氏は<a href="https://x.com/poteto/status/2102050467505430555">講演</a>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/dc9141">第4章</a>）で、推奨される実装方法を一つに絞る必要がある、と述べています。本書では、この原則を、APIの移行で実装方法を一つに戻す手順と読みます。</p>
+<h3 id="api">ルール：呼び出し元を洗い出して移し、古いAPIをすぐ消す</h3>
+<p>主なルールは次のとおりです。</p>
+<h4 id="api_1">呼び出し元が残っていることを、古いAPIを残す理由にしない</h4>
+<p>エージェントは、古いAPIの呼び出し元をすべて洗い出して新しいAPIへ移し、古いAPIをすぐに消します。</p>
+<p>たとえば、<code>getUser(id)</code> を <code>fetchUser({ id })</code> に置き換えるなら、エージェントは、<code>getUser</code> を呼んでいる箇所をすべて検索して <code>fetchUser</code> に書き換え、同じ一連の変更の中で <code>getUser</code> を消します。</p>
+<p>新旧の呼び方が並んでいると、読み手はどちらを使うべきか迷い、片付けも後回しになるからです。</p>
+<h4 id="_22">一時的なつなぎの層は例外にする</h4>
+<p>古い呼び方を新しいAPIにつなぐ一時的な層（アダプタ）は、どうしても必要なときだけの例外とし、エージェントは、置くときにいつ消すかの期限を決めます。つなぎの層を当たり前に置くと、コードが増えるばかりで減らなくなるからです。</p>
+<p>たとえば、古い <code>getUser(id)</code> を消さずに、中身を <code>return fetchUser({ id });</code> の1行だけにして残した関数が、アダプタです。</p>
+<h4 id="api_2">テストを新しいAPIに合わせる</h4>
+<p>エージェントは、テストを、新しいAPIが約束する挙動を確かめるように直し、古い実装の内部の作りを守るだけのテストは消します。</p>
+<p>たとえば、「<code>fetchUser({ id })</code> が、そのIDのユーザーを返すか」を確かめるテストは残し、「古い <code>getUser</code> が内部で別の関数を何回呼んだか」だけを確かめるテストは消します。</p>
+<p>古い作りを守るテストが残っていると、コードは、消したはずの古い実装の内部の作りに合わせ続けることになるからです。</p>
+<h3 id="_23">発火条件</h3>
+<p>古い呼び出し元が残っている状態で、新しい内部APIを導入するときです。</p>
+<p><strong>外部のユーザーがいる公開API（外部API）には、そのままでは、この原則は当てはまりません</strong>。この原則には、次の3つの前提があるからです。</p>
+<ol>
+<li>古いAPIを使っている外部のユーザーがいない</li>
+<li>古いAPIを消して動かなくなる呼び出し元を、プロジェクトの中で一度にまとめて直しきれる</li>
+<li>新しいAPIを入れる目的が、コードを単純にすることやリファクタリングである</li>
+</ol>
+<h2 id="separate-before-serializing-shared-state">『Separate Before Serializing Shared State』は、書き込み先の共有をなくすのが先で、ロックは最後の手段</h2>
+<p>原則『<strong>Separate Before Serializing Shared State</strong>』は、複数の主体（エージェントやWorkerなど）が同じ書き込み先を共有するかもしれない場面で使います。</p>
+<p>エージェントは、ロックを追加する前に、<strong>主体どうしが本当に同じ書き込み先を必要としているか</strong>を考え、必要でなければ、書き込み先を主体ごとに分けて共有をなくします。並行した書き込みが生む競合状態は、たまにしか起きず再現しにくいため、原因の調査に時間がかかるからです。</p>
+<p>!</p>
+<ul>
+<li><strong>Serializing（直列化）</strong>・・・ ロックなどを使って、書き込みを一つずつ順番に行わせること</li>
+<li><strong>ロック</strong>・・・ 一度に一つの処理だけが書き込めるようにする仕組み</li>
+<li><strong>競合状態</strong>・・・ 複数の処理が同じデータを同時に読み書きし、実行の順番しだいで結果が変わってしまう状態</li>
+</ul>
+<p>たとえば、2つの処理A・Bが、値が10のカウンタをそれぞれ1ずつ増やすと、次のようになります。</p>
+<p>2つの処理が1ずつ増やしたので本当は12になるはずが、Bは、Aが書き込む前の10をもとに11を書き込むため、11になります。</p>
+<h3 id="_24">ロックは共有をなくさないので、書き込みの直列化は最後の手段にする</h3>
+<p>この原則は、<strong>書き込みの直列化を、書き込み先を分けられないときの最後の手段としています</strong>。</p>
+<p>最後の手段にしているのは、ロックが共有そのものをなくすわけではないからです。<br />
+書き込み先を分ければ、同じ場所に書く主体がいなくなるので、競合状態はそもそも起きません。</p>
+<p>一方、ロックを入れても、書き込み先は共有されたままです。すべての主体が、書き込むたびに必ずロックを取らなければならず、ロックを取らずに書き込む処理が1つでも残れば、競合状態がまた起きます。</p>
+<p>また、ロックを持ったままの主体が途中で止まると、ロックが外れず、ほかの主体がいつまでも書き込めなくなることもあります。</p>
+<p>そのため、<strong>原則は、「ロックが必要だ」と思ったら、すぐにロックを入れるのではなく、まず本当に書き込み先を分けられないのかを見直すよう求めます</strong>。</p>
+<h3 id="_25">分けられないときも、順番は指示ではなく仕組みで守らせる</h3>
+<p><strong>書き込み先を本当に分けられないときも、原則は、順番を守らせる方法を人への指示に頼らず、ロックなどの仕組みで守らせるよう求めます</strong>。</p>
+<p>この原則の最初の段落は、次の一文で終わります。</p>
+<blockquote>
+<p>Instructions and conventions are not concurrency control.</p>
+<p>指示や慣習は並行性の制御ではない。</p>
+</blockquote>
+<p>エージェントに当てはめると、人間が「同じファイルを触らないように」と依頼に書いても、それはエージェントどうしの並行した書き込みを防ぐ仕組みにはなりません。</p>
+<h3 id="_26">ルール：ロックの前に書き込み先を分ける</h3>
+<p>手順は3つです。</p>
+<h4 id="1">1. 複数の主体が書き換える、共有の場所を見つける</h4>
+<p>複数の主体が読み書きするファイルや、複数の主体がpushするブランチなどを見つけます。</p>
+<h4 id="2">2. 書き込み先の共有をなくす</h4>
+<p>エージェントは、書き込み先の共有をなくすことを、基本の対応とします。</p>
+<p>まず、主体たちが一つの正式なデータを必要としているのか、それぞれ別々の事実を書き出しているだけなのかを考えます。</p>
+<p>そのうえで、各主体に、自分だけが書き込むファイル、キー、ブランチを持たせ、結果は読むときや報告するときにまとめます。</p>
+<p>たとえば、2つのWorkerが一つの <code>state.json</code> にそれぞれの項目を書くなら、書き込み先を共有しています。<code>indexer-state.json</code> と <code>metrics-state.json</code> に分ければ、共有ではなくなります。</p>
+<p>書き込み先を分ける前と後を図にすると、次のようになります。</p>
+<pre><code>分ける前（書き込み先を共有している）
+WorkerA ─┐
+           ├─→ state.json
+WorkerB ─┘
+
+分けた後（書き込み先が主体ごとに分かれている）
+WorkerA ──→ indexer-state.json
+WorkerB ──→ metrics-state.json
+</code></pre>
+<h4 id="3_2">3. 分けられないときだけ、書き込みを直列化する</h4>
+<p>書き込み先を一つにしなければ正しく動かないときだけ、書き込みを一つずつ順番に行わせる仕組み（直列化）を入れます。</p>
+<p>たとえば、在庫の残り数や座席の予約のように、すべての主体が同じ一つの値を読み書きしなければ正しくならないデータなどが該当します。</p>
+<p>原則が挙げる仕組みは、次の4つです。</p>
+<ul>
+<li><strong>ロックファイル</strong>・・・ 書き込む前に「書き込み中」を示すファイルを作り、書き終えたら消します。ほかの主体は、そのファイルがある間は書き込まずに待ちます。</li>
+<li><strong>段階を分けて順番に実行する</strong>・・・ 書き込みを段階に分け、前の段階が終わってから次の段階を始めます（例：Aが書き終えてから、Bが書く）。</li>
+<li><strong>書き込みを一つの主体だけに任せる</strong>・・・ 書き込める主体を1つだけにし、ほかの主体は、その主体に「この値を書いて」と頼みます。</li>
+<li><strong>アトミックな比較交換</strong>・・・ 「値がまだ10なら11にする」のように、読んだときから値が変わっていないときだけ書き換えます。変わっていたら書き換えず、読み直してやり直します。値の確認と書き換えは、途中でほかの処理に割り込まれない一つの操作（アトミックな操作）として行います。</li>
+</ul>
+<p>アトミックな比較交換を、先のカウンタの例に当てはめると、次のようになります。</p>
+<p>Bの1回目の書き換えは、Aがすでに値を11にしているので失敗します。Bは11を読み直してやり直すので、最後は正しく12になります。</p>
+<h3 id="_27">発火条件</h3>
+<p>並行して動く複数の主体が、同じファイル、ブランチ、キー、状態を持つオブジェクトに書き込むかもしれないときです。</p>
+<h3 id="worktree">依頼の例：並行する試行に、それぞれ専用のworktreeを与える</h3>
+<p>同梱ガイドのページ <a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/08-principles.md"><code>docs/guide/08-principles.md</code></a> は、並行して進めている2つの試行が同じブランチに書き込もうとしている場面で、次の一行を挙げています。</p>
+<pre><code>separate before serializing shared state. give each attempt its own worktree, no locks.
+// separate before serializing shared state で。試行ごとに専用の worktree を与えて。ロックは使わないで。
+</code></pre>
+<p>!</p>
+<ul>
+<li><strong>worktree</strong>・・・ 一つのGitリポジトリから、別のブランチを取り出した作業ディレクトリを追加で作る機能。ブランチごとに別のディレクトリで同時に作業できる</li>
+</ul>
+<h2 id="architecture6">Architectureの6原則は、構造そのものをエージェントへの説明書にする</h2>
+<p>poteto氏は講演で、エージェントへの信頼を高める方法の一つとして、コードベースそのものの構造を改善することを挙げています。エージェントが、フォルダ、型、プロセスの境目を見れば、どこで何をしてよいかが分かるようにする、という方法です。</p>
+<p>講演では、これを<strong>構造そのものがエージェントへの説明書になる設計</strong>としています。</p>
+<p>6原則は、それぞれの判断を、型、状態機械、ファイルの分け方などの構造として残します。各原則について、レビューで聞く一言と、判断を構造として残す先を示すと、次のとおりです。</p>
+<table>
+<thead>
+<tr>
+<th>原則</th>
+<th>レビューで聞く一言</th>
+<th>構造として残す先</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>『<strong>Model the Domain</strong>』</td>
+<td>「2つ目の真偽値が増えていないか」</td>
+<td>状態機械、discriminated union、参照表</td>
+</tr>
+<tr>
+<td>『<strong>Boundary Discipline</strong>』</td>
+<td>「このデータは今、境界をまたいでいるか（外から入ってきたところか）」</td>
+<td>境界ごとのパース関数（外から来たデータを検証し、型の付いた値に変える関数）</td>
+</tr>
+<tr>
+<td>『<strong>Type System Discipline</strong>』</td>
+<td>「新しい variant が追加されたら、コンパイラは教えてくれるか」</td>
+<td>直和型、ブランド型、<code>never</code> による網羅性の確認</td>
+</tr>
+<tr>
+<td>『<strong>Make Operations Idempotent</strong>』</td>
+<td>「2回実行したら、途中で止まったら、どうなるか」</td>
+<td>照合の手順</td>
+</tr>
+<tr>
+<td>『<strong>Migrate Callers Then Delete Legacy APIs</strong>』</td>
+<td>「古いAPIはいつ消えるか」</td>
+<td>呼び出し元の移行と同じ一連の変更での、古いAPIの削除</td>
+</tr>
+<tr>
+<td>『<strong>Separate Before Serializing Shared State</strong>』</td>
+<td>「この書き込み先に書き込む主体は一つだけか」</td>
+<td>主体ごとのファイル、ブランチ、worktree</td>
+</tr>
+</tbody>
+</table>
+<h2 id="_28">まとめ</h2>
+<ul>
+<li>『<strong>Model the Domain</strong>』は、散らばった分岐と真偽値を、状態機械や参照表にまとめます。エージェントは、コードを書くたびにこの原則を適用します。</li>
+<li>『<strong>Boundary Discipline</strong>』は、検証を境界に集め、境界の内側のコードでは型を信じます。</li>
+<li>『<strong>Type System Discipline</strong>』は、ありえない状態をコンパイルの時点で作れなくします。</li>
+<li>『<strong>Make Operations Idempotent</strong>』は、3つの問いを使って、再試行や再起動があっても同じ最終状態に収束する操作を作るよう求めます。</li>
+<li>『<strong>Migrate Callers Then Delete Legacy APIs</strong>』は、呼び出し元の移行と古いAPIの削除を同じ一連の変更で済ませます。本書では、これを、推奨される実装方法を一つに保つ原則だと読みます。</li>
+<li>『<strong>Separate Before Serializing Shared State</strong>』は、ロックで直列化（書き込みを一つずつ順番に行わせること）する前に、書き込み先の共有そのものをなくします。</li>
+<li>本書では、6件はどれも、構造そのものをエージェントへの説明書にする原則だと読みます。</li>
+</ul>
+<p>次の<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/1fb019">第19章</a>では、何をもって完了の証明とするかを決める、Verificationの4原則を扱います。</p>
+  </div>
+  <footer class="article-footer">
+    <span>取得: 2026-10-06T23:37:30+09:00</span>
+    <a href="#article-top">↑ 先頭へ戻る</a>
+  </footer>
+</main>
+<script>
+(() => {
+  const progress = document.querySelector(".reading-progress > span");
+  const updateProgress = () => {
+    const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+    const ratio = scrollable > 0 ? window.scrollY / scrollable : 0;
+    if (progress) progress.style.width = `${Math.min(1, ratio) * 100}%`;
+  };
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  document.querySelectorAll("pre").forEach((block) => {
+    const button = document.createElement("button");
+    button.className = "copy-button";
+    button.type = "button";
+    button.textContent = "コピー";
+    button.addEventListener("click", async () => {
+      const text = block.querySelector("code")?.innerText || block.innerText;
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const textarea = document.createElement("textarea");
+          textarea.value = text;
+          textarea.style.position = "fixed";
+          textarea.style.opacity = "0";
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand("copy");
+          textarea.remove();
+        }
+        button.textContent = "コピー済み";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      } catch (error) {
+        button.textContent = "失敗";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      }
+    });
+    block.appendChild(button);
+  });
+
+  const links = new Map(
+    [...document.querySelectorAll(".toc a")].map((link) => [link.hash, link])
+  );
+  const headings = [...document.querySelectorAll(
+    ".article-body h2[id], .article-body h3[id], .article-body h4[id]"
+  )];
+  if ("IntersectionObserver" in window && headings.length) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        links.forEach((link) => link.classList.remove("is-active"));
+        links.get(`#${entry.target.id}`)?.classList.add("is-active");
+      });
+    }, { rootMargin: "-12% 0px -72% 0px" });
+    headings.forEach((heading) => observer.observe(heading));
+  }
+})();
+</script>
+</body>
+</html>

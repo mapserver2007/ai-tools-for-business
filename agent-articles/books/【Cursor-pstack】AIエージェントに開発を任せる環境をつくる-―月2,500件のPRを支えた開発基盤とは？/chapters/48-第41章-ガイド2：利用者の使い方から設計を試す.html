@@ -1,0 +1,1129 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="title" content="第41章 ガイド2：利用者の使い方から設計を試す">
+<meta name="book_title" content="【Cursor pstack】AIエージェントに開発を任せる環境をつくる ―月2,500件のPRを支えた開発基盤とは？">
+<meta name="source_url" content="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/7549a7">
+<meta name="author" content="kaito">
+<meta name="published_at" content="2026-10-02">
+<meta name="retrieved_at" content="2026-10-06T23:37:37+09:00">
+<meta name="site" content="zenn.dev">
+<meta name="content_type" content="article">
+<meta name="chapter_position" content="48">
+<title>第41章 ガイド2：利用者の使い方から設計を試す</title>
+<style>
+:root {
+  color-scheme: light;
+  --ink: #172033;
+  --muted: #64748b;
+  --line: #dbe4ef;
+  --accent: #2563eb;
+  --accent-dark: #1d4ed8;
+  --accent-soft: #eff6ff;
+  font-family: -apple-system, BlinkMacSystemFont, "Avenir Next",
+    "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 8% 0%, #dbeafe 0, transparent 32rem),
+    radial-gradient(circle at 100% 12%, #e0e7ff 0, transparent 28rem),
+    #f4f7fb;
+  color: var(--ink);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(120deg, transparent 0 48%, rgba(255, 255, 255, 0.4));
+}
+.article {
+  position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
+  max-width: 920px;
+  margin: clamp(1rem, 5vw, 4rem) auto;
+  padding: clamp(2rem, 6vw, 5rem) clamp(1.25rem, 7vw, 5.5rem);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  border-radius: 24px;
+  min-height: 100vh;
+  box-shadow:
+    0 24px 70px rgba(30, 64, 175, 0.1),
+    0 4px 16px rgba(15, 23, 42, 0.04);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 5px;
+  content: "";
+  background: linear-gradient(90deg, #2563eb, #7c3aed, #db2777);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin: 0 0 2.5rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.72rem;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+a {
+  color: var(--accent-dark);
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: #7c3aed;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--ink);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 18ch;
+  margin: 0 0 2.5rem;
+  font-size: clamp(2.15rem, 5vw, 3.65rem);
+  letter-spacing: -0.045em;
+}
+h2 {
+  position: relative;
+  margin: 3.8rem 0 1.25rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--line);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 4.2rem;
+  height: 3px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), #7c3aed);
+  border-radius: 999px;
+}
+h3 {
+  margin: 2.6rem 0 0.8rem;
+  color: var(--accent-dark);
+  font-size: 1.3rem;
+}
+h4, h5, h6 {
+  margin-top: 2rem;
+}
+p {
+  margin: 1.15rem 0;
+}
+ul, ol {
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.35rem 0;
+}
+li::marker {
+  color: var(--accent);
+  font-weight: 700;
+}
+strong {
+  color: #111827;
+}
+blockquote {
+  margin: 1.6rem 0;
+  padding: 0.8rem 1.25rem;
+  color: #475569;
+  background: linear-gradient(90deg, var(--accent-soft), #fff);
+  border-left: 4px solid var(--accent);
+  border-radius: 0 12px 12px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 3rem 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+img {
+  display: block;
+  max-width: 100%;
+  margin: 1.75rem auto;
+  height: auto;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+}
+pre {
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  padding: 1.15rem 1.25rem;
+  color: #e2e8f0;
+  background: #111827;
+  border: 1px solid #253047;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+}
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+:not(pre) > code {
+  padding: 0.15rem 0.4rem;
+  color: #9f1239;
+  background: #fff1f2;
+  border-radius: 5px;
+}
+table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  border-collapse: collapse;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
+  text-align: left;
+}
+th {
+  color: #1e3a8a;
+  background: #eff6ff;
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: #f8fafc;
+}
+@media (max-width: 600px) {
+  .article {
+    margin: 0;
+    padding: 2rem 1rem 4rem;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(2rem, 10vw, 2.75rem);
+  }
+  .metadata {
+    margin-bottom: 2rem;
+  }
+}
+@media print {
+  body {
+    background: #fff;
+  }
+  .article {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  a {
+    color: inherit;
+  }
+}
+</style>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0f1419;
+  --surface: #1a2332;
+  --surface-raised: #202c3f;
+  --surface-soft: rgba(26, 35, 50, 0.72);
+  --border: #2d3a4f;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #58a6ff;
+  --accent-strong: #79c0ff;
+  --green: #3fb950;
+  --purple: #bc8cff;
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+    "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  line-height: 1.75;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+  background: var(--bg);
+}
+body {
+  min-width: 320px;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 2rem 1.5rem 5rem;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(31, 111, 235, 0.18), transparent 32rem),
+    radial-gradient(circle at 100% 12%, rgba(137, 87, 229, 0.14), transparent 28rem),
+    var(--bg);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black, transparent 75%);
+}
+.reading-progress {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 20;
+  height: 3px;
+  background: rgba(45, 58, 79, 0.7);
+}
+.reading-progress > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  box-shadow: 0 0 14px rgba(88, 166, 255, 0.8);
+  transition: width 80ms linear;
+}
+.article {
+  position: relative;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  background: rgba(15, 20, 25, 0.76);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(88, 166, 255, 0.035) inset;
+  backdrop-filter: blur(16px);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  border-radius: 16px 16px 0 0;
+}
+.article-header {
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.eyebrow-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--green);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(63, 185, 80, 0.75);
+}
+.eyebrow-separator {
+  color: var(--border);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  background: rgba(32, 44, 63, 0.68);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+.source-link {
+  color: var(--text);
+  text-decoration: none;
+}
+.source-link:hover {
+  border-color: var(--accent);
+  background: rgba(88, 166, 255, 0.12);
+}
+a {
+  color: var(--accent);
+  overflow-wrap: anywhere;
+  text-decoration: none;
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 24ch;
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  background: linear-gradient(120deg, #fff 12%, #b9d8ff 58%, #bc8cff);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+h2 {
+  position: relative;
+  margin: 3.2rem 0 1.1rem;
+  padding: 0.75rem 0 0.65rem;
+  border-bottom: 1px solid var(--border);
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 3.8rem;
+  height: 2px;
+  content: "";
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(88, 166, 255, 0.7);
+}
+h3 {
+  margin: 2.25rem 0 0.7rem;
+  color: var(--accent-strong);
+  font-size: 1.2rem;
+}
+h4, h5, h6 {
+  margin-top: 1.75rem;
+}
+p {
+  margin: 0.9rem 0;
+}
+ul, ol {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.3rem 0;
+}
+li::marker {
+  color: var(--accent);
+}
+strong {
+  color: #fff;
+}
+blockquote {
+  margin: 1.4rem 0;
+  padding: 0.85rem 1.15rem;
+  color: #c9d1d9;
+  background: linear-gradient(100deg, rgba(88, 166, 255, 0.1), rgba(26, 35, 50, 0.55));
+  border: 1px solid rgba(88, 166, 255, 0.18);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 2.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+}
+pre {
+  position: relative;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  padding: 1rem 1.15rem;
+  color: #dbeafe;
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+pre code {
+  color: inherit;
+  background: transparent;
+}
+code {
+  font-family: "SF Mono", "Fira Code", ui-monospace, monospace;
+  font-size: 0.86em;
+}
+:not(pre) > code {
+  padding: 0.12em 0.38em;
+  color: #ffabbc;
+  background: rgba(248, 81, 73, 0.11);
+  border-radius: 4px;
+}
+.copy-button {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  padding: 0.25rem 0.55rem;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.72rem;
+  background: rgba(32, 44, 63, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.copy-button:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  border-spacing: 0;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.6rem 0.75rem;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+th {
+  color: var(--accent);
+  background: var(--surface);
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: rgba(26, 35, 50, 0.42);
+}
+tr:last-child td {
+  border-bottom: 0;
+}
+th:last-child, td:last-child {
+  border-right: 0;
+}
+.toc {
+  margin: 1.75rem 0 2.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.toc-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--border);
+}
+.toc-title {
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.toc-count {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.toc ol {
+  margin: 0.7rem 0 0;
+  padding-left: 1.25rem;
+}
+.toc ol ol {
+  margin: 0.2rem 0;
+}
+.toc li {
+  margin: 0.18rem 0;
+  font-size: 0.86rem;
+}
+.toc li::marker {
+  color: var(--muted);
+}
+.toc a {
+  display: inline-block;
+  max-width: 100%;
+  color: var(--muted);
+  transition: color 160ms ease, transform 160ms ease;
+}
+.toc a:hover, .toc a.is-active {
+  color: var(--accent-strong);
+  text-decoration: none;
+  transform: translateX(2px);
+}
+.article-body {
+  max-width: 78ch;
+  margin: 0 auto;
+}
+.article-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 1rem;
+  color: var(--muted);
+  font-size: 0.74rem;
+  border-top: 1px solid var(--border);
+}
+.article-footer a {
+  color: var(--muted);
+}
+@media (max-width: 720px) {
+  body {
+    padding: 0 0 3rem;
+  }
+  .article {
+    min-height: 100vh;
+    padding: 1.5rem 1rem 3rem;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+  .article::before {
+    border-radius: 0;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(1.9rem, 9vw, 2.6rem);
+  }
+  .article-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+@media print {
+  :root {
+    color-scheme: light;
+  }
+  body {
+    padding: 0;
+    color: #111;
+    background: #fff;
+  }
+  .reading-progress, .toc, .copy-button {
+    display: none;
+  }
+  .article {
+    max-width: none;
+    padding: 0;
+    background: #fff;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  h1, h2, h3, h4, h5, h6, strong {
+    color: #111;
+    -webkit-text-fill-color: initial;
+  }
+  a {
+    color: inherit;
+    text-decoration: underline;
+  }
+  pre {
+    color: #111;
+    background: #f4f4f4;
+    box-shadow: none;
+  }
+}
+</style>
+</head>
+<body>
+<div class="reading-progress" aria-hidden="true"><span></span></div>
+<main id="article-top" class="article">
+  <header class="article-header">
+    <div class="eyebrow">
+      <span class="eyebrow-dot"></span>
+      <span>ARTICLE</span>
+      <span class="eyebrow-separator">/</span>
+      <span>zenn.dev</span>
+    </div>
+    <div class="metadata" aria-label="記事メタデータ"><span class="metadata-item"><span class="metadata-label">著者</span>kaito</span><span class="metadata-item"><span class="metadata-label">公開日</span>2026-10-02</span><a class="metadata-item source-link" href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/7549a7"><span class="metadata-label">原文</span>読む</a><span class="metadata-item"><span class="metadata-label">サイト</span>zenn.dev</span><span class="metadata-item"><span class="metadata-label">形式</span>ARTICLE</span></div>
+    <h1 id="41-2">第41章 ガイド2：利用者の使い方から設計を試す</h1>
+  </header>
+<nav class="toc" aria-label="目次">
+  <div class="toc-heading">
+    <span class="toc-title">目次</span>
+    <span class="toc-count">17 セクション</span>
+  </div>
+  <ol><li><a href="#_1">この章の構成</a></li><li><a href="#_2">「計画を信じない」は、「コードで計画する」という意味</a></li><li><a href="#5">要点5：使い方を先に書く</a><ol><li><a href="#readme">記事の考え：READMEから書き始める</a></li><li><a href="#pstackarchitect">pstack：/architect の出力も、使い方を先に書く</a></li></ol></li><li><a href="#6technical-writing">要点6：/technical-writingで、文書を用途ごとに分ける</a><ol><li><a href="#readme_1">記事の考え：用途の混ざったREADMEは読みにくい</a></li><li><a href="#technical-writing-skill">記事の考え：/technical-writing をほかのSkillと組み合わせる</a></li><li><a href="#pstack11">pstack：1つの文書に1つのモード</a></li></ol></li><li><a href="#7">要点7：複数案のプロトタイプで比べる</a><ol><li><a href="#_3">記事の考え：複数案のプロトタイプを作って比べる</a></li><li><a href="#pstack">pstack：プロトタイプは、設計を決めるための使い捨ての道具</a></li></ol></li><li><a href="#8">要点8：疑問は、実験で確かめさせる</a><ol><li><a href="#_4">記事の考え：疑問はプロトタイプで答え、抽象的な計画は敵対的にレビューしない</a></li><li><a href="#pstack_1">pstack：エージェントは、人間に聞く前に、実験で答えが出る疑問かを見分ける</a></li><li><a href="#pstackinterrogate">pstack：/interrogate にかけるのは骨組みと差分</a></li></ol></li><li><a href="#_5">まとめ</a></li></ol>
+</nav>
+  <div class="article-body">
+
+<p><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/b4b9a1">第40章</a>では、何を作るか（どの問題を、どんな設計で解き、どう計画するか）を、エージェントと一緒に決める方法について見てきました。</p>
+<p>この章では、問題を理解した次の段階として、解決策を試す方法を解説します。</p>
+<p>この章も、『The Complete Guide to pstack』<a href="https://x.com/poteto/status/2097732320606507506">Part 2</a>（以下、記事）をもとにしています。</p>
+<p>記事が勧めるのは、<strong>抽象的な計画（まだコードで形にしていない、文章だけの計画）を細かく書き込むことではなく、次の3つです</strong>。</p>
+<ul>
+<li>実装の前に、ユーザーの使い方を書く</li>
+<li>複数の案を実際に作って動かす</li>
+<li>動かした結果で選択する</li>
+</ul>
+<p><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/b4b9a1">第40章</a>で、本書は記事の内容を<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/b4b9a1#13%E3%81%AE%E8%A6%81%E7%82%B9%E3%81%A8%E3%80%81%E8%A6%81%E7%82%B91%E3%80%9C4%E3%81%AE%E3%81%A4%E3%81%AA%E3%81%8C%E3%82%8A">13の要点</a>に要約しました。</p>
+<p>この章では、そのうち要点5〜8を解説します。</p>
+<table>
+<thead>
+<tr>
+<th>No.</th>
+<th>Part 2の対応する箇所</th>
+<th>概要</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>5</td>
+<td>『Working backwards』</td>
+<td>人間が、エージェントに実装の前にREADMEやチュートリアルを書かせ、ユーザーの使い方からAPIや内部設計を考えさせる</td>
+</tr>
+<tr>
+<td>6</td>
+<td>『Working backwards』</td>
+<td>エージェントが、<code>/technical-writing</code> で文書をチュートリアル、ハウツー、リファレンス、解説の用途ごとに分け、内部で使う <code>/unslop</code> で、AIが書きがちな不自然な言い回しを除く</td>
+</tr>
+<tr>
+<td>7</td>
+<td>『Measure a hundred times, cut once』</td>
+<td>人間が、エージェントの最初の設計をそのまま採用せず、エージェントに複数案のプロトタイプを作らせ、実際に操作したときのスクリーンショットや、測った時間やレイアウトで比べる</td>
+</tr>
+<tr>
+<td>8</td>
+<td>『Measure a hundred times, cut once』『Architecting bigger changes』</td>
+<td>人間が、小さく作って動かす実験で答えられる疑問を、エージェント自身に確かめさせる。抽象的な計画へのレビューを重ねるより、プロトタイプと検証で不確かな点を減らす</td>
+</tr>
+</tbody>
+</table>
+<p>表の「Part 2の対応する箇所」は、その要点を扱っている記事の節名です。</p>
+<p>最初に、pstackの<a href="https://github.com/cursor/plugins/blob/main/pstack/README.md">README</a>が「計画を信じない」と書いている理由を解説し、その後、要点5〜8を1つずつ見ます。</p>
+<p>各要点は、主に「記事の考え」と「pstack」の節に分けて書きます。</p>
+<p>!</p>
+<p>要点7で使う『Prototype』Playbookの手順は、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/f1e85b">第12章</a>で解説しました。</p>
+<p>この章では、次の内容を割愛し、記事が勧めることを中心に解説します。</p>
+<ul>
+<li><strong>プロトタイプの作り方</strong>・・・ エージェントは、速さを優先し、コードの品質は問いません。</li>
+<li><strong>作り終えた後の報告</strong>・・・ エージェントは、試した案、証拠（スクリーンショットや測定値）、トレードオフ、推奨する案を人間に示します。</li>
+</ul>
+<h2 id="_1">この章の構成</h2>
+<p>この章の構成は次のとおりです。</p>
+<ul>
+<li>「計画を信じない」は、「コードで計画する」という意味</li>
+<li>要点5：使い方を先に書く</li>
+<li>要点6：/technical-writingで、文書を用途ごとに分ける</li>
+<li>要点7：複数案のプロトタイプで比べる</li>
+<li>要点8：疑問は、実験で確かめさせる</li>
+<li>まとめ</li>
+</ul>
+<h2 id="_2">「計画を信じない」は、「コードで計画する」という意味</h2>
+<p>pstackのREADMEは「計画を信じない」と書いていますが、これは、計画を捨てるという意味ではなく、<strong>コードで計画する</strong>という意味です。</p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/README.md">README</a>の節『why are there no planning skills?』には、次の文があります。</p>
+<blockquote>
+<p>personally, i don't believe in planning. the best spec is code.</p>
+<p>個人的には、計画を信じていない。最良の仕様はコードだ。</p>
+</blockquote>
+<p>!</p>
+<p><strong>プランモード</strong>・・・ コードを書く前に、エージェントが計画を書くモードです。</p>
+<p>記事の節『Working backwards』で、poteto氏は、プランモードを持つほとんどのツール（原文では harness）について、次のように書いています。</p>
+<p>「<strong>計画に実装の細部を書きすぎ、それ以外のことは書き足りない傾向がある</strong>」</p>
+<p>しかし、poteto氏は次のようにも書いており、計画そのものは立てています。</p>
+<blockquote>
+<p>The truth is that I do plan, but I do so through code.</p>
+<p>実のところ、私も計画は立てている。ただし、それをコードで行っている。</p>
+</blockquote>
+<p><strong>異なるのは、計画の方法です</strong>。</p>
+<p>本書では、<strong>コードで計画するとは、何も考えずに実装を始めるのではなく、「作って確かめながら設計上の疑問を解いていくこと</strong>」と考えます。</p>
+<p>コードで計画する方法には、「使い方を書いたチュートリアル（<a href="#%E8%A6%81%E7%82%B95%EF%BC%9A%E4%BD%BF%E3%81%84%E6%96%B9%E3%82%92%E5%85%88%E3%81%AB%E6%9B%B8%E3%81%8F">要点5</a>）」や、「実際に動かして比べるプロトタイプ（<a href="#%E8%A6%81%E7%82%B97%EF%BC%9A%E8%A4%87%E6%95%B0%E6%A1%88%E3%81%AE%E3%83%97%E3%83%AD%E3%83%88%E3%82%BF%E3%82%A4%E3%83%97%E3%81%A7%E6%AF%94%E3%81%B9%E3%82%8B">要点7</a>・<a href="#%E8%A6%81%E7%82%B98%EF%BC%9A%E7%96%91%E5%95%8F%E3%81%AF%E3%80%81%E5%AE%9F%E9%A8%93%E3%81%A7%E7%A2%BA%E3%81%8B%E3%82%81%E3%81%95%E3%81%9B%E3%82%8B">要点8</a>）を作って確かめること」などが該当します。</p>
+<h2 id="5">要点5：使い方を先に書く</h2>
+<p>人間は、実装の前に、エージェントに<strong>READMEやチュートリアルで使い方を書かせ</strong>、そこからAPIや内部設計を逆算させます。</p>
+<h3 id="readme">記事の考え：READMEから書き始める</h3>
+<p>poteto氏は、使い方を先に書く開発手法として、「<strong>README駆動開発</strong>」を、記事の中で紹介しています。</p>
+<p>!</p>
+<p><strong>README駆動開発</strong>・・・ 想定するユーザーに使い方を説明するREADMEから書き始め、実装とアーキテクチャへ逆算する開発の方法です。</p>
+<p>READMEから書き始めると、開発者は、作るもの（APIなど）を使う側の立場で、使いやすさ（原文では developer experience）を考えざるをえなくなります。</p>
+<p>たとえば、poteto氏は、Cursor社内のデスクトップアプリ用フレームワークであるDuneを作ったとき、まずエージェントにチュートリアルを書かせ、Duneでアプリを作るとどうなるかを確かめようとしたそうです。</p>
+<p>実装の前に書いた使い方は、<strong>人間にとっては完成形を理解する材料になり、エージェントにとっては実装後に動作を確かめる具体的な基準になります</strong>。</p>
+<p>ちなみに、当初は、エージェントに読みやすいチュートリアルを書かせるのは難しく、先に <code>/technical-writing</code> を作ることになった、とも書かれています（<a href="#%E8%A6%81%E7%82%B96%EF%BC%9A%2Ftechnical-writing%E3%81%A7%E3%80%81%E6%96%87%E6%9B%B8%E3%82%92%E7%94%A8%E9%80%94%E3%81%94%E3%81%A8%E3%81%AB%E5%88%86%E3%81%91%E3%82%8B">要点6</a>）。</p>
+<h3 id="pstackarchitect">pstack：/architect の出力も、使い方を先に書く</h3>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/architect/SKILL.md"><code>/architect</code></a>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/2ad346">第24章</a>）の <code>SKILL.md</code> も、節『Outputs』で、<strong>呼び出し側の使い方を先に書き、骨組みはその使い方から導く</strong>と定めています。</p>
+<blockquote>
+<p>The caller's usage is written first and the type sketch derived from it.</p>
+<p>呼び出し側の使い方を先に書き、型の骨組みはそこから導く。</p>
+</blockquote>
+<p>!</p>
+<ul>
+<li><strong>骨組み</strong>・・・ 型と関数の形だけを書き、中身はまだ書かないコードです。</li>
+<li><strong>webhook</strong>・・・ 指定したURLにHTTPリクエストを送って、別のシステムにイベントを知らせる仕組みです（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/46bd1f">第25章</a>）。</li>
+</ul>
+<p>使い方から骨組みを導く例として、外部から届く webhook にレート制限（一定時間に受け付ける要求の数の上限）を設ける機能を考えてみましょう。</p>
+<p>この機能は、記事の節『The workflow in practice』の例2の依頼（<code>we need to add rate limiting for external webhooks</code>）にも出てきます（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/166acb">第42章</a>の「例2）設計の依頼」）。</p>
+<p>ここでは、同じ送り手（webhook を送ってくる外部のシステム）から受け付ける webhook を、1分あたり60件までに制限する例を見ていきます。</p>
+<p><code>/architect</code>に従って、エージェントが使い方を先に書き、そこから骨組みを導くと、次のようになります。</p>
+<pre><code>// 1. 先に、呼び出し側の使い方を書く
+const limiter = createRateLimiter({ perMinute: 60 });
+
+function handleWebhook(webhook: { senderId: string }): Response {
+  if (!limiter.tryAcquire(webhook.senderId)) {
+    return new Response(&quot;Too Many Requests&quot;, { status: 429 });
+  }
+  return new Response(&quot;OK&quot;);
+}
+
+// 2. 使い方から骨組みを導く：型と関数の形だけを書き、中身はまだ書かない
+type RateLimiterOptions = { perMinute: number };
+type RateLimiter = { tryAcquire(senderId: string): boolean };
+
+function createRateLimiter(options: RateLimiterOptions): RateLimiter {
+  throw new Error(&quot;not implemented&quot;);
+}
+</code></pre>
+<p>1の使い方で <code>createRateLimiter</code> に <code>{ perMinute: 60 }</code> を渡すと書いたので、2の <code>RateLimiterOptions</code> の形が決まります。</p>
+<p>また、1で <code>limiter.tryAcquire(webhook.senderId)</code> の結果によって「受け付けるかどうか」の条件分岐を書いたので、2の <code>RateLimiter</code> は、送り手のID（文字列）を受け取って真偽値を返す <code>tryAcquire</code> を持つ形に決まります。</p>
+<p>関数の中身（<code>throw new Error("not implemented")</code> の部分）は、骨組みが決まった後の実装の段階で書きます（骨組みに沿って実装する段階について、記事が説明していることは、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/166acb">第42章</a>の要点9で見ます）。</p>
+<p>このように、<strong>使い方を先に書けば、型と関数の形は使い方から決まります</strong>。</p>
+<h2 id="6technical-writing">要点6：/technical-writingで、文書を用途ごとに分ける</h2>
+<p>エージェントは、<code>/technical-writing</code> で文書をチュートリアル、ハウツー、リファレンス、解説の4つに分け、<strong>1つの文書に用途を混ぜません</strong>。</p>
+<h3 id="readme_1">記事の考え：用途の混ざったREADMEは読みにくい</h3>
+<p>poteto氏が <code>/technical-writing</code> なしでエージェントに書かせた、Duneの最初のREADMEは、読みにくいものだったそうです。</p>
+<p><strong>チュートリアル、ハウツー、解説、リファレンスの役目が1つの文書に詰め込まれていた</strong>うえに、AIらしい、もったいぶった文章で書かれていたからです。</p>
+<p>そこでpoteto氏が作ったのが <code>/technical-writing</code> です（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/44857b">第33章</a>）。</p>
+<p>!</p>
+<ul>
+<li><strong><a href="https://diataxis.fr/">Diátaxis</a></strong>・・・ 文書を、読み手の目的によって4つの種類（モード）に分ける考え方です。</li>
+<li><strong><code>/unslop</code></strong>・・・ エージェントが、自分の書いた文章から、AIらしい癖（読み手に「機械が書いた」と気づかせる言い回しや書式。例：「お役に立てば幸いです」のような決まり文句）を、規則に沿って削るSkillです（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/44857b">第33章</a>）。</li>
+</ul>
+<p><code>/technical-writing</code> は、Diátaxis に沿って文書を分類します。<br />
+また、<code>/technical-writing</code> は <code>/unslop</code> も使うので、<strong>作る文書が読みやすくなります</strong>。</p>
+<h3 id="technical-writing-skill">記事の考え：/technical-writing をほかのSkillと組み合わせる</h3>
+<p><code>/technical-writing</code> を含むpstackの多くのSkillは、組み合わさって効果を高め合います。</p>
+<p>記事は、それが起こる場面として、利用者が自分のアプリの設計を考える段階（原文では design phase）を挙げています。</p>
+<p>pstackのSkillを組み合わせて、豊富なコンテキストを引き出すことで、<strong>エージェントは、問題の小さな一部分だけを見るのではなく、人間と同じように問題の本質的な部分を見られるようになります</strong>。</p>
+<p>!</p>
+<ul>
+<li><strong>検証スキル</strong>・・・ エージェントがアプリを起動・操作して証拠を取るための、プロジェクト専用のSkillです（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/7d7081">第39章</a>）。</li>
+<li><strong>仮想化</strong>・・・ 長いリストのうち、画面に見えている部分だけを描画する仕組みです（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/b4b9a1">第40章</a>）。</li>
+</ul>
+<p>Skillを組み合わせる例が、3つの部分からなる次の依頼です。</p>
+<pre><code>(1) /recall my work fixing virtualization bugs and perf issues from the past 7 days. use /how and /why to understand how our current virtualization implementation works.
+// 過去7日間に仮想化の不具合と性能問題を直した作業を思い出して。/how と /why を使って、今の仮想化の実装がどう動いているかを理解して。
+
+(2) then use /poteto-mode planning and /technical-writing to come up with a new virtualization engine that categorically eliminates flickering and jittering. let's start by writing a tutorial on how i would use this new package to virtualize a React app
+// 次に、/poteto-mode で計画を立て、/technical-writing を使って、ちらつきとガタつきを根本からなくす新しい仮想化エンジンを考えて。まずは、私がこの新しいパッケージでReactアプリを仮想化する方法のチュートリアルを書くところから始めて。
+
+(3) after you write the plan, /teach me and prove to me why this new approach is superior to our current engine
+// 計画を書いたら、/teach で教えて。この新しい方法が今のエンジンより優れている理由を、私に証明して。
+</code></pre>
+<p><code>/technical-writing</code> は (2) に出てきて、新しいパッケージのチュートリアル、つまり<a href="#%E8%A6%81%E7%82%B95%EF%BC%9A%E4%BD%BF%E3%81%84%E6%96%B9%E3%82%92%E5%85%88%E3%81%AB%E6%9B%B8%E3%81%8F">要点5</a>の「使い方」を書く役目を受け持ちます。</p>
+<p>3つの部分の内容は、次のとおりです。</p>
+<ul>
+<li><strong>(1)</strong>・・・ <code>/recall</code> で過去7日間の作業を思い出し、<code>/how</code> と <code>/why</code> で、今の仮想化の実装がどう動いているかを理解するよう頼みます。</li>
+<li><strong>(2)</strong>・・・ (1) で集めた内容（以前に直した不具合など）を使って、ちらつきとガタつきを根本からなくす新しい設計を考えるよう頼みます。</li>
+<li><strong>(3)</strong>・・・ 計画を書いた後で、<code>/teach</code> で説明し、新しいパッケージのほうが今のエンジン（今使っている仮想化を受け持つ部品）より優れていることを証明するよう頼みます。<br />
+  （ここで、検証スキルのような質の高い道具が重要になります）</li>
+</ul>
+<p>このように、<strong>依頼の狙いは、過去の作業や今の実装についての豊かなコンテキストをエージェントに引き出させ、それを設計と証明に使わせることです</strong>。</p>
+<h3 id="pstack11">pstack：1つの文書に1つのモード</h3>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/technical-writing/SKILL.md"><code>/technical-writing</code></a> の <code>SKILL.md</code> は、節『Pick the mode first (Diátaxis)』で、<strong>1つの文書に1つのモード</strong>と定めています。</p>
+<blockquote>
+<p>One document, one mode.</p>
+<p>1つの文書に、1つのモード。</p>
+</blockquote>
+<p>エージェントは、文書の内容が読み手の何に役立つかを確かめる、次の2つの問いでモードを選びます。</p>
+<ul>
+<li>行動のためか、理解のためか</li>
+<li>学習のためか、仕事のためか</li>
+</ul>
+<p>組み合わせごとのモードは次のとおりです（各モードの説明は記事に沿っています）。</p>
+<ul>
+<li><strong>行動と学習</strong>・・・ チュートリアル。初めての人が、手順に沿って目に見えるものを作りながら学ぶ文書です。</li>
+<li><strong>行動と仕事</strong>・・・ ハウツー。使い慣れた人が、実際に抱えている特定の問題を解くための手順を書いた文書です。</li>
+<li><strong>理解と仕事</strong>・・・ リファレンス。APIや設定項目を、正確に漏れなく説明する文書です。</li>
+<li><strong>理解と学習</strong>・・・ 解説。背景、設計上の選択、トレードオフを説明する文書です。</li>
+</ul>
+<p>前述した、2つの問いは、文書全体にも、1つの文にも、使うことができます。</p>
+<p>また、この <code>SKILL.md</code> は、チュートリアルの中にリファレンスの表を入れることを禁じており、分類してリンクするよう定めています。</p>
+<p>たとえば、チュートリアルの途中に設定項目の一覧表を入れようとしたら、その表は理解のためのリファレンスなので、エージェントは、表を別の文書に分け、チュートリアルからその文書へリンクします。</p>
+<p>詳しいルールは<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/44857b">第33章</a>で解説したとおりです。</p>
+<h2 id="7">要点7：複数案のプロトタイプで比べる</h2>
+<p>人間は、エージェントの最初の設計をそのまま採用せず、<strong>エージェントに複数の案を実際に作らせ、操作や測定の結果で採用する案を選択します</strong>。</p>
+<h3 id="_3">記事の考え：複数案のプロトタイプを作って比べる</h3>
+<p>poteto氏は、節『Measure a hundred times, cut once』で、<strong>計画でよく見る失敗</strong>として、次の2つを挙げています。</p>
+<ul>
+<li>エージェントの最初の設計をそのまま受け入れる</li>
+<li>動かして確かめた結果（経験的な証拠）なしに、計画を作り込みすぎる</li>
+</ul>
+<p>本書では、1つ目への対処をこの要点7、2つ目への対処を<a href="#%E8%A6%81%E7%82%B98%EF%BC%9A%E7%96%91%E5%95%8F%E3%81%AF%E3%80%81%E5%AE%9F%E9%A8%93%E3%81%A7%E7%A2%BA%E3%81%8B%E3%82%81%E3%81%95%E3%81%9B%E3%82%8B">要点8</a>で解説します。</p>
+<p>1つ目について、poteto氏の説明は次のとおりです。</p>
+<p>人間がコードを書いていたころは、設計書を互いにやり取りし、設計が固まるまで何度も書き直すのが普通でした。</p>
+<p>一方、エージェントとの作業では、人間が設計書を書くという手続きを、省略することができ、エージェントに設計書を書かせることが普通になっています。</p>
+<p>問題は、「<strong>エージェントが最初に返した設計を、人間がそのまま受け入れてしまう</strong>ことがよくある」ということです。</p>
+<p>poteto氏は、これを失敗と呼んでいます。</p>
+<blockquote>
+<p>With agents, while we can skip the ceremony of the design doc, I often see the mistake of accepting the first thing the agent gives back to you.</p>
+<p>エージェントとの作業では、設計書という手続きは省けるが、エージェントが最初に返してきたものをそのまま受け入れる、という失敗をよく目にする。</p>
+</blockquote>
+<p>これがなぜ失敗と呼ばれるのか、という理由について、記事には言及がないものの、これは直感的にも経験的にも正しいと言えるのではないでしょうか。</p>
+<p>実際に、<strong>比べていない設計は、良いかどうかを判断できない</strong>と私は考えています。</p>
+<p>人間が設計書に、検討した別の案まで書き、何度も書き直していたのは、案を比べて、より良いものを選ぶためでした。<br />
+最初の設計をそのまま受け入れると、この比べる作業がまるごと抜け落ちてしまいます。</p>
+<p>この失敗に対処するのが、複数の案を作って比べる『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/prototype.md"><strong>Prototype</strong></a>』Playbookです。</p>
+<p>依頼例は次のとおりです。</p>
+<pre><code>/poteto-mode prototype a few options for &lt;feature request&gt;. use /control-app* and take videos/screenshots for me to review and choose from
+// &lt;機能の要望&gt;の案のプロトタイプをいくつか作って。/control-app* で動画とスクリーンショットを撮って、私が見比べて選べるようにして。
+</code></pre>
+<p>記事の注釈（*）は、<code>/control-app</code> が、『The Complete Guide to pstack』<a href="https://x.com/poteto/status/2094457600259842065">Part 1</a>で作った検証スキルを指すと説明しています（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/7d7081">第39章</a>）。</p>
+<p>見た目を変えるプロトタイプでは、エージェントは使い捨ての試作を、アプリの中か作業用のディレクトリに作ります。</p>
+<p>UIの操作を比べるときは、エージェントは2〜3の案を作り、簡単な切り替えスイッチで、表示する案を入れ替えられるようにします。</p>
+<p>たとえば、メニューの開き方を3つの案で比べるなら、画面に「案A」「案B」「案C」のボタンを並べ、押したボタンの案でメニューが開くようにします。<br />
+こうすると、同じ画面のまま、案を切り替えて見比べられます。</p>
+<p>そのうえで、エージェントは、<code>/control-app</code> で各案を操作してスクリーンショットを撮り、実際のタイミングやレイアウトを測定します。</p>
+<p>また、『<strong>Prototype</strong>』Playbookは、見た目の案だけでなく、機能や不具合修正の案を比べるのにも使えます。</p>
+<h3 id="pstack">pstack：プロトタイプは、設計を決めるための使い捨ての道具</h3>
+<p>『<strong>Prototype</strong>』Playbookは、<strong>プロトタイプを、設計を決めるための使い捨ての道具</strong>と定めています。</p>
+<p>始める前に、エージェントは、プロトタイプで「何を決めるのか」を明確に決めます。</p>
+<p>決めるのは、次の3つです。</p>
+<ul>
+<li>どのレイアウトにするか</li>
+<li>どの操作方法にするか</li>
+<li>画面の要素をどれくらい詰めて並べるか</li>
+</ul>
+<p>動かして観察すれば、どれがよいかがわかる選択の場合は、次のようなことを決めます。</p>
+<ul>
+<li>どの挙動にするか</li>
+<li>どのタイミングにするか</li>
+<li>どの方法にするか</li>
+</ul>
+<p>プロトタイプで決めることがなければ、エージェントはプロトタイプを作らず、新機能を作る『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/feature.md"><strong>Feature</strong></a>』Playbookへ作業を回します。</p>
+<p>人間が案を選んだ場合も、エージェントは、その案を、『<strong>Feature</strong>』Playbookへ渡します。</p>
+<p>型やモジュールの形から決める必要があれば、<code>/architect</code> へ渡します。</p>
+<h2 id="8">要点8：疑問は、実験で確かめさせる</h2>
+<p>人間は、作って動かせば答えが出る疑問について、自分で答えたり、エージェントに人間の返事を待たせたりせず、<strong>エージェントに実験で確かめさせます</strong>。</p>
+<p>計画が抽象的なうちは、レビューを重ねて作り込むこともしません。</p>
+<p>!</p>
+<ul>
+<li><strong>実験</strong>・・・ 小さく作って動かし、結果を確かめることです。</li>
+<li><strong>抽象的な計画</strong>・・・ まだコードで形にしていない、文章だけの計画です。実装の細部まで書き込んだ長い計画でも、コードで形にしていなければ、抽象的な計画です。</li>
+</ul>
+<h3 id="_4">記事の考え：疑問はプロトタイプで答え、抽象的な計画は敵対的にレビューしない</h3>
+<blockquote>
+<p>動かして確かめた結果（経験的な証拠）なしに、計画を作り込みすぎる</p>
+</blockquote>
+<p><a href="#%E8%A8%98%E4%BA%8B%E3%81%AE%E8%80%83%E3%81%88%EF%BC%9A%E8%A4%87%E6%95%B0%E6%A1%88%E3%81%AE%E3%83%97%E3%83%AD%E3%83%88%E3%82%BF%E3%82%A4%E3%83%97%E3%82%92%E4%BD%9C%E3%81%A3%E3%81%A6%E6%AF%94%E3%81%B9%E3%82%8B">要点7で挙げた2つ目の失敗</a>への対処も、プロトタイプです。</p>
+<p>poteto氏は、節『Measure a hundred times, cut once』で、<strong>プロトタイプを作ることは、コードで計画すること</strong>だと書いています。</p>
+<p><strong>プロトタイプがあれば、エージェントは、人間の返事を待たずに、動かして確かめた結果で自分の疑問に答えられます</strong>。</p>
+<p>たとえば、エージェントは、「AとBのどちらが速いか」なら両方を動かして時間を測り、「この操作で画面が崩れるか」ならプロトタイプを操作して確認します。</p>
+<p>節『Architecting bigger changes』の終わりで、poteto氏は、<strong>プロトタイプと <code>/architect</code> を使ってコードで計画することが、はるかに効果的だ</strong>と書いています。<br />
+これが、抽象的な計画を敵対的にレビューしない理由でもあると続けています。</p>
+<p>!</p>
+<p><strong>敵対的なレビュー</strong>・・・ 欠陥を探す立場で、エージェントに批判させることです。</p>
+<p>抽象的な計画を敵対的にレビューしないのは、レビューさせると、エージェントが、<strong>根拠のない、理屈の上だけのリスクを事実のように作り出す</strong>からです。<br />
+そして、起こりもしない問題に備えて、複雑な例外ケースを考え出します。</p>
+<p>たとえば、エージェントは、計画に出てくる関数について「この関数に null（値がないことを表す値）が渡されたら、処理が落ちる」と指摘し、null が渡されたときの処理を計画に足すよう求めます。</p>
+<p>コードがあれば、呼び出し元をたどって、実際に「null が渡されることがあるか」を確かめられます。</p>
+<p>null を渡す呼び出し元がなければ、この指摘が求める処理は、起こりもしない問題への備えだとわかります。</p>
+<p>しかし、<strong>抽象的な計画には、たどれる呼び出し元がありません</strong>。<br />
+そのため、指摘は確かめられないまま事実のように扱われ、計画には、起こりもしない問題に備える例外ケースの処理が積み重なっていきます。</p>
+<p>以上のことから、記事では、<strong>計画が抽象的なうちは作り込まず、未解決の疑問は、エージェントにプロトタイプを作らせ、その結果を確かめさせて、エージェント自身に答えを出させる</strong>ことが勧められています。</p>
+<h3 id="pstack_1">pstack：エージェントは、人間に聞く前に、実験で答えが出る疑問かを見分ける</h3>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/SKILL.md"><code>/poteto-mode</code></a> の節『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/SKILL.md#non-negotiables">Non-negotiables</a>』は、どのPlaybookの作業でも守る決まりを並べた節です（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/096f3d">第8章</a>）。</p>
+<p>この節には、エージェントが人間に質問しそうになったときの決まりもあります。</p>
+<p>対象は、次のような、進め方がいくつかに分かれる場面での質問です。</p>
+<ul>
+<li>どの方法にするか</li>
+<li>どう作るべきか</li>
+<li>これは何をすべきか</li>
+</ul>
+<p>『Non-negotiables』は、こうした質問をする前に、<strong>その答えが、実行して観察すればわかる事実かどうかを見分ける</strong>よう、エージェントに求めています（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/4f8911">第38章</a>）。</p>
+<p>回答が、実行すれば観察できる事実なら、人間が答えるべきことではありません。</p>
+<p>観察できる事実には、次のようなものが該当します。</p>
+<ul>
+<li>挙動</li>
+<li>タイミング</li>
+<li>レイアウト</li>
+<li>出力</li>
+<li>性能</li>
+</ul>
+<p>回答がこうした事実になる疑問は、<strong>エージェントが人間に聞かずに、『Prototype』Playbookで試して決めます</strong>。</p>
+<p>ただし、『Non-negotiables』は、作業が読み取りのみの調査（『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/investigation.md"><strong>Investigation</strong></a>』Playbook）で、成果物が根拠つきの回答である場合を例外としています。</p>
+<p>この場合、エージェントはプロトタイプを作らずに、集めた証拠から答えます。</p>
+<p><strong>エージェントが人間に聞くのは、試しても答えが出ない、プロダクト上の判断や好みです</strong>。</p>
+<p>次の2つの疑問で、この分類を確かめてみましょう。</p>
+<p>「この操作で画面が崩れるか」は、プロトタイプを操作すれば観察できるので、エージェントが試して決めます。</p>
+<p>一方、「2つのレイアウトのうち、どちらをこのプロダクトで採用するか」は、試しても答えが出ない、好みで決まる疑問です。画面がどう配置されるか（レイアウト）は観察できますが、どちらを選ぶかは観察しても決まりません。</p>
+<p>そのため、エージェントは、画面を並べて見せたうえで、選択を人間に委ねます。</p>
+<h3 id="pstackinterrogate">pstack：/interrogate にかけるのは骨組みと差分</h3>
+<p>抽象的な計画を敵対的にレビューしないなら、pstackは何を敵対的にレビューするのでしょうか。</p>
+<p>pstackには、複数のモデルに、変更を敵対的にレビューさせるSkill、<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/interrogate/SKILL.md"><strong><code>/interrogate</code></strong></a> があります（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/997880">第28章</a>）。</p>
+<p><code>/interrogate</code> は、レビュアーへの指示文で、レビュアーを「敵対的なコードレビュアー」と呼び、手助けや励ましではなく、本物の問題を探させるよう定義しています。</p>
+<p>この <code>/interrogate</code> を使う場面は『Non-negotiables』で決まっており、<strong>意見の分かれる設計は、マージする前に <code>/interrogate</code> にかける</strong>ことになっています。</p>
+<p>!</p>
+<p><strong>意見の分かれる設計</strong>・・・ 見る人によって、良い・悪いの判断が分かれる設計です（原文では contested design）。<br />
+本書では、どれを選んでも正しく動く作り方が複数ある設計が、これに当たると考えます。たとえば、エラーの扱い方です。失敗を例外で知らせるか、戻り値で知らせるかは、どちらでも正しく動くため、意見が分かれます。</p>
+<p>pstackの2つの <code>SKILL.md</code> を見ると、<code>/interrogate</code> にかける設計は、どちらも<strong>コードの形になったもの</strong>です。</p>
+<ul>
+<li><strong>差分</strong>・・・ <code>/interrogate</code> の <code>SKILL.md</code> は、レビューする対象を、コードの変更（差分）としています。</li>
+<li><strong>骨組み</strong>・・・ <code>/architect</code>（複数のモデルの設計案を、1つの骨組みに統合するSkill。<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/2ad346">第24章</a>）の <code>SKILL.md</code> は、実装を始める前に、統合した骨組み（型と関数の形だけを書き、中身はまだ書かないコード）を <code>/interrogate</code> にかけられると記載しています（節『Phase C: Agree (opt-in)』）。</li>
+</ul>
+<p>コードの形になっていれば、レビューで出た指摘を、実物と照らして確かめられます。</p>
+<p><code>/interrogate</code> では、全体のコンテキストを持つ主エージェントが、レビュアーの指摘を確かめます。</p>
+<p>先ほどの null の例のような、実際には起こらない仮定の話は、呼び出し元をたどれば問題ではないとわかるので、対応しなくてよい指摘として仕分けます（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/997880">第28章</a>）。</p>
+<p>このことから、本書では、「抽象的な計画を敵対的にレビューしない」を、「レビューをしない」という意味ではなく、<strong>根拠を用意してからレビューする</strong>という意味として読みます。</p>
+<p>ここでいう根拠とは、骨組みや差分、利用例、プロトタイプ、測定結果のように、レビューする側が実物を見て確かめられるものを指します。</p>
+<h2 id="_5">まとめ</h2>
+<ul>
+<li><strong>「計画を信じない」の意味</strong>・・・ 計画を捨てるのではなく、コードで計画するという意味です。本書では、コードで計画するとは、作って確かめながら設計上の疑問を解いていくことだと考えます。</li>
+<li><strong>要点5：使い方を先に書く</strong>・・・ 人間は、エージェントにREADMEやチュートリアルを先に書かせ、その使い方からAPIや内部設計を考えさせます。</li>
+<li><strong>要点6：/technical-writingで、文書を用途ごとに分ける</strong>・・・ エージェントは、<code>/technical-writing</code> で文書をチュートリアル、ハウツー、リファレンス、解説の4つのモードに分け、1つの文書に用途を混ぜません。AIらしい癖は、<code>/technical-writing</code> が使う <code>/unslop</code> で削られます。</li>
+<li><strong>要点7：複数案のプロトタイプで比べる</strong>・・・ 人間は、エージェントの最初の設計をそのまま採用せず、複数案のプロトタイプを作らせ、スクリーンショットや測定値で比べます。プロトタイプは、設計を決めるための使い捨ての道具です。</li>
+<li><strong>要点8：疑問は、実験で確かめさせる</strong>・・・ 人間は、実験で答えられる疑問をエージェント自身に確かめさせます。人間が答えるのは、原則として、試しても答えが出ない、プロダクト上の判断や好みで決まる疑問だけです。本書では、「抽象的な計画を敵対的にレビューしない」を、骨組みや差分、利用例、プロトタイプ、測定結果のような根拠を用意してからレビューするという意味として読みます。</li>
+</ul>
+<p>次の<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/166acb">第42章</a>では、「解決策を固めて、実行できる計画に変える」段階として、要点9〜13を見ます。</p>
+<ul>
+<li>要点9：/architectで、複数の設計を比較・統合する</li>
+<li>要点10：実装で設計の誤りが分かったら、設計を見直す</li>
+<li>要点11：小さく検証できる作業に分ける</li>
+<li>要点12：計画書は一時的なもの</li>
+<li>要点13：/poteto-modeに伝えること</li>
+</ul>
+  </div>
+  <footer class="article-footer">
+    <span>取得: 2026-10-06T23:37:37+09:00</span>
+    <a href="#article-top">↑ 先頭へ戻る</a>
+  </footer>
+</main>
+<script>
+(() => {
+  const progress = document.querySelector(".reading-progress > span");
+  const updateProgress = () => {
+    const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+    const ratio = scrollable > 0 ? window.scrollY / scrollable : 0;
+    if (progress) progress.style.width = `${Math.min(1, ratio) * 100}%`;
+  };
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  document.querySelectorAll("pre").forEach((block) => {
+    const button = document.createElement("button");
+    button.className = "copy-button";
+    button.type = "button";
+    button.textContent = "コピー";
+    button.addEventListener("click", async () => {
+      const text = block.querySelector("code")?.innerText || block.innerText;
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const textarea = document.createElement("textarea");
+          textarea.value = text;
+          textarea.style.position = "fixed";
+          textarea.style.opacity = "0";
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand("copy");
+          textarea.remove();
+        }
+        button.textContent = "コピー済み";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      } catch (error) {
+        button.textContent = "失敗";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      }
+    });
+    block.appendChild(button);
+  });
+
+  const links = new Map(
+    [...document.querySelectorAll(".toc a")].map((link) => [link.hash, link])
+  );
+  const headings = [...document.querySelectorAll(
+    ".article-body h2[id], .article-body h3[id], .article-body h4[id]"
+  )];
+  if ("IntersectionObserver" in window && headings.length) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        links.forEach((link) => link.classList.remove("is-active"));
+        links.get(`#${entry.target.id}`)?.classList.add("is-active");
+      });
+    }, { rootMargin: "-12% 0px -72% 0px" });
+    headings.forEach((heading) => observer.observe(heading));
+  }
+})();
+</script>
+</body>
+</html>

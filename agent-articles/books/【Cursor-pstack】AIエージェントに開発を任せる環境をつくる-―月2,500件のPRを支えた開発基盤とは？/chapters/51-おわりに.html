@@ -1,0 +1,1106 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="title" content="おわりに">
+<meta name="book_title" content="【Cursor pstack】AIエージェントに開発を任せる環境をつくる ―月2,500件のPRを支えた開発基盤とは？">
+<meta name="source_url" content="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/f903e4">
+<meta name="author" content="kaito">
+<meta name="published_at" content="2026-10-02">
+<meta name="retrieved_at" content="2026-10-06T23:37:38+09:00">
+<meta name="site" content="zenn.dev">
+<meta name="content_type" content="article">
+<meta name="chapter_position" content="51">
+<title>おわりに</title>
+<style>
+:root {
+  color-scheme: light;
+  --ink: #172033;
+  --muted: #64748b;
+  --line: #dbe4ef;
+  --accent: #2563eb;
+  --accent-dark: #1d4ed8;
+  --accent-soft: #eff6ff;
+  font-family: -apple-system, BlinkMacSystemFont, "Avenir Next",
+    "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 8% 0%, #dbeafe 0, transparent 32rem),
+    radial-gradient(circle at 100% 12%, #e0e7ff 0, transparent 28rem),
+    #f4f7fb;
+  color: var(--ink);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(120deg, transparent 0 48%, rgba(255, 255, 255, 0.4));
+}
+.article {
+  position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
+  max-width: 920px;
+  margin: clamp(1rem, 5vw, 4rem) auto;
+  padding: clamp(2rem, 6vw, 5rem) clamp(1.25rem, 7vw, 5.5rem);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  border-radius: 24px;
+  min-height: 100vh;
+  box-shadow:
+    0 24px 70px rgba(30, 64, 175, 0.1),
+    0 4px 16px rgba(15, 23, 42, 0.04);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 5px;
+  content: "";
+  background: linear-gradient(90deg, #2563eb, #7c3aed, #db2777);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin: 0 0 2.5rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.72rem;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+a {
+  color: var(--accent-dark);
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: #7c3aed;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--ink);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 18ch;
+  margin: 0 0 2.5rem;
+  font-size: clamp(2.15rem, 5vw, 3.65rem);
+  letter-spacing: -0.045em;
+}
+h2 {
+  position: relative;
+  margin: 3.8rem 0 1.25rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--line);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 4.2rem;
+  height: 3px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), #7c3aed);
+  border-radius: 999px;
+}
+h3 {
+  margin: 2.6rem 0 0.8rem;
+  color: var(--accent-dark);
+  font-size: 1.3rem;
+}
+h4, h5, h6 {
+  margin-top: 2rem;
+}
+p {
+  margin: 1.15rem 0;
+}
+ul, ol {
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.35rem 0;
+}
+li::marker {
+  color: var(--accent);
+  font-weight: 700;
+}
+strong {
+  color: #111827;
+}
+blockquote {
+  margin: 1.6rem 0;
+  padding: 0.8rem 1.25rem;
+  color: #475569;
+  background: linear-gradient(90deg, var(--accent-soft), #fff);
+  border-left: 4px solid var(--accent);
+  border-radius: 0 12px 12px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 3rem 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+img {
+  display: block;
+  max-width: 100%;
+  margin: 1.75rem auto;
+  height: auto;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+}
+pre {
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  padding: 1.15rem 1.25rem;
+  color: #e2e8f0;
+  background: #111827;
+  border: 1px solid #253047;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+}
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+:not(pre) > code {
+  padding: 0.15rem 0.4rem;
+  color: #9f1239;
+  background: #fff1f2;
+  border-radius: 5px;
+}
+table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  border-collapse: collapse;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
+  text-align: left;
+}
+th {
+  color: #1e3a8a;
+  background: #eff6ff;
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: #f8fafc;
+}
+@media (max-width: 600px) {
+  .article {
+    margin: 0;
+    padding: 2rem 1rem 4rem;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(2rem, 10vw, 2.75rem);
+  }
+  .metadata {
+    margin-bottom: 2rem;
+  }
+}
+@media print {
+  body {
+    background: #fff;
+  }
+  .article {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  a {
+    color: inherit;
+  }
+}
+</style>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0f1419;
+  --surface: #1a2332;
+  --surface-raised: #202c3f;
+  --surface-soft: rgba(26, 35, 50, 0.72);
+  --border: #2d3a4f;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #58a6ff;
+  --accent-strong: #79c0ff;
+  --green: #3fb950;
+  --purple: #bc8cff;
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+    "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  line-height: 1.75;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+  background: var(--bg);
+}
+body {
+  min-width: 320px;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 2rem 1.5rem 5rem;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(31, 111, 235, 0.18), transparent 32rem),
+    radial-gradient(circle at 100% 12%, rgba(137, 87, 229, 0.14), transparent 28rem),
+    var(--bg);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black, transparent 75%);
+}
+.reading-progress {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 20;
+  height: 3px;
+  background: rgba(45, 58, 79, 0.7);
+}
+.reading-progress > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  box-shadow: 0 0 14px rgba(88, 166, 255, 0.8);
+  transition: width 80ms linear;
+}
+.article {
+  position: relative;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  background: rgba(15, 20, 25, 0.76);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(88, 166, 255, 0.035) inset;
+  backdrop-filter: blur(16px);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  border-radius: 16px 16px 0 0;
+}
+.article-header {
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.eyebrow-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--green);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(63, 185, 80, 0.75);
+}
+.eyebrow-separator {
+  color: var(--border);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  background: rgba(32, 44, 63, 0.68);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+.source-link {
+  color: var(--text);
+  text-decoration: none;
+}
+.source-link:hover {
+  border-color: var(--accent);
+  background: rgba(88, 166, 255, 0.12);
+}
+a {
+  color: var(--accent);
+  overflow-wrap: anywhere;
+  text-decoration: none;
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 24ch;
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  background: linear-gradient(120deg, #fff 12%, #b9d8ff 58%, #bc8cff);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+h2 {
+  position: relative;
+  margin: 3.2rem 0 1.1rem;
+  padding: 0.75rem 0 0.65rem;
+  border-bottom: 1px solid var(--border);
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 3.8rem;
+  height: 2px;
+  content: "";
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(88, 166, 255, 0.7);
+}
+h3 {
+  margin: 2.25rem 0 0.7rem;
+  color: var(--accent-strong);
+  font-size: 1.2rem;
+}
+h4, h5, h6 {
+  margin-top: 1.75rem;
+}
+p {
+  margin: 0.9rem 0;
+}
+ul, ol {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.3rem 0;
+}
+li::marker {
+  color: var(--accent);
+}
+strong {
+  color: #fff;
+}
+blockquote {
+  margin: 1.4rem 0;
+  padding: 0.85rem 1.15rem;
+  color: #c9d1d9;
+  background: linear-gradient(100deg, rgba(88, 166, 255, 0.1), rgba(26, 35, 50, 0.55));
+  border: 1px solid rgba(88, 166, 255, 0.18);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 2.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+}
+pre {
+  position: relative;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  padding: 1rem 1.15rem;
+  color: #dbeafe;
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+pre code {
+  color: inherit;
+  background: transparent;
+}
+code {
+  font-family: "SF Mono", "Fira Code", ui-monospace, monospace;
+  font-size: 0.86em;
+}
+:not(pre) > code {
+  padding: 0.12em 0.38em;
+  color: #ffabbc;
+  background: rgba(248, 81, 73, 0.11);
+  border-radius: 4px;
+}
+.copy-button {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  padding: 0.25rem 0.55rem;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.72rem;
+  background: rgba(32, 44, 63, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.copy-button:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  border-spacing: 0;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.6rem 0.75rem;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+th {
+  color: var(--accent);
+  background: var(--surface);
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: rgba(26, 35, 50, 0.42);
+}
+tr:last-child td {
+  border-bottom: 0;
+}
+th:last-child, td:last-child {
+  border-right: 0;
+}
+.toc {
+  margin: 1.75rem 0 2.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.toc-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--border);
+}
+.toc-title {
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.toc-count {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.toc ol {
+  margin: 0.7rem 0 0;
+  padding-left: 1.25rem;
+}
+.toc ol ol {
+  margin: 0.2rem 0;
+}
+.toc li {
+  margin: 0.18rem 0;
+  font-size: 0.86rem;
+}
+.toc li::marker {
+  color: var(--muted);
+}
+.toc a {
+  display: inline-block;
+  max-width: 100%;
+  color: var(--muted);
+  transition: color 160ms ease, transform 160ms ease;
+}
+.toc a:hover, .toc a.is-active {
+  color: var(--accent-strong);
+  text-decoration: none;
+  transform: translateX(2px);
+}
+.article-body {
+  max-width: 78ch;
+  margin: 0 auto;
+}
+.article-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 1rem;
+  color: var(--muted);
+  font-size: 0.74rem;
+  border-top: 1px solid var(--border);
+}
+.article-footer a {
+  color: var(--muted);
+}
+@media (max-width: 720px) {
+  body {
+    padding: 0 0 3rem;
+  }
+  .article {
+    min-height: 100vh;
+    padding: 1.5rem 1rem 3rem;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+  .article::before {
+    border-radius: 0;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(1.9rem, 9vw, 2.6rem);
+  }
+  .article-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+@media print {
+  :root {
+    color-scheme: light;
+  }
+  body {
+    padding: 0;
+    color: #111;
+    background: #fff;
+  }
+  .reading-progress, .toc, .copy-button {
+    display: none;
+  }
+  .article {
+    max-width: none;
+    padding: 0;
+    background: #fff;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  h1, h2, h3, h4, h5, h6, strong {
+    color: #111;
+    -webkit-text-fill-color: initial;
+  }
+  a {
+    color: inherit;
+    text-decoration: underline;
+  }
+  pre {
+    color: #111;
+    background: #f4f4f4;
+    box-shadow: none;
+  }
+}
+</style>
+</head>
+<body>
+<div class="reading-progress" aria-hidden="true"><span></span></div>
+<main id="article-top" class="article">
+  <header class="article-header">
+    <div class="eyebrow">
+      <span class="eyebrow-dot"></span>
+      <span>ARTICLE</span>
+      <span class="eyebrow-separator">/</span>
+      <span>zenn.dev</span>
+    </div>
+    <div class="metadata" aria-label="記事メタデータ"><span class="metadata-item"><span class="metadata-label">著者</span>kaito</span><span class="metadata-item"><span class="metadata-label">公開日</span>2026-10-02</span><a class="metadata-item source-link" href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/f903e4"><span class="metadata-label">原文</span>読む</a><span class="metadata-item"><span class="metadata-label">サイト</span>zenn.dev</span><span class="metadata-item"><span class="metadata-label">形式</span>ARTICLE</span></div>
+    <h1 id="_1">おわりに</h1>
+  </header>
+<nav class="toc" aria-label="目次">
+  <div class="toc-heading">
+    <span class="toc-title">目次</span>
+    <span class="toc-count">10 セクション</span>
+  </div>
+  <ol><li><a href="#_2">本書の結論：任せられる範囲は、確かめられる環境の広さで決まる</a></li><li><a href="#_3">最初の一歩は、小さな仕事で検証のループを一周させること</a></li><li><a href="#14">1週間でできる4つのステップ</a><ol><li><a href="#1-1">1. 失敗しても困らない、本物の仕事を1つ選ぶ</a></li><li><a href="#2">2. 完了の条件を、合否が出る形で書く</a></li><li><a href="#3">3. エージェント自身が本物のアプリで確かめるよう、依頼する</a></li><li><a href="#4-2">4. 同じ注意を2回したら、その注意を文章ではなく仕組みに残す</a></li></ol></li><li><a href="#_4">任せる範囲は、段階的に広げる</a></li><li><a href="#_5">最後に</a></li><li><a href="#_6">参考文献</a></li></ol>
+</nav>
+  <div class="article-body">
+
+<h2 id="_2">本書の結論：任せられる範囲は、確かめられる環境の広さで決まる</h2>
+<p>いよいよ、pstackの旅も終着点です。</p>
+<p>ここまで本書は、poteto氏の講演と記事を手がかりに、pstackのPlaybook、Principle、Skillを1つずつ読み解いてきました。その旅で本書がたどり着いた結論は、次の一文です。</p>
+<p>「<strong>エージェントに任せられる範囲は、エージェントの賢さではなく、エージェントが自分の仕事を確かめられる環境の広さで決まる</strong>」</p>
+<p><strong>エージェントが自分でアプリを起動し、操作し、結果を証拠として残せる範囲が広いほど、利用者が自分で動かして確かめなくても、任せられる仕事が増える</strong>、ということを結論としたいと思います。</p>
+<p>この結論の出発点は、poteto氏の<a href="https://x.com/poteto/status/2102050467505430555">講演</a>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/74ae41">第1章</a>）と『The Complete Guide to pstack』<a href="https://x.com/poteto/status/2094457600259842065">Part 1</a>です。<strong>どちらも、検証を土台に置くという考えで一貫していました</strong>。</p>
+<p>講演は、<strong>信頼する対象はエージェントではなく成果物であり、その成果物を検証できることが信頼の前提になる</strong>としました。Part 1は、節『Verification is all you need』で、<strong>質の高い検証スキルを、最も重要なスキル</strong>として取り上げました。</p>
+<h2 id="_3">最初の一歩は、小さな仕事で検証のループを一周させること</h2>
+<p>pstackには23件のPlaybook、24件のPrinciple、27件のSkillがありますが、<strong>明日からすべてを使いこなす必要はありません</strong>。</p>
+<p>最初は、<strong>小さな仕事で検証のループを一周させるだけで十分です</strong>。</p>
+<p>!</p>
+<ul>
+<li><strong>検証スキル</strong>・・・ エージェントがアプリを起動・操作して証拠を取るための、プロジェクト専用のSkillです。</li>
+<li><strong>検証のループ</strong>・・・ 利用者が、合否が出る完了の条件を決めて依頼し、エージェントが本物のアプリで確かめ、条件を満たすまで直して、証拠を返すまでの一連の流れを指す、ループ処理です。</li>
+</ul>
+<p>ここからは、読み終えた後の最初の一歩として、1週間でできる4つのステップと、そこから任せる範囲を広げる順番を書きます。</p>
+<p>1週間という区切りと4つのステップの組み立ては、本書の提案です。</p>
+<p>ただし、<a href="#1.-%E5%A4%B1%E6%95%97%E3%81%97%E3%81%A6%E3%82%82%E5%9B%B0%E3%82%89%E3%81%AA%E3%81%84%E3%80%81%E6%9C%AC%E7%89%A9%E3%81%AE%E4%BB%95%E4%BA%8B%E3%82%921%E3%81%A4%E9%81%B8%E3%81%B6">ステップ1</a>（本物の仕事を選ぶ）と<a href="#2.-%E5%AE%8C%E4%BA%86%E3%81%AE%E6%9D%A1%E4%BB%B6%E3%82%92%E3%80%81%E5%90%88%E5%90%A6%E3%81%8C%E5%87%BA%E3%82%8B%E5%BD%A2%E3%81%A7%E6%9B%B8%E3%81%8F">ステップ2</a>（完了の条件を合否が出る形で書く）の中身は、pstackの同梱ガイド（<a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/01-setup.md"><code>01-setup.md</code></a>、<a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/06-verify-and-ship.md"><code>06-verify-and-ship.md</code></a>）にも書かれています。</p>
+<h2 id="14">1週間でできる4つのステップ</h2>
+<h3 id="1-1">1. 失敗しても困らない、本物の仕事を1つ選ぶ</h3>
+<p>最初に選ぶタスクは、「小さく、失敗しても困らないが、実際に必要な仕事」です。</p>
+<p>表示の小さな不具合の修正、CLIのオプションの追加、設定値の読み込みの修正などが向いています。どれも変更が小さく、動かせば結果が合っているかをすぐに確かめられるからです。</p>
+<p><strong>練習用の課題は避け、本物の仕事を選んでください</strong>。この1週間の目的が、検証のループが本物のアプリで回るかを確かめることだからです。</p>
+<h3 id="2">2. 完了の条件を、合否が出る形で書く</h3>
+<p>利用者は、依頼を書く前に、「何が確認できたら終わりか」（完了の条件）を決めます。</p>
+<p><strong>完了の条件は、「いい感じにして」ではなく、実行して合否が出る形にします</strong>。</p>
+<p>同梱ガイドの <a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/06-verify-and-ship.md"><code>06-verify-and-ship.md</code></a> の節『State the finish condition up front』は、CLIにJSON出力を足す仕事を例に、完了の条件を次のように依頼に書いています。</p>
+<pre><code>/poteto-mode add json output to this command. text output stays byte-identical, the json parses, both run against the sample project. show me the evidence.
+// このコマンドにJSON出力を足して。テキスト出力は1バイトも変えない。JSONはパースできる。両方をサンプルプロジェクトで実行する。証拠を見せて。
+</code></pre>
+<p>この依頼の3つの条件は、どれも実行して合否が出ます。</p>
+<p>pstackを使っているなら、このように条件をそのまま、pstackの入口である <a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/SKILL.md"><code>/poteto-mode</code></a>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/4fda7d">第7章</a>）への依頼に入れます。</p>
+<p>pstackを使っていなくても、どのエージェントへの依頼にも同じ書き方ができます。</p>
+<h3 id="3">3. エージェント自身が本物のアプリで確かめるよう、依頼する</h3>
+<p>ここが一番大事なステップです。</p>
+<p>利用者は、テストが通ったかどうかを報告させるのではなく、エージェントに、実際にアプリを起動し、変更した機能を動かして、<strong>結果を証拠として見せる</strong>よう求めます。テストが通っても、実際の画面や出力が正しいとは限らないからです。</p>
+<p>たとえば、『The Complete Guide to pstack』<a href="https://x.com/poteto/status/2094457600259842065">Part 1</a>は、機能を作る依頼を次のように書いています（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/7d7081">第39章</a>）。</p>
+<pre><code>/poteto-mode build &lt;description of feature, any useful context&gt;. use /control-app to verify your changes and show me a video and screenshots as proof
+// &lt;機能の説明と、役に立つコンテキスト&gt;を作って。/control-app で変更を確かめて。証拠として動画とスクリーンショットを見せて。
+</code></pre>
+<p><code>/control-app</code> は、<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/create-verification-skill/SKILL.md"><code>/create-verification-skill</code></a> で作った検証スキルを指す、記事での検証スキル名です。</p>
+<p>この依頼は、作る機能の説明に、どの検証スキルで確かめるか（<code>/control-app</code>）と、証拠の形式（動画とスクリーンショット）を添えています。</p>
+<p>証拠には、次のようなものがあります。</p>
+<ul>
+<li>コマンドの出力</li>
+<li>画面のスクリーンショット</li>
+<li>保存された値を読み戻した結果</li>
+</ul>
+<p>エージェントが自分で確かめられない場合は、利用者が<strong>その原因を最初に取り除きます</strong>。確かめられないままでは、結果を利用者が確かめるしかなく、任せられる範囲が広がらないからです。</p>
+<p>本書では、<strong>エージェントが確かめられずに止まる原因として、次の3つ</strong>を挙げます。</p>
+<ul>
+<li>アプリの起動方法が分からない</li>
+<li>操作する手段がない</li>
+<li>テスト用のユーザーやデータがない</li>
+</ul>
+<p><strong>利用者が、エージェントがこの3つのどれで止まったかを書き留めておくと、次に何を整えればよいかがはっきりします</strong>。</p>
+<p>このうち、アプリの起動と、テスト用のユーザーやデータの2つは、Part 1の節『Make it Reproducible』にも出てきます。</p>
+<p>Part 1はこの節で、アプリの開発体験（原文では dev experience）として、次の3つを考え始めておくよう勧めています。</p>
+<blockquote>
+<p>seeding a dev database<br />
+how to handle auth, test users, API calls against a test/staging environment<br />
+installing and bringing up your dev environment in a consistent way</p>
+<p>開発用データベースにシードデータ（開発やテストのために最初から入れておくデータ）を入れること<br />
+認証、テストユーザー、テスト環境やステージング環境へのAPIの呼び出しを、どう扱うか<br />
+開発環境を、いつも同じ手順でインストールし、立ち上げること</p>
+</blockquote>
+<p>検証スキル（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/03ebca">第26章</a>、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/7d7081">第39章</a>）は、エージェントが自分で確かめられない状態をなくすためのものです。検証スキルを用意する理由を、第26章では次のように書きました。</p>
+<blockquote>
+<p>利用者が検証スキルを最初に用意するのは、<strong>エージェントが自分の仕事を確かめられないと、どれだけ多くの仕事をエージェントに任せても、最後は人間が1つずつ確かめることになり、人間が作業の流れを止める存在（ボトルネック）になる</strong>からです。</p>
+</blockquote>
+<p>pstackを使っているなら、検証スキルを作る <a href="https://github.com/cursor/plugins/blob/main/pstack/skills/create-verification-skill/SKILL.md"><code>/create-verification-skill</code></a> を一度実行してみてください。</p>
+<h3 id="4-2">4. 同じ注意を2回したら、その注意を文章ではなく仕組みに残す</h3>
+<p><strong>利用者は、1週間のうちに同じ注意を2回したら、注意した間違いを自動で検出できないかを考え、できるなら仕組みにします</strong>。</p>
+<p>この考え方は、本書がpstackの原則から借りたものです。</p>
+<p>原則『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-encode-lessons-in-structure/SKILL.md"><strong>Encode Lessons in Structure</strong></a>』（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/dd2d9f">第21章</a>）は、エージェントが同じ指示を2回書いていると気づいたときの対応を定めています。</p>
+<p>エージェントは、その指示を、次のどれかにできないかを考え、できるなら仕組みにして、元の指示を消します。</p>
+<ul>
+<li>lint（コードの書き方を自動で検査する道具）のルール</li>
+<li>メタデータのフラグ（ファイルの設定欄に置く値）</li>
+<li>実行時チェック（プログラムの実行中に、値や状態が条件を満たすかを確かめる処理）</li>
+<li>スクリプト</li>
+</ul>
+<p>原則がこう定めるのは、<strong>文章の指示は、読み手が気づき、覚え、従わなければ効かない</strong>からです。</p>
+<p>原則の本文は、次のように書いています。</p>
+<blockquote>
+<p>Textual instructions are easy to miss. They require the reader to notice, remember, and comply.</p>
+<p>文章の指示は見落とされやすい。読み手が気づき、覚え、従う必要がある。</p>
+</blockquote>
+<p>利用者の側では、lintのルールやCIのチェック、スクリプトなどが、文章の指示に代わる仕組みに当たります。</p>
+<p>たとえば、<code>any</code> を使わないよう2回注意したなら、<code>any</code> を禁止するlintのルールを追加します。</p>
+<p>eslint.config.js</p>
+<pre><code>// any を書くと、lint がエラーにする（typescript-eslint を導入済みの前提）
+import tseslint from &quot;typescript-eslint&quot;;
+
+export default [
+  {
+    files: [&quot;src/**/*.ts&quot;],
+    languageOptions: { parser: tseslint.parser },
+    plugins: { &quot;@typescript-eslint&quot;: tseslint.plugin },
+    rules: {
+      &quot;@typescript-eslint/no-explicit-any&quot;: &quot;error&quot;,
+    },
+  },
+];
+</code></pre>
+<p>注意の内容をlintやCIのチェックにすれば、<strong>次の週からは、利用者が注意しなくても、エージェントが覚えていなくても、同じ間違いは自動で止まります</strong>。</p>
+<p>どの注意を仕組みにするかを選ぶ作業そのものも、エージェントに任せられます。<code>/correct</code>（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/fe17ab">第35章</a>）は、コミットやレビューの履歴から繰り返している間違いを探し、アーキテクチャ、型、lint、テストの順に、その間違いを止められる最も確実な手段を選び、その間違いを起こせなくします。</p>
+<h2 id="_4">任せる範囲は、段階的に広げる</h2>
+<p>利用者が<a href="#1%E9%80%B1%E9%96%93%E3%81%A7%E3%81%A7%E3%81%8D%E3%82%8B4%E3%81%A4%E3%81%AE%E3%82%B9%E3%83%86%E3%83%83%E3%83%97">1週間でできる4つのステップ</a>を一通り終えると、「この種類の仕事なら、差分と動作を毎回自分で確かめなくても、エージェントが出した証拠を読めばよい」という範囲が1つできます。</p>
+<p><strong>この範囲を、仕事の種類ごとに一つずつ増やしていきます</strong>。</p>
+<p>あわせて、1つの種類の仕事の中でも、任せる範囲はフェーズを追って広げます。</p>
+<p>本書では、そのフェーズを次の4つに分けて扱います。</p>
+<table>
+<thead>
+<tr>
+<th>任せるフェーズ</th>
+<th>利用者がすること</th>
+<th>エージェントに任せること</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>毎回の差分と動作を自分で確かめる</td>
+<td>コードを書く</td>
+</tr>
+<tr>
+<td>2</td>
+<td>エージェントが出した証拠を読む</td>
+<td>コードを書き、自分で動かして証拠を出す</td>
+</tr>
+<tr>
+<td>3</td>
+<td>完了の条件を決めて依頼し、できあがったPRと証拠だけを見る</td>
+<td>仕事の種類ごとに決まった手順（pstackならPlaybook）で調べ、直し、確かめ、PRを作る</td>
+</tr>
+<tr>
+<td>4</td>
+<td>方針を決め、取り消せない操作（デプロイ、データの削除など）を承認する</td>
+<td>複数の仕事を並列に進め、検証済みの変更をマージする</td>
+</tr>
+</tbody>
+</table>
+<p><a href="#1%E9%80%B1%E9%96%93%E3%81%A7%E3%81%A7%E3%81%8D%E3%82%8B4%E3%81%A4%E3%81%AE%E3%82%B9%E3%83%86%E3%83%83%E3%83%97">4つのステップ</a>を一通り終えた種類の仕事は、この表のフェーズ2（エージェントが出した証拠を読む）まで来ています。</p>
+<p><strong>フェーズは飛ばさず、1から順に上がります</strong>。</p>
+<p>フェーズ2でエージェントが出す証拠を信頼できないままフェーズ4へ進むと、確かめようのない変更が並列に増えるだけです。</p>
+<p>講演の「月2,500件のPR」も、成果物の検証から順に環境を整えた先に出た数字です。<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/74ae41">第1章</a>では、次のように書きました。</p>
+<blockquote>
+<p>つまり、まず成果物を検証できる状態を作り、そこで得た知識をコードベースに残し、その土台の上で自動化を進める、という順番が守られる必要があります。</p>
+<p>月2,500件という数字は、この4つを順に整えた結果です。</p>
+</blockquote>
+<p>引用は、講演の4つのテーマ（信頼、信頼を高める方法、コードベースを記憶として扱うこと、自動化）でもあります。</p>
+<h2 id="_5">最後に</h2>
+<p>pstackは今も更新が続いています。</p>
+<p>本書が対象にしたのは、2026年10月時点の pstack version <code>0.15.15</code> です。</p>
+<p>Playbook・Principle・Skillの名前や数、既定のモデル（利用者が指定しないときに使われるモデル）は、これからも変わっていきます。</p>
+<p>それでも本書では、<strong>「エージェントが自分の仕事を確かめられる環境を先に作る」という方針の価値は、モデルが賢くなっても下がらない</strong>と考えます。<strong>モデルが賢くなるほど任せる仕事は大きくなり、その分、確かめる仕組みが必要になる</strong>からです。</p>
+<p>加えて、賢いモデルでも確かめずに、自信を持って、言い切ることもあります。</p>
+<p>『The Complete Guide to pstack』<a href="https://x.com/poteto/status/2097732320606507506">Part 2</a>は、節『Building up a mental model』で、最新のモデルについて次のように書いていました。</p>
+<blockquote>
+<p>Even with the latest frontier models, (this also depends on the quality of the harness), in general I find that they still often state things confidently without backing it up with data or actually reading the code needed to build up a mental model of how it works.</p>
+<p>最新の最先端モデルでも（エージェントを動かすツールの質にもよるが）、概して、データで裏づけたり、仕組みを理解するのに必要なコードを実際に読んだりせずに、自信を持って言い切ることがまだ多いと感じている。</p>
+</blockquote>
+<p>まずは1つ、小さな仕事で検証のループを一周させてみてください。</p>
+<p>そこから、任せられる範囲が少しずつ広がっていきます。</p>
+<p>最後まで読んでいただき、ありがとうございました。<br />
+本書が読者のみなさまにとって、少しでも参考になり、開発ライフをより良くできるものになっていると感じていただけたら幸いです。</p>
+<p>では、よい pstack lifeを！</p>
+<h2 id="_6">参考文献</h2>
+<p><a href="https://x.com/poteto">https://x.com/poteto</a></p>
+<p><a href="https://x.com/poteto/status/2102050467505430555">https://x.com/poteto/status/2102050467505430555</a></p>
+<p><a href="https://x.com/poteto/status/2094457600259842065">https://x.com/poteto/status/2094457600259842065</a></p>
+<p><a href="https://x.com/poteto/status/2097732320606507506">https://x.com/poteto/status/2097732320606507506</a></p>
+<p><a href="https://x.com/poteto/status/2106542593656111276">https://x.com/poteto/status/2106542593656111276</a></p>
+<p><a href="https://x.com/poteto/status/2089067865098113024">https://x.com/poteto/status/2089067865098113024</a></p>
+<p><a href="https://github.com/cursor/plugins/tree/main/pstack">https://github.com/cursor/plugins/tree/main/pstack</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/README.md">https://github.com/cursor/plugins/blob/main/pstack/README.md</a></p>
+<p><a href="https://github.com/cursor/plugins">https://github.com/cursor/plugins</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/README.md">https://github.com/cursor/plugins/blob/main/pstack/docs/guide/README.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/06-verify-and-ship.md">https://github.com/cursor/plugins/blob/main/pstack/docs/guide/06-verify-and-ship.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/02-poteto-mode.md">https://github.com/cursor/plugins/blob/main/pstack/docs/guide/02-poteto-mode.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/01-setup.md">https://github.com/cursor/plugins/blob/main/pstack/docs/guide/01-setup.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/07-overnight.md">https://github.com/cursor/plugins/blob/main/pstack/docs/guide/07-overnight.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/10-recipes-and-pitfalls.md">https://github.com/cursor/plugins/blob/main/pstack/docs/guide/10-recipes-and-pitfalls.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/05-build-and-clean.md">https://github.com/cursor/plugins/blob/main/pstack/docs/guide/05-build-and-clean.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/09-make-it-yours.md">https://github.com/cursor/plugins/blob/main/pstack/docs/guide/09-make-it-yours.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/08-principles.md">https://github.com/cursor/plugins/blob/main/pstack/docs/guide/08-principles.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/03-understand.md">https://github.com/cursor/plugins/blob/main/pstack/docs/guide/03-understand.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/04-design.md">https://github.com/cursor/plugins/blob/main/pstack/docs/guide/04-design.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/bug-fix.md">https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/bug-fix.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/babysit.md">https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/babysit.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/prototype.md">https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/prototype.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/multi-phase-plan.md">https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/multi-phase-plan.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/autonomous-run.md">https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/autonomous-run.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/orchestrate.md">https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/orchestrate.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/feature.md">https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/feature.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/refactoring.md">https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/refactoring.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/investigation.md">https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/investigation.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/runtime-forensics.md">https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/runtime-forensics.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/trace-forensics.md">https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/trace-forensics.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/perf-issue.md">https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/perf-issue.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/hillclimb.md">https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/hillclimb.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/visual-parity.md">https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/visual-parity.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/authoring-a-skill.md">https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/authoring-a-skill.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/eval.md">https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/eval.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/opening-a-pr.md">https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/opening-a-pr.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/shipping.md">https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/shipping.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/session-pickup.md">https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/session-pickup.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/pause-safely.md">https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/pause-safely.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/autopilot-full.md">https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/autopilot-full.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/autopilot-stack.md">https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/autopilot-stack.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/worktree-cleanup.md">https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/worktree-cleanup.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-prove-it-works/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/principle-prove-it-works/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-test-behavior-not-implementation/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/principle-test-behavior-not-implementation/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-build-the-lever/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/principle-build-the-lever/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-type-system-discipline/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/principle-type-system-discipline/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-encode-lessons-in-structure/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/principle-encode-lessons-in-structure/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-fix-root-causes/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/principle-fix-root-causes/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-subtract-before-you-add/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/principle-subtract-before-you-add/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-migrate-callers-then-delete-legacy-apis/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/principle-migrate-callers-then-delete-legacy-apis/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-never-block-on-the-human/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/principle-never-block-on-the-human/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-laziness-protocol/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/principle-laziness-protocol/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-guard-the-context-window/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/principle-guard-the-context-window/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-make-operations-idempotent/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/principle-make-operations-idempotent/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-sequence-verifiable-units/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/principle-sequence-verifiable-units/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-separate-before-serializing-shared-state/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/principle-separate-before-serializing-shared-state/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-model-the-domain/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/principle-model-the-domain/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-minimize-reader-load/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/principle-minimize-reader-load/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-exhaust-the-design-space/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/principle-exhaust-the-design-space/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-foundational-thinking/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/principle-foundational-thinking/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-redesign-from-first-principles/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/principle-redesign-from-first-principles/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-attack-the-premise/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/principle-attack-the-premise/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-outcome-oriented-execution/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/principle-outcome-oriented-execution/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-experience-first/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/principle-experience-first/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-boundary-discipline/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/principle-boundary-discipline/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-explain-the-number/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/principle-explain-the-number/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/create-verification-skill/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/create-verification-skill/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/maintain-verification-skill/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/maintain-verification-skill/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/references/bugbot-triage.md">https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/references/bugbot-triage.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/no-comments/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/no-comments/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/reflect/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/reflect/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/correct/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/correct/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/benchmark-checklist/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/benchmark-checklist/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-help/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-help/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-help/references/recipes.md">https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-help/references/recipes.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-help/references/prompting.md">https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-help/references/prompting.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/agents/poteto-agent.md">https://github.com/cursor/plugins/blob/main/pstack/agents/poteto-agent.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/agents/comment-sicko.md">https://github.com/cursor/plugins/blob/main/pstack/agents/comment-sicko.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/architect/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/architect/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/figure-it-out/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/figure-it-out/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/arena/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/arena/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/tree/main/pstack/skills/poteto-mode/scripts/watch-pr">https://github.com/cursor/plugins/tree/main/pstack/skills/poteto-mode/scripts/watch-pr</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/recall/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/recall/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/scripts/check-plan.mjs">https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/scripts/check-plan.mjs</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/scripts/orch/orch.ts">https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/scripts/orch/orch.ts</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/scripts/worktree-audit.sh">https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/scripts/worktree-audit.sh</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/how/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/how/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/why/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/why/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/teach/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/teach/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/blast-radius/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/blast-radius/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/interrogate/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/interrogate/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/swarm/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/swarm/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/automate-me/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/automate-me/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/make-bot-ui/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/make-bot-ui/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/bro/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/bro/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/tdd/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/tdd/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/show-me-your-work/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/show-me-your-work/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/typescript-best-practices/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/typescript-best-practices/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/unslop/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/unslop/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/technical-writing/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/technical-writing/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/setup-pstack/SKILL.md">https://github.com/cursor/plugins/blob/main/pstack/skills/setup-pstack/SKILL.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/show-me-your-work/scripts/log.sh">https://github.com/cursor/plugins/blob/main/pstack/skills/show-me-your-work/scripts/log.sh</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/typescript-best-practices/references/patterns.md">https://github.com/cursor/plugins/blob/main/pstack/skills/typescript-best-practices/references/patterns.md</a></p>
+<p><a href="https://github.com/cursor/plugins/tree/main/pstack/skills/create-verification-skill/references/feature-map-example">https://github.com/cursor/plugins/tree/main/pstack/skills/create-verification-skill/references/feature-map-example</a></p>
+<p><a href="https://github.com/cursor/plugins/pull/508">https://github.com/cursor/plugins/pull/508</a></p>
+<p><a href="https://github.com/cursor/plugins/pull/509">https://github.com/cursor/plugins/pull/509</a></p>
+<p><a href="https://github.com/cursor/plugins/pull/511">https://github.com/cursor/plugins/pull/511</a></p>
+<p><a href="https://github.com/cursor/plugins/tree/main/cursor-team-kit">https://github.com/cursor/plugins/tree/main/cursor-team-kit</a></p>
+<p><a href="https://github.com/cursor/plugins/tree/main/thermos">https://github.com/cursor/plugins/tree/main/thermos</a></p>
+<p><a href="https://cursor.com/docs/skills">https://cursor.com/docs/skills</a></p>
+<p><a href="https://www.brendangregg.com/blog/2018-06-30/benchmarking-checklist.html">https://www.brendangregg.com/blog/2018-06-30/benchmarking-checklist.html</a></p>
+<p><a href="https://github.com/sharkdp/hyperfine">https://github.com/sharkdp/hyperfine</a></p>
+<p><a href="https://github.com/poteto/verification-skill-example">https://github.com/poteto/verification-skill-example</a></p>
+<p><a href="https://diataxis.fr/">https://diataxis.fr/</a></p>
+<p><a href="https://github.com/mattpocock/skills">https://github.com/mattpocock/skills</a></p>
+<p><a href="https://cursor.com/ja/docs/bugbot">https://cursor.com/ja/docs/bugbot</a></p>
+<p><a href="https://tailscale.com/">https://tailscale.com/</a></p>
+<p><a href="https://stylexjs.com/">https://stylexjs.com/</a></p>
+<p><a href="https://x.ai/bot/marketplace/bots/dr-eggbot-v2">https://x.ai/bot/marketplace/bots/dr-eggbot-v2</a></p>
+<p><a href="https://github.com/mattpocock/skills/blob/main/skills/engineering/grill-with-docs/SKILL.md">https://github.com/mattpocock/skills/blob/main/skills/engineering/grill-with-docs/SKILL.md</a></p>
+<p><a href="https://github.com/mattpocock/skills/blob/main/skills/productivity/grilling/SKILL.md">https://github.com/mattpocock/skills/blob/main/skills/productivity/grilling/SKILL.md</a></p>
+<p><a href="https://github.com/mattpocock/skills/blob/main/skills/engineering/domain-modeling/SKILL.md">https://github.com/mattpocock/skills/blob/main/skills/engineering/domain-modeling/SKILL.md</a></p>
+<p><a href="https://github.com/mattpocock/skills/blob/main/skills/engineering/domain-modeling/ADR-FORMAT.md">https://github.com/mattpocock/skills/blob/main/skills/engineering/domain-modeling/ADR-FORMAT.md</a></p>
+<p><a href="https://github.com/mattpocock/skills/blob/main/skills/engineering/domain-modeling/GLOSSARY-FORMAT.md">https://github.com/mattpocock/skills/blob/main/skills/engineering/domain-modeling/GLOSSARY-FORMAT.md</a></p>
+<p><a href="https://x.com/poteto/status/2087977008253071816">https://x.com/poteto/status/2087977008253071816</a></p>
+<p><a href="https://x.com/poteto/status/2104744961904394699">https://x.com/poteto/status/2104744961904394699</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/architect/references/design-red-flags.md">https://github.com/cursor/plugins/blob/main/pstack/skills/architect/references/design-red-flags.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/create-verification-skill/references/feature-map-example/create-note.md">https://github.com/cursor/plugins/blob/main/pstack/skills/create-verification-skill/references/feature-map-example/create-note.md</a></p>
+<p><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/create-verification-skill/references/feature-map-example/search.md">https://github.com/cursor/plugins/blob/main/pstack/skills/create-verification-skill/references/feature-map-example/search.md</a></p>
+<p><a href="https://cursor.com/ja/blog/cloud-agent-environment">https://cursor.com/ja/blog/cloud-agent-environment</a></p>
+<p><a href="https://cursor.com/ja/docs/cloud-agent/security-network">https://cursor.com/ja/docs/cloud-agent/security-network</a></p>
+<p><a href="https://github.com/anthropics/skills">https://github.com/anthropics/skills</a></p>
+<p><a href="https://github.com/anthropics/skills/blob/main/skills/skill-creator/scripts/quick_validate.py">https://github.com/anthropics/skills/blob/main/skills/skill-creator/scripts/quick_validate.py</a></p>
+<p><a href="https://github.com/agentskills/agentskills/tree/main/skills-ref">https://github.com/agentskills/agentskills/tree/main/skills-ref</a></p>
+<p><a href="https://developers.google.com/style">https://developers.google.com/style</a></p>
+<p><a href="https://www.asd-ste100.org/">https://www.asd-ste100.org/</a></p>
+<p><a href="https://web.stanford.edu/~ouster/cgi-bin/book.php">https://web.stanford.edu/~ouster/cgi-bin/book.php</a></p>
+<p><a href="https://zenn.dev/sc30gsw/articles/953334f11df507">https://zenn.dev/sc30gsw/articles/953334f11df507</a></p>
+  </div>
+  <footer class="article-footer">
+    <span>取得: 2026-10-06T23:37:38+09:00</span>
+    <a href="#article-top">↑ 先頭へ戻る</a>
+  </footer>
+</main>
+<script>
+(() => {
+  const progress = document.querySelector(".reading-progress > span");
+  const updateProgress = () => {
+    const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+    const ratio = scrollable > 0 ? window.scrollY / scrollable : 0;
+    if (progress) progress.style.width = `${Math.min(1, ratio) * 100}%`;
+  };
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  document.querySelectorAll("pre").forEach((block) => {
+    const button = document.createElement("button");
+    button.className = "copy-button";
+    button.type = "button";
+    button.textContent = "コピー";
+    button.addEventListener("click", async () => {
+      const text = block.querySelector("code")?.innerText || block.innerText;
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const textarea = document.createElement("textarea");
+          textarea.value = text;
+          textarea.style.position = "fixed";
+          textarea.style.opacity = "0";
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand("copy");
+          textarea.remove();
+        }
+        button.textContent = "コピー済み";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      } catch (error) {
+        button.textContent = "失敗";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      }
+    });
+    block.appendChild(button);
+  });
+
+  const links = new Map(
+    [...document.querySelectorAll(".toc a")].map((link) => [link.hash, link])
+  );
+  const headings = [...document.querySelectorAll(
+    ".article-body h2[id], .article-body h3[id], .article-body h4[id]"
+  )];
+  if ("IntersectionObserver" in window && headings.length) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        links.forEach((link) => link.classList.remove("is-active"));
+        links.get(`#${entry.target.id}`)?.classList.add("is-active");
+      });
+    }, { rootMargin: "-12% 0px -72% 0px" });
+    headings.forEach((heading) => observer.observe(heading));
+  }
+})();
+</script>
+</body>
+</html>

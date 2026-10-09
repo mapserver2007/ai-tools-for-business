@@ -956,10 +956,15 @@ th:last-child, td:last-child {{
 """
 
 
-def write_html(markdown_text: str, markdown_filename: str) -> Path:
+def write_html(
+    markdown_text: str,
+    markdown_filename: str,
+    output_dir: Path | None = None,
+) -> Path:
     """Write the HTML counterpart and return its path."""
     html_filename = Path(markdown_filename).with_suffix(".html").name
-    HTML_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    output_path = HTML_OUTPUT_DIR / html_filename
+    target_dir = output_dir if output_dir is not None else HTML_OUTPUT_DIR
+    target_dir.mkdir(parents=True, exist_ok=True)
+    output_path = target_dir / html_filename
     output_path.write_text(markdown_to_html(markdown_text), encoding="utf-8")
     return output_path

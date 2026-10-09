@@ -1,0 +1,1397 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="title" content="第42章 ガイド2：設計を見直し、実行できる計画に変える">
+<meta name="book_title" content="【Cursor pstack】AIエージェントに開発を任せる環境をつくる ―月2,500件のPRを支えた開発基盤とは？">
+<meta name="source_url" content="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/166acb">
+<meta name="author" content="kaito">
+<meta name="published_at" content="2026-10-02">
+<meta name="retrieved_at" content="2026-10-06T23:37:37+09:00">
+<meta name="site" content="zenn.dev">
+<meta name="content_type" content="article">
+<meta name="chapter_position" content="49">
+<title>第42章 ガイド2：設計を見直し、実行できる計画に変える</title>
+<style>
+:root {
+  color-scheme: light;
+  --ink: #172033;
+  --muted: #64748b;
+  --line: #dbe4ef;
+  --accent: #2563eb;
+  --accent-dark: #1d4ed8;
+  --accent-soft: #eff6ff;
+  font-family: -apple-system, BlinkMacSystemFont, "Avenir Next",
+    "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 8% 0%, #dbeafe 0, transparent 32rem),
+    radial-gradient(circle at 100% 12%, #e0e7ff 0, transparent 28rem),
+    #f4f7fb;
+  color: var(--ink);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(120deg, transparent 0 48%, rgba(255, 255, 255, 0.4));
+}
+.article {
+  position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
+  max-width: 920px;
+  margin: clamp(1rem, 5vw, 4rem) auto;
+  padding: clamp(2rem, 6vw, 5rem) clamp(1.25rem, 7vw, 5.5rem);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  border-radius: 24px;
+  min-height: 100vh;
+  box-shadow:
+    0 24px 70px rgba(30, 64, 175, 0.1),
+    0 4px 16px rgba(15, 23, 42, 0.04);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 5px;
+  content: "";
+  background: linear-gradient(90deg, #2563eb, #7c3aed, #db2777);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin: 0 0 2.5rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.72rem;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+a {
+  color: var(--accent-dark);
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: #7c3aed;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--ink);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 18ch;
+  margin: 0 0 2.5rem;
+  font-size: clamp(2.15rem, 5vw, 3.65rem);
+  letter-spacing: -0.045em;
+}
+h2 {
+  position: relative;
+  margin: 3.8rem 0 1.25rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--line);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 4.2rem;
+  height: 3px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), #7c3aed);
+  border-radius: 999px;
+}
+h3 {
+  margin: 2.6rem 0 0.8rem;
+  color: var(--accent-dark);
+  font-size: 1.3rem;
+}
+h4, h5, h6 {
+  margin-top: 2rem;
+}
+p {
+  margin: 1.15rem 0;
+}
+ul, ol {
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.35rem 0;
+}
+li::marker {
+  color: var(--accent);
+  font-weight: 700;
+}
+strong {
+  color: #111827;
+}
+blockquote {
+  margin: 1.6rem 0;
+  padding: 0.8rem 1.25rem;
+  color: #475569;
+  background: linear-gradient(90deg, var(--accent-soft), #fff);
+  border-left: 4px solid var(--accent);
+  border-radius: 0 12px 12px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 3rem 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+img {
+  display: block;
+  max-width: 100%;
+  margin: 1.75rem auto;
+  height: auto;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+}
+pre {
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  padding: 1.15rem 1.25rem;
+  color: #e2e8f0;
+  background: #111827;
+  border: 1px solid #253047;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+}
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+:not(pre) > code {
+  padding: 0.15rem 0.4rem;
+  color: #9f1239;
+  background: #fff1f2;
+  border-radius: 5px;
+}
+table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  border-collapse: collapse;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
+  text-align: left;
+}
+th {
+  color: #1e3a8a;
+  background: #eff6ff;
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: #f8fafc;
+}
+@media (max-width: 600px) {
+  .article {
+    margin: 0;
+    padding: 2rem 1rem 4rem;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(2rem, 10vw, 2.75rem);
+  }
+  .metadata {
+    margin-bottom: 2rem;
+  }
+}
+@media print {
+  body {
+    background: #fff;
+  }
+  .article {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  a {
+    color: inherit;
+  }
+}
+</style>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0f1419;
+  --surface: #1a2332;
+  --surface-raised: #202c3f;
+  --surface-soft: rgba(26, 35, 50, 0.72);
+  --border: #2d3a4f;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #58a6ff;
+  --accent-strong: #79c0ff;
+  --green: #3fb950;
+  --purple: #bc8cff;
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+    "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  line-height: 1.75;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+  background: var(--bg);
+}
+body {
+  min-width: 320px;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 2rem 1.5rem 5rem;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(31, 111, 235, 0.18), transparent 32rem),
+    radial-gradient(circle at 100% 12%, rgba(137, 87, 229, 0.14), transparent 28rem),
+    var(--bg);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black, transparent 75%);
+}
+.reading-progress {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 20;
+  height: 3px;
+  background: rgba(45, 58, 79, 0.7);
+}
+.reading-progress > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  box-shadow: 0 0 14px rgba(88, 166, 255, 0.8);
+  transition: width 80ms linear;
+}
+.article {
+  position: relative;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  background: rgba(15, 20, 25, 0.76);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(88, 166, 255, 0.035) inset;
+  backdrop-filter: blur(16px);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  border-radius: 16px 16px 0 0;
+}
+.article-header {
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.eyebrow-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--green);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(63, 185, 80, 0.75);
+}
+.eyebrow-separator {
+  color: var(--border);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  background: rgba(32, 44, 63, 0.68);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+.source-link {
+  color: var(--text);
+  text-decoration: none;
+}
+.source-link:hover {
+  border-color: var(--accent);
+  background: rgba(88, 166, 255, 0.12);
+}
+a {
+  color: var(--accent);
+  overflow-wrap: anywhere;
+  text-decoration: none;
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 24ch;
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  background: linear-gradient(120deg, #fff 12%, #b9d8ff 58%, #bc8cff);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+h2 {
+  position: relative;
+  margin: 3.2rem 0 1.1rem;
+  padding: 0.75rem 0 0.65rem;
+  border-bottom: 1px solid var(--border);
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 3.8rem;
+  height: 2px;
+  content: "";
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(88, 166, 255, 0.7);
+}
+h3 {
+  margin: 2.25rem 0 0.7rem;
+  color: var(--accent-strong);
+  font-size: 1.2rem;
+}
+h4, h5, h6 {
+  margin-top: 1.75rem;
+}
+p {
+  margin: 0.9rem 0;
+}
+ul, ol {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.3rem 0;
+}
+li::marker {
+  color: var(--accent);
+}
+strong {
+  color: #fff;
+}
+blockquote {
+  margin: 1.4rem 0;
+  padding: 0.85rem 1.15rem;
+  color: #c9d1d9;
+  background: linear-gradient(100deg, rgba(88, 166, 255, 0.1), rgba(26, 35, 50, 0.55));
+  border: 1px solid rgba(88, 166, 255, 0.18);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 2.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+}
+pre {
+  position: relative;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  padding: 1rem 1.15rem;
+  color: #dbeafe;
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+pre code {
+  color: inherit;
+  background: transparent;
+}
+code {
+  font-family: "SF Mono", "Fira Code", ui-monospace, monospace;
+  font-size: 0.86em;
+}
+:not(pre) > code {
+  padding: 0.12em 0.38em;
+  color: #ffabbc;
+  background: rgba(248, 81, 73, 0.11);
+  border-radius: 4px;
+}
+.copy-button {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  padding: 0.25rem 0.55rem;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.72rem;
+  background: rgba(32, 44, 63, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.copy-button:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  border-spacing: 0;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.6rem 0.75rem;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+th {
+  color: var(--accent);
+  background: var(--surface);
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: rgba(26, 35, 50, 0.42);
+}
+tr:last-child td {
+  border-bottom: 0;
+}
+th:last-child, td:last-child {
+  border-right: 0;
+}
+.toc {
+  margin: 1.75rem 0 2.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.toc-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--border);
+}
+.toc-title {
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.toc-count {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.toc ol {
+  margin: 0.7rem 0 0;
+  padding-left: 1.25rem;
+}
+.toc ol ol {
+  margin: 0.2rem 0;
+}
+.toc li {
+  margin: 0.18rem 0;
+  font-size: 0.86rem;
+}
+.toc li::marker {
+  color: var(--muted);
+}
+.toc a {
+  display: inline-block;
+  max-width: 100%;
+  color: var(--muted);
+  transition: color 160ms ease, transform 160ms ease;
+}
+.toc a:hover, .toc a.is-active {
+  color: var(--accent-strong);
+  text-decoration: none;
+  transform: translateX(2px);
+}
+.article-body {
+  max-width: 78ch;
+  margin: 0 auto;
+}
+.article-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 1rem;
+  color: var(--muted);
+  font-size: 0.74rem;
+  border-top: 1px solid var(--border);
+}
+.article-footer a {
+  color: var(--muted);
+}
+@media (max-width: 720px) {
+  body {
+    padding: 0 0 3rem;
+  }
+  .article {
+    min-height: 100vh;
+    padding: 1.5rem 1rem 3rem;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+  .article::before {
+    border-radius: 0;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(1.9rem, 9vw, 2.6rem);
+  }
+  .article-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+@media print {
+  :root {
+    color-scheme: light;
+  }
+  body {
+    padding: 0;
+    color: #111;
+    background: #fff;
+  }
+  .reading-progress, .toc, .copy-button {
+    display: none;
+  }
+  .article {
+    max-width: none;
+    padding: 0;
+    background: #fff;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  h1, h2, h3, h4, h5, h6, strong {
+    color: #111;
+    -webkit-text-fill-color: initial;
+  }
+  a {
+    color: inherit;
+    text-decoration: underline;
+  }
+  pre {
+    color: #111;
+    background: #f4f4f4;
+    box-shadow: none;
+  }
+}
+</style>
+</head>
+<body>
+<div class="reading-progress" aria-hidden="true"><span></span></div>
+<main id="article-top" class="article">
+  <header class="article-header">
+    <div class="eyebrow">
+      <span class="eyebrow-dot"></span>
+      <span>ARTICLE</span>
+      <span class="eyebrow-separator">/</span>
+      <span>zenn.dev</span>
+    </div>
+    <div class="metadata" aria-label="記事メタデータ"><span class="metadata-item"><span class="metadata-label">著者</span>kaito</span><span class="metadata-item"><span class="metadata-label">公開日</span>2026-10-02</span><a class="metadata-item source-link" href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/166acb"><span class="metadata-label">原文</span>読む</a><span class="metadata-item"><span class="metadata-label">サイト</span>zenn.dev</span><span class="metadata-item"><span class="metadata-label">形式</span>ARTICLE</span></div>
+    <h1 id="42-2">第42章 ガイド2：設計を見直し、実行できる計画に変える</h1>
+  </header>
+<nav class="toc" aria-label="目次">
+  <div class="toc-heading">
+    <span class="toc-title">目次</span>
+    <span class="toc-count">35 セクション</span>
+  </div>
+  <ol><li><a href="#_1">この章の構成</a></li><li><a href="#9architect">要点9：/architectで、複数の設計を比較・統合する</a><ol><li><a href="#poteto">記事の考え：poteto氏はアーキテクチャの設計に時間を使う</a><ol><li><a href="#1">1. 問題を調べる</a></li><li><a href="#2">2. 骨組みを描く</a><ol><li><a href="#_2">骨組みのコード例</a></li></ol></li><li><a href="#3">3. 評価し、統合する</a></li><li><a href="#4">4. 骨組みに沿って実装する</a></li><li><a href="#5">5. 設計が間違っていたら捨てる</a></li></ol></li><li><a href="#pstackarchitect">pstack：/architect を使うのは、関数の境界をまたぐ変更と、責任の所在を移す変更</a></li></ol></li><li><a href="#10">要点10：実装で設計の誤りが分かったら、設計を見直す</a><ol><li><a href="#_3">記事の考え：無関係な箇所に現れる同じ回避策や、型の逃げ道は、設計が間違っている証拠</a></li><li><a href="#pstack">pstack：設計を捨てるかは、兆候が繰り返し現れるかで判断する</a></li></ol></li><li><a href="#11">要点11：小さく検証できる作業に分ける</a><ol><li><a href="#playbook">記事の考え：計画用のPlaybookは、たいてい設計の後に使う</a></li><li><a href="#pstackpr">pstack：計画書には、PRごとに完了の証拠と確かめ方を書く</a><ol><li><a href="#_4">計画が成果物で、実装はしない</a></li><li><a href="#_5">書く前に、未解決の疑問をプロトタイプで決める</a></li><li><a href="#1pr1">1つのPRに1つの変更と、その証拠</a></li><li><a href="#_6">テストだけでは検証済みにしない</a></li><li><a href="#_7">利用者が開始を指示してから実行する</a></li><li><a href="#_8">計画書の完成形の例</a></li></ol></li></ol></li><li><a href="#12">要点12：計画書は一時的なもの</a><ol><li><a href="#_9">記事の考え：計画書は、終わったら通常は消す</a></li><li><a href="#pstack-docs">pstack：計画書は、エージェントのストアの docs/ に置く</a></li></ol></li><li><a href="#13poteto-mode">要点13：/poteto-modeに伝えること</a><ol><li><a href="#poteto-mode">記事の考え：たいていは /poteto-mode だけでよい</a><ol><li><a href="#1_1">例1）原因の分からない不具合の調査</a></li><li><a href="#2_1">例2）設計の依頼</a></li><li><a href="#3_1">例3）移行の計画</a></li><li><a href="#4slack">例4）Slackで報告された不具合の修正</a></li><li><a href="#4_1">4つの例に共通すること</a></li></ol></li><li><a href="#pstackskill">pstack：Skillの名前は、選択を上書きしたいときだけ書く</a></li></ol></li><li><a href="#13">13の要点を、一つの流れとして読む</a></li><li><a href="#_10">まとめ</a></li></ol>
+</nav>
+  <div class="article-body">
+
+<p><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/7549a7">第41章</a>では、ユーザーの使い方から設計を考え、プロトタイプで解決策を試して、設計案を選ぶ方法を見てきました。</p>
+<p>この章では、解決策を試した次の段階として、エージェントが、<strong>大きな変更の設計を固め、実行できる計画に変える</strong>方法を解説します。</p>
+<ul>
+<li><strong>設計を固める（<code>/architect</code>）</strong>・・・ 型、公開する関数のシグネチャ（関数の名前、引数、戻り値の型）、モジュールの分け方を決めます。</li>
+<li><strong>実行できる計画に変える（『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/multi-phase-plan.md">Multi-phase or multi-PR plan</a>』Playbook）</strong>・・・ 大きな作業を、1つのPRに1つの変更だけが入るように、いくつかのPRに分けます（例：「データの型を変えるPR」と「画面を新しい型に合わせるPR」に分ける）。そのうえで、PRごとに、変更するファイルと完了の確かめ方（例：画面の状態を確かめる手順）を書いた計画書にします。</li>
+</ul>
+<p>この章も、『The Complete Guide to pstack』<a href="https://x.com/poteto/status/2097732320606507506">Part 2</a>（以下、記事）をもとにしています。</p>
+<p><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/b4b9a1">第40章</a>で、本書は記事の内容を<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/b4b9a1#13%E3%81%AE%E8%A6%81%E7%82%B9%E3%81%A8%E3%80%81%E8%A6%81%E7%82%B91%E3%80%9C4%E3%81%AE%E3%81%A4%E3%81%AA%E3%81%8C%E3%82%8A">13の要点</a>に要約しました。</p>
+<p>この章では、そのうち残りの要点9〜13を解説します。</p>
+<table>
+<thead>
+<tr>
+<th>No.</th>
+<th>Part 2の対応する箇所</th>
+<th>概要</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>9</td>
+<td>『Architecting bigger changes』</td>
+<td>大きな変更では、人間はデータの持ち方やシステム間の連携を考えることに時間を使う。エージェントは <code>/architect</code> で既存の制約を調べて設計し、複数モデルの独立した案を比較・統合してから実装する</td>
+</tr>
+<tr>
+<td>10</td>
+<td>『Architecting bigger changes』</td>
+<td>実装で設計との食い違いが見つかったら、エージェントが設計を見直す。実装で得た証拠（例：型が <code>any</code> や強制的なキャストを必要とした）によっては、エージェントが設計を捨ててやり直す</td>
+</tr>
+<tr>
+<td>11</td>
+<td>『Okay but I really want a planning doc』</td>
+<td>設計が具体化したら、エージェントが、計画用のPlaybookで小さく検証できる作業やPRに分け、各作業に、実際にコードを動かして確かめた結果を完了の証拠として定める</td>
+</tr>
+<tr>
+<td>12</td>
+<td>『Okay but I really want a planning doc』</td>
+<td>計画用のPlaybookが作る計画書は、作業の実行と、大きな作業で進み具合をほかのエージェントと共有するために使う一時的な文書で、poteto氏は完了後に通常削除する</td>
+</tr>
+<tr>
+<td>13</td>
+<td>『The workflow in practice』</td>
+<td><code>/poteto-mode</code> は、依頼に応じてPlaybookやSkillを使う入口。人間は <code>/poteto-mode</code> に、目的、制約、確認したい結果、レビューのタイミングを伝える</td>
+</tr>
+</tbody>
+</table>
+<p>表の「Part 2の対応する箇所」は、その要点を扱っている記事の節名です。</p>
+<p>前半の要点9〜11で設計を固めて計画に変える方法を見た後、要点12で計画書の扱いを、要点13で人間が <code>/poteto-mode</code> に何を伝えるかを見ます。</p>
+<p>最後に、13の要点を一つの流れとして振り返ります。</p>
+<p>各要点は、主に「記事の考え」と「pstack」の節に分けて書きます。</p>
+<p>!</p>
+<p>要点9〜11で使う <code>/architect</code> と『Multi-phase or multi-PR plan』Playbookの手順は、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/2ad346">第24章</a>と<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/8a8dd5">第16章</a>で解説しました。</p>
+<p>この章では、次の内容を割愛し、記事が勧めることを中心に解説します。</p>
+<ul>
+<li><strong>設計を見せてもらう指示</strong>・・・ <code>/architect</code> は、既定では、統合した骨組み（型と関数の形だけを書き、中身はまだ書かないコード）ができると、利用者の確認を待たずに実装へ進みます。利用者が依頼で求めたとき（例：<code>/architect with checkpoint. stop and show me before implementing.</code>）だけ、統合した設計を見せて止まります。</li>
+<li><strong>骨組みを捨てた後の再設計</strong>・・・ エージェントは、実装で分かった新しい制約を前提として設計をやり直し、新しい骨組みを、機能を足す前に古い骨組みより小さくします（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a8e80b">第17章</a>の原則『Redesign from First Principles』『Subtract Before You Add』）。</li>
+<li><strong>計画が不要な場合</strong>・・・ 変更が1〜2ファイルに収まり、やり方が明らかなら、エージェントは計画を作らず、計画が不要だと利用者に伝えて止まります。</li>
+<li><strong>計画書の形式の検査</strong>・・・ エージェントは、計画書の構造と書式を <code>check-plan.mjs</code> で確かめ、出力された指摘をすべて直します。</li>
+</ul>
+<h2 id="_1">この章の構成</h2>
+<p>この章の構成は次のとおりです。</p>
+<ul>
+<li>要点9：/architectで、複数の設計を比較・統合する</li>
+<li>要点10：実装で設計の誤りが分かったら、設計を見直す</li>
+<li>要点11：小さく検証できる作業に分ける</li>
+<li>要点12：計画書は一時的なもの</li>
+<li>要点13：/poteto-modeに伝えること</li>
+<li>13の要点を、一つの流れとして読む</li>
+<li>まとめ</li>
+</ul>
+<h2 id="9architect">要点9：/architectで、複数の設計を比較・統合する</h2>
+<p>大きな変更では、人間はアーキテクチャの設計やデータ構造、システムどうしの連携を考えることに時間を使い、エージェントは実装の細部を埋めることに時間を使います。</p>
+<p>ただし、エージェントは、いきなり実装を始めるのではなく、<strong>まず複数の設計案を比べて1つに統合し、それから実装します</strong>。</p>
+<h3 id="poteto">記事の考え：poteto氏はアーキテクチャの設計に時間を使う</h3>
+<p>節『Architecting bigger changes』で、poteto氏は、<strong>エージェントの時代のエンジニアとして、次のことに時間を使うのが、より大切だ</strong>と書いています。</p>
+<ul>
+<li>アーキテクチャの設計</li>
+<li>適切なデータ構造の選択</li>
+<li>自分が作るシステムどうしの連携</li>
+</ul>
+<p><strong>実装の細部は、自分のエージェントが埋める</strong>とも書いています。</p>
+<p>設計を明確な段階に分けて進めるSkillとして記事が挙げているのが <code>/architect</code> で、依頼例は次の一行です。</p>
+<pre><code>/architect this new &lt;feature request&gt;
+// この新しい&lt;機能の要望&gt;を設計して
+</code></pre>
+<p>記事は、<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/architect/SKILL.md"><code>/architect</code></a> の流れを、次の5つの段階で説明しています。</p>
+<ol>
+<li>問題を調べる</li>
+<li>骨組みを描く</li>
+<li>評価し、統合する</li>
+<li>骨組みに沿って実装する</li>
+<li>設計が間違っていたら捨てる</li>
+</ol>
+<p>流れを図にすると、次のようになります。</p>
+<p>ここからは、5つの段階を1つずつ見ていきます。</p>
+<h4 id="1">1. 問題を調べる</h4>
+<p>エージェントは、新しいコードが関わる既存の仕組みを <code>/how</code> と <code>/why</code> で調べます。</p>
+<p>!</p>
+<ul>
+<li><strong><code>/how</code></strong>・・・ コードが今どう動くかを調べるSkillです（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/788746">第22章</a>）。</li>
+<li><strong><code>/why</code></strong>・・・ コードがなぜ今の形になったかを調べるSkillです（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/788746">第22章</a>）。</li>
+</ul>
+<p>そして、どのモジュールが何を受け持つかという責任の分担と、既存の制約を正しく把握します。</p>
+<h4 id="2">2. 骨組みを描く</h4>
+<p>エージェントは、互いの案を見せずに、複数のモデルに設計案を並列に作らせます（<code>/architect</code> の <code>SKILL.md</code> では <code>/arena</code> を使います）。<br />
+モデルには、多くの場合、系統の異なるものを使います。</p>
+<p>!</p>
+<p><strong><code>/arena</code></strong>・・・ 同じ課題を複数のエージェントに別々に解かせるSkillです（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/2ad346">第24章</a>）</p>
+<p>各モデルが作る案は、次の4つをそろえた設計一式（原文では design package）です。</p>
+<ul>
+<li><strong>呼び出し側の使い方</strong>・・・ 作るものを使う側のコードです（下の例のコードの1の部分）。</li>
+<li><strong>中心になる型の定義</strong>・・・ 設計の中心になるデータの形です（下の例のコードの2の <code>RateLimiterOptions</code> と <code>RateLimiter</code>）。</li>
+<li><strong>公開する関数のシグネチャ</strong>・・・ ほかのコードから呼べる関数の名前、引数、戻り値の型です（下の例のコードの2の <code>createRateLimiter</code> の1行目）。</li>
+<li><strong>設計の理由を短く書いた文書</strong>・・・ なぜこの形にしたか、ほかにどんな形を考えて採らなかったかを、1ページ程度にまとめた文書です。これだけは、コードではなく文章で書きます（<code>/architect</code> の <code>references/rationale-template.md</code> が書き方を定めています）。</li>
+</ul>
+<p>このうち、最初の3つは、多くの場合、骨組みのコードとして描かれます。</p>
+<p>!</p>
+<p><strong>骨組み</strong>・・・ 型と関数の形だけを書き、中身はまだ書かないコードです（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/2ad346">第24章</a>）。</p>
+<p>また、案を作る各モデルは、次の3つの観点でも自分の案を確かめます。</p>
+<ul>
+<li><strong>インターフェースの深さ</strong>・・・ 使う側から見える関数や型は少なく、その裏で多くの処理を引き受けているか。（例：<code>tryAcquire</code> を1つ呼ぶだけで、件数を数えることも、1分ごとに数え直すことも、内側で済むか。）</li>
+<li><strong>能力の低いモデルが扱うときに起きる失敗</strong>・・・ 後でその設計に沿ってコードを書く能力の低いモデルが、「設計を満たした実装ができるかどうか」を確かめる。</li>
+<li><strong>8つの危険信号との照合</strong>・・・ <code>/architect</code> は、設計の危険信号を8つ並べた一覧（<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/architect/references/design-red-flags.md"><code>references/design-red-flags.md</code></a>）を持っています（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/2ad346">第24章</a>）。浅いモジュール、情報の漏れ、順番による分割、素通しのメソッド、持ち主が複数いる、1つの作業に2つのやり方、外から import できる内部実装、手動で同期する一覧の8つです。案がどれかに当てはまれば、直すか、退けます。</li>
+</ul>
+<h5 id="_2">骨組みのコード例</h5>
+<p>骨組みは、使う側のコードを先に書き、そこから型と関数の形を決めて作ります。</p>
+<p>骨組みの例：第41章で導いた、webhook のレート制限の骨組み</p>
+<p><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/7549a7#%E8%A6%81%E7%82%B95%EF%BC%9A%E4%BD%BF%E3%81%84%E6%96%B9%E3%82%92%E5%85%88%E3%81%AB%E6%9B%B8%E3%81%8F">第41章の要点5（使い方を先に書く）</a>で、使う側のコードから骨組みを導いた例です。例の内容は、次のとおりです。</p>
+<blockquote>
+<p>ここでは、同じ送り手（webhook を送ってくる外部のシステム）から受け付ける webhook を、1分あたり60件までに制限する例を見ていきます。</p>
+</blockquote>
+<p>この例では、次の順に書きました。</p>
+<pre><code>// 1. 先に、呼び出し側の使い方を書く
+const limiter = createRateLimiter({ perMinute: 60 });
+
+function handleWebhook(webhook: { senderId: string }): Response {
+  if (!limiter.tryAcquire(webhook.senderId)) {
+    return new Response(&quot;Too Many Requests&quot;, { status: 429 });
+  }
+  return new Response(&quot;OK&quot;);
+}
+
+// 2. 使い方から骨組みを導く：型と関数の形だけを書き、中身はまだ書かない
+type RateLimiterOptions = { perMinute: number };
+type RateLimiter = { tryAcquire(senderId: string): boolean };
+
+function createRateLimiter(options: RateLimiterOptions): RateLimiter {
+  throw new Error(&quot;not implemented&quot;);
+}
+</code></pre>
+<p>1で、使う側のコードを先に書いています。<code>createRateLimiter</code> に <code>{ perMinute: 60 }</code> を渡し、<code>tryAcquire</code> の結果で webhook を受け付けるかを決める、という書き方です。</p>
+<p>2で、その書き方に合うように、型と関数の形を決めています。</p>
+<p>これは、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/7549a7#%E8%A6%81%E7%82%B95%EF%BC%9A%E4%BD%BF%E3%81%84%E6%96%B9%E3%82%92%E5%85%88%E3%81%AB%E6%9B%B8%E3%81%8F">第41章の要点5</a>と同じ考え方です。第41章は、要点5を次のように書いています。</p>
+<blockquote>
+<p>人間は、実装の前に、エージェントに<strong>READMEやチュートリアルで使い方を書かせ</strong>、そこからAPIや内部設計を逆算させます。</p>
+</blockquote>
+<h4 id="3">3. 評価し、統合する</h4>
+<p>主エージェント（案を作るモデルを起動した元のエージェント）とは別のモデルの判定役が、厳しい採点基準で各案を評価します。</p>
+<p>主エージェントは、各案とその評価を踏まえて、案を1つの設計に統合します。</p>
+<p>同梱ガイドの <a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/04-design.md"><code>docs/guide/04-design.md</code></a> は、統合するエージェントが各案を最後まで読み、土台にする案を1つ選び、ほかの案の良い部分を取り込んで、結果を検証すると説明しています。</p>
+<h4 id="4">4. 骨組みに沿って実装する</h4>
+<p>エージェントは、骨組みの仮の本体（中身の代わりに置いた <code>throw new Error("not implemented")</code> のようなコード）を、実際のコードに置き換えます。</p>
+<p>実装の途中で、関数に予想していなかった引数や状態が必要だと分かったら、エージェントは、その食い違いを黙って実装の中で片付けずに、表に出します。</p>
+<p>そのうえで、原因が次のどれかを問い直します（<code>/architect</code> の <code>SKILL.md</code> の節『Phase D: Implement against the sketch』）。</p>
+<ul>
+<li>骨組みが間違っていた</li>
+<li>要件を見落としていた</li>
+<li>実装が必要以上のことをしている</li>
+</ul>
+<h4 id="5">5. 設計が間違っていたら捨てる</h4>
+<p>実装の途中で骨組みが間違っていたと分かったら、エージェントは、すべてを捨てて最初からやり直します（<a href="#%E8%A6%81%E7%82%B910%EF%BC%9A%E5%AE%9F%E8%A3%85%E3%81%A7%E8%A8%AD%E8%A8%88%E3%81%AE%E8%AA%A4%E3%82%8A%E3%81%8C%E5%88%86%E3%81%8B%E3%81%A3%E3%81%9F%E3%82%89%E3%80%81%E8%A8%AD%E8%A8%88%E3%82%92%E8%A6%8B%E7%9B%B4%E3%81%99">要点10</a>）。</p>
+<h3 id="pstackarchitect">pstack：/architect を使うのは、関数の境界をまたぐ変更と、責任の所在を移す変更</h3>
+<p>同梱ガイドの <a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/04-design.md"><code>docs/guide/04-design.md</code></a> は、ほとんどの変更には、複数の案を比べて統合するような設計作業は必要ないとしています。</p>
+<p>そのうえで、<strong>関数の境界をまたぐ変更や、責任の所在（どのモジュールが責任を持つか）を移す変更</strong>を <code>/architect</code> の対象としています。</p>
+<p>本書で例を挙げると、ある関数の引数や戻り値の形を変え、その関数を呼ぶ側のコードも合わせて直す必要がある変更は、関数の境界をまたぐ変更です。</p>
+<p>たとえば、商品の金額を返す関数 <code>getPrice</code> の戻り値を、金額だけから「金額と通貨」に変えるとします。</p>
+<pre><code>// price.ts（変更前）：金額だけを返す
+function getPrice(itemId: string): number {
+  // ...
+}
+
+// price.ts（変更後）：金額と通貨を返す
+function getPrice(itemId: string): { amount: number; currency: string } {
+  // ...
+}
+</code></pre>
+<p>戻り値の形が変わるので、<code>getPrice</code> を呼ぶ側のコードも、合わせて直す必要があります。</p>
+<p>また、キャッシュを持つ役目を、画面のコードから、データを取得するモジュールへ移す変更は、責任の所在を移す変更です。</p>
+<p>変更前は、画面のコードが、自分でキャッシュ（一度取得したデータを取っておく入れ物）を持っています。</p>
+<pre><code>// UserPage.ts（変更前）：画面のコードがキャッシュを持つ
+const cache = new Map&lt;string, User&gt;();
+
+async function showUser(id: string) {
+  const user = cache.get(id) ?? (await fetchUser(id));
+  cache.set(id, user);
+  render(user);
+}
+</code></pre>
+<p>変更後は、データを取得するモジュールがキャッシュを持ち、画面のコードは呼ぶだけになります。</p>
+<pre><code>// userApi.ts（変更後）：データを取得するモジュールがキャッシュを持つ
+const cache = new Map&lt;string, User&gt;();
+
+export async function fetchUser(id: string): Promise&lt;User&gt; {
+  const cached = cache.get(id);
+  if (cached) return cached;
+  const user = await request(`/users/${id}`);
+  cache.set(id, user);
+  return user;
+}
+
+// UserPage.ts（変更後）：キャッシュを気にせず、呼ぶだけ
+async function showUser(id: string) {
+  render(await fetchUser(id));
+}
+</code></pre>
+<p>キャッシュを持つ役目が、画面のコードから <code>userApi.ts</code> へ移っています。これが、責任の所在を移す変更です。</p>
+<p>このように、変更が1つの関数の中で閉じず、ほかのコードとの約束（引数や戻り値の形）や役目の分担に及ぶなら、その変更は <code>/architect</code> で設計から入る対象になります。</p>
+<p><code>04-design.md</code> は、<code>/poteto-mode</code> が依頼を受けると、この基準を当てはめ、<code>/architect</code> を使うかを自分で決めると明示しています。</p>
+<p>そのため、<strong>利用者が毎回、<code>/architect</code>の使用有無を判断する必要はありません</strong>。</p>
+<p>利用者が <code>/architect</code> などのSkillを直接呼ぶのは、主に、<code>/poteto-mode</code> が既定で行うよりも念入りに、または手短に設計を確かめたいときです。</p>
+<h2 id="10">要点10：実装で設計の誤りが分かったら、設計を見直す</h2>
+<p>実装の途中で、骨組みとの食い違いや、繰り返し現れる回避策（問題の原因を直さずに、その場しのぎで問題を避ける書き方）が見つかったら、エージェントは、それらを設計が間違っている証拠とみなして、<strong>設計を見直します。必要なら、エージェントは骨組みを捨てて、問題を調べる段階から設計をやり直します</strong>。</p>
+<p>たとえば、実装してみると、骨組みにない引数が関数に必要になることがあります。これが、骨組みとの食い違いです。</p>
+<p>また、エージェントが、データの型にない項目を読むために <code>as any</code>（値の型を決めつけ、型の検査を止める書き方）を同じ形であちこちに書くのは、繰り返し現れる回避策です。</p>
+<h3 id="_3">記事の考え：無関係な箇所に現れる同じ回避策や、型の逃げ道は、設計が間違っている証拠</h3>
+<p>節『Architecting bigger changes』は、<code>/architect</code> の5つの段階を説明した後、設計を捨てるかどうかの目安を次の一文にまとめています。</p>
+<blockquote>
+<p>If the same workaround appears across unrelated call sites, or if the types require escape hatches like any or forced casts, that is empirical proof that the architecture is wrong.</p>
+<p>無関係な呼び出し箇所に同じ回避策が現れるなら、あるいは、型が any や強制的なキャストのような逃げ道を必要とするなら、それは、アーキテクチャが間違っていることを、実際に確かめて示した証拠だ。</p>
+</blockquote>
+<p>引用が挙げる兆候は、次の2つです。</p>
+<ul>
+<li>無関係な呼び出し箇所に、同じ回避策が現れる</li>
+<li>型が、<code>any</code> や強制的なキャスト（<code>as unknown as User</code> などの書き方）といった逃げ道を必要とする</li>
+</ul>
+<p>本書の例で、2つの兆候がどう現れるかを示します。</p>
+<p>骨組みで決めた <code>Order</code> 型には、通貨の項目がありません。<br />
+ところが、エージェントが実装してみると、請求書、メール、管理画面という無関係な3つの箇所が、どれも通貨を必要としました。</p>
+<pre><code>// 骨組みで決めた型：通貨の項目がない
+type Order = { id: string; total: number };
+
+// 表示や送信の対象になる注文
+declare const order: Order;
+
+// invoice.ts：型の逃げ道（as any）で、型にない項目を読む
+const invoiceCurrency = (order as any).currency ?? &quot;JPY&quot;;
+
+// mail.ts：同じ回避策を、無関係な別の箇所でも書く
+const mailCurrency = (order as any).currency ?? &quot;JPY&quot;;
+
+// admin.ts：さらに別の箇所でも、同じ回避策を書く
+const adminCurrency = (order as any).currency ?? &quot;JPY&quot;;
+</code></pre>
+<p>エージェントが3つの箇所に同じ回避策を書くのは、<strong>それぞれの箇所の書き方が悪いからではなく、骨組みの <code>Order</code> 型に通貨の項目がないから</strong>です。</p>
+<p>このように、無関係な箇所に同じ回避策や型の逃げ道が現れるなら、<strong>個々の箇所ではなく、設計そのものを見直す必要があります</strong>。</p>
+<h3 id="pstack">pstack：設計を捨てるかは、兆候が繰り返し現れるかで判断する</h3>
+<p><code>/architect</code> の <a href="https://github.com/cursor/plugins/blob/main/pstack/skills/architect/SKILL.md"><code>SKILL.md</code></a> は、設計を捨てるかどうかを、<strong>兆候が1回だけ現れたかではなく、同じ形で繰り返し現れるかで判断する</strong>よう求めています。</p>
+<p>同 <code>SKILL.md</code> は、<strong>兆候を見つけても、すぐに設計が間違っていると決めつけない</strong>よう求めています。エッジケース（まれな入力や状況）への対応がいくつか必要になるだけでは、設計が間違っているとは言えません。問題そのものが本当に複雑な場合もあるからです。</p>
+<p>記事の引用は型の逃げ道を兆候として挙げていますが、同 <code>SKILL.md</code> に従えば、<code>any</code> が1か所に1回だけ現れても、それだけでは設計を捨てる理由になりません。</p>
+<p>一方、請求書、メール、管理画面の例のように、無関係な3つの呼び出し箇所に同じ回避策を書き始めたら、その回避策を、骨組みを捨てるべき兆候とみなします。</p>
+<p>また、同 <code>SKILL.md</code> の節『Phase E: Scrap when the architecture is wrong』は、設計を捨てるかどうかを判断する材料として、前述した2つの兆候（同じ回避策と型の逃げ道）に加えて、次の4つの兆候も挙げています。</p>
+<ol>
+<li>互いに無関係な複数のエッジケースが、どれも専用の分岐を必要とする</li>
+<li>骨組みでは状態を共有しないとしていたのに、実装の途中でエージェントが「ロック（同時に書き換えられないように守る仕組み）が必要だ」と考える</li>
+<li>呼び出し側が、モジュールの内部の決まりを知らないと使えない（例：先に初期化の関数を呼んでおく必要がある）</li>
+<li>実装の途中で見つかった骨組みとの食い違いのうち、同じ形のものが、互いに独立して2回以上現れる</li>
+</ol>
+<p>以下は上記の4つの兆候のコード例です。</p>
+<p>1の例：無関係なエッジケースごとに、専用の分岐が増える</p>
+<p>注文の合計を表示する関数で、互いに関係のない3つのエッジケースに、それぞれ専用の分岐を足しています。</p>
+<pre><code>function formatTotal(order: Order): string {
+  // 古い形式の注文だけ、別の計算をする
+  if (order.id.startsWith(&quot;legacy-&quot;)) return formatLegacyTotal(order);
+  // 返金の注文だけ、別の表示にする
+  if (order.total &lt; 0) return `返金 ${-order.total}円`;
+  // ギフトの注文だけ、金額を隠す
+  if (order.id.endsWith(&quot;-gift&quot;)) return &quot;ギフト&quot;;
+  return `${order.total}円`;
+}
+</code></pre>
+<p>どの分岐も、注文の種類を <code>id</code> の文字列や金額の符号から推測しています。<code>Order</code> 型に、注文の種類を表す項目がないからです。分岐を足し続けるのではなく、型の設計を見直す兆候です。</p>
+<p>2の例：共有しないはずの状態に、ロックが必要になる</p>
+<p>骨組みでは、送り手ごとの件数は、1つの処理だけが読み書きする前提でした。</p>
+<pre><code>// 骨組みの前提：送り手ごとの件数は、1つの処理だけが読み書きする
+const counts = new Map&lt;string, number&gt;();
+</code></pre>
+<p>ところが、実装してみると、複数のサーバーが、共有の保存先（<code>store</code>）にある同じ件数を、同時に書き換えると分かりました。</p>
+<p>そこで、読んでから書き戻すまでの間に、ほかのサーバーに割り込まれないよう、ロックを足そうとしています。</p>
+<pre><code>// 実装の途中：骨組みになかったロックを足そうとしている
+async function tryAcquire(senderId: string): Promise&lt;boolean&gt; {
+  await lock.acquire(senderId);
+  try {
+    const count = (await store.get(senderId)) ?? 0;
+    await store.set(senderId, count + 1);
+    return count &lt; 60;
+  } finally {
+    await lock.release(senderId);
+  }
+}
+</code></pre>
+<p>ロックが必要になったのは、「状態を共有しない」という骨組みの前提が間違っていたからです。</p>
+<p>3の例：呼び出し側が、内部の決まりを知らないと使えない</p>
+<p><code>init()</code> を先に呼ばないと、<code>tryAcquire</code> がエラーになる設計です。</p>
+<pre><code>const limiter = createRateLimiter({ perMinute: 60 });
+
+limiter.init(); // これを先に呼ぶ、という内部の決まりがある
+limiter.tryAcquire(&quot;sender-a&quot;); // init() を忘れると、ここでエラーになる
+</code></pre>
+<p>呼び出し側は、「先に <code>init()</code> を呼ぶ」という内部の決まりを知らないと、正しく使えません。この決まりは、型にも関数の形にも表れていません。</p>
+<p>4の例：同じ形の食い違いが、別々の箇所で2回現れる</p>
+<p>骨組みでは、金額を整える関数 <code>formatPrice</code> は注文だけを受け取る形でした。</p>
+<pre><code>// 骨組み：注文だけを受け取る
+function formatPrice(order: Order): string {
+  throw new Error(&quot;not implemented&quot;);
+}
+</code></pre>
+<p>ところが、請求書と、メールという別々の箇所を実装したとき、どちらでも表示する言語（<code>locale</code>）の引数が必要になりました。</p>
+<pre><code>// invoice.ts を実装中：骨組みにない引数 locale が必要になった
+formatPrice(order, locale);
+
+// mail.ts を実装中：別の箇所でも、同じ形で locale が必要になった
+formatPrice(order, locale);
+</code></pre>
+<p>同じ形の食い違いが、互いに関係のない2つの箇所で現れています。1つの箇所の都合ではなく、骨組みに <code>locale</code> が欠けていた兆候です。</p>
+<h2 id="11">要点11：小さく検証できる作業に分ける</h2>
+<p>設計が固まったら、エージェントは、計画用の『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/multi-phase-plan.md"><strong>Multi-phase or multi-PR plan</strong></a>』Playbookを使い、<strong>作業を小さく、それぞれ検証できるPRに分けます</strong>。</p>
+<p>そして、PRごとに、何が確かめられれば完了とするか（例：ログの行、スクリーンショット、テストの実行結果）を、計画書に書いておきます。</p>
+<h3 id="playbook">記事の考え：計画用のPlaybookは、たいてい設計の後に使う</h3>
+<p>poteto氏は、節『Okay but I really want a planning doc』で、pstackに計画用のSkillはないが、複数の段階に分けて計画するPlaybookはある、と書いています。</p>
+<p>そのうえで、自分が納得できる設計をエージェントが出した後に、<strong>その設計を、実行の手順まで具体的に決めた計画にするため、たいていこの計画用のPlaybook（『Multi-phase or multi-PR plan』）を使う</strong>としています。<br />
+（このPlaybookで作られる計画書の例は「<a href="#%E8%A8%88%E7%94%BB%E6%9B%B8%E3%81%AE%E5%AE%8C%E6%88%90%E5%BD%A2%E3%81%AE%E4%BE%8B">計画書の完成形の例</a>」で後述します）</p>
+<p>記事が挙げる依頼は、次の一行です。</p>
+<pre><code>/poteto-mode turn this design into a plan
+// この設計を計画にして
+</code></pre>
+<p>このPlaybookを使うと、エージェントは、計画の各タスクを、完了を示す証拠と、その確かめ方（検証）を中心に組み立てます。</p>
+<p>人間が計画を承認した後は、エージェントが項目ごとに実行します。<br />
+計画の各PRは、<strong>小さく、それ1つで完結していて、レビューしやすい</strong>ものになります。</p>
+<h3 id="pstackpr">pstack：計画書には、PRごとに完了の証拠と確かめ方を書く</h3>
+<p>『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/multi-phase-plan.md"><strong>Multi-phase or multi-PR plan</strong></a>』Playbookのファイル（<code>playbooks/multi-phase-plan.md</code>）が定める要点は、次の5つです。</p>
+<ul>
+<li>計画が成果物で、実装はしない</li>
+<li>書く前に、未解決の疑問をプロトタイプで決める</li>
+<li>1つのPRに1つの変更と、その証拠</li>
+<li>テストだけでは検証済みにしない</li>
+<li>利用者が開始を指示してから実行する</li>
+</ul>
+<p>最後に、この5つに沿って書いた計画書の完成形の例を示します。</p>
+<h4 id="_4">計画が成果物で、実装はしない</h4>
+<p><strong>このPlaybookでエージェントが作るのは計画書だけで、コードは書きません</strong>。</p>
+<p>計画の実行は、計画書の中で名前を挙げた実行用のPlaybookで行います。</p>
+<p>実行用のPlaybookは、『<strong>Autopilot-full</strong>』か『<strong>Autopilot-stack</strong>』から選びます。何日も続く作業の全体（プログラム）を運用するときは『<strong>Orchestrate</strong>』を使います（いずれも<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/8a8dd5">第16章</a>）。</p>
+<h4 id="_5">書く前に、未解決の疑問をプロトタイプで決める</h4>
+<p>エージェントは、「どちらの方法が速いか」のような未解決の疑問ごとに『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/prototype.md"><strong>Prototype</strong></a>』Playbook（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/f1e85b">第12章</a>）を実行します。</p>
+<p>そして、プロトタイプで得た証拠（ブランチ、コミット、スクリーンショット）を計画書の付録に残します。</p>
+<p>これは、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/7549a7">第41章</a>の要点8（疑問は、実験で確かめさせる）と同じ考え方です。第40章は、要点8を次のように書いています。</p>
+<blockquote>
+<p>人間は、作って動かせば答えが出る疑問について、自分で答えたり、エージェントに人間の返事を待たせたりせず、<strong>エージェントに実験で確かめさせます</strong>。</p>
+</blockquote>
+<h4 id="1pr1">1つのPRに1つの変更と、その証拠</h4>
+<p>計画書では、PRを1つずつ、見出し（<code>##</code>）で区切って書きます。たとえば、PRが2つある計画書は、次の形になります。</p>
+<pre><code># webhook のレート制限の計画書
+
+## 送り手ごとに件数を数える RateLimiter を作る（PR 1）
+（PR 1 について、下の欄を書く）
+
+## 送り手ごとのレート制限を追加する（PR 2）
+（PR 2 について、同じ欄を書く）
+</code></pre>
+<p>どの見出しの下にも、次の欄を順に書きます。中身まで書いた完成形は、この節の最後に載せます。</p>
+<ul>
+<li>依存するPR</li>
+<li>変更するファイル</li>
+<li>行う変更</li>
+<li>観察できる結果（ログの行や画面の状態）</li>
+<li>単体テスト</li>
+<li>ライブ確認（動くアプリを実際に操作して確かめること）</li>
+<li>性能の確認</li>
+<li>利用者のレビュー（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/8a8dd5">第16章</a>では「運用者」の確認と呼ぶ。利用者が行う操作の流れを変えるPRだけが対象で、それ以外のPRは「なし」と書く）</li>
+<li>マージ</li>
+</ul>
+<p>たとえば、上の骨格の PR 2 の見出しの下に、これらの欄を書くと、次のようになります。</p>
+<pre><code>## 送り手ごとのレート制限を追加する（PR 2）
+
+**依存するPR**：PR 1（送り手ごとに件数を数える RateLimiter を作る）
+
+**変更するファイル**
+- [ ] `src/webhooks/handleWebhook.ts` を編集する
+
+**行う変更**
+- [ ] `handleWebhook` で `limiter.tryAcquire(senderId)` を呼び、上限を超えたら 429 を返す
+
+**観察できる結果**
+- [ ] 同じ送り手から1分に61件送ると、61件目でログに `rate_limited sender=sender-a` が出る
+
+**単体テスト**（テストだけでは検証済みにしない）
+- [ ] `handleWebhook.test.ts` に「61件目は 429 を返す」ケースを足し、`npm test` を実行する
+
+**ライブ確認**
+- [ ] 動いているサーバーに webhook を61件送り、61件目が 429 になることを確かめる
+
+**性能の確認**
+- [ ] webhook 1件あたりの処理時間を、変更前と変更後で比べる
+
+**利用者のレビュー**：なし（利用者の操作の流れは変わらない）
+
+**マージ**
+- [ ] 単体テスト、ライブ確認、性能の確認にすべてチェックが入ってから、マージする
+</code></pre>
+<h4 id="_6">テストだけでは検証済みにしない</h4>
+<p>Playbookは、次の2文を検証の決まりとしています。</p>
+<blockquote>
+<p>Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.</p>
+<p>テストだけでは、検証として十分ではない。単体テスト、ライブ確認、性能の確認の3つの欄すべてにチェックが入ったときだけ、そのPRを検証済みとする。</p>
+</blockquote>
+<h4 id="_7">利用者が開始を指示してから実行する</h4>
+<p>エージェントは、計画書の場所と、計画書の形式の検査（<code>check-plan.mjs</code>）の結果を利用者に渡して止まります。</p>
+<p>利用者が開始を指示するまで、実行は始めません。</p>
+<h4 id="_8">計画書の完成形の例</h4>
+<p>例：webhook のレート制限の計画書（2つのPR）</p>
+<p>上の骨格の2つのPRに、欄の中身を書き込むと、次のようになります。</p>
+<pre><code># webhook のレート制限の計画書
+
+## 送り手ごとに件数を数える RateLimiter を作る（PR 1）
+
+**依存するPR**：なし
+
+**変更するファイル**
+- [ ] `src/webhooks/rateLimiter.ts` を作る
+- [ ] `src/webhooks/rateLimiter.test.ts` を作る
+
+**行う変更**
+- [ ] `createRateLimiter` を実装し、送り手ごとに1分あたりの件数を数える
+
+**観察できる結果**
+- [ ] 検証用のスクリプトで同じ送り手として61回呼ぶと、61回目で `false` が表示される
+
+**単体テスト**（テストだけでは検証済みにしない）
+- [ ] 「60回目までは true、61回目は false」「1分たつと数え直す」の2つのケースを書き、`npm test` を実行する
+
+**ライブ確認**
+- [ ] 検証用のスクリプトを実際に動かし、観察できる結果のとおりになることを確かめる
+
+**性能の確認**
+- [ ] 10,000回呼んだときの時間を測り、1回あたりの時間を記録する
+
+**利用者のレビュー**：なし（利用者の操作の流れは変わらない）
+
+**マージ**
+- [ ] 単体テスト、ライブ確認、性能の確認にすべてチェックが入ってから、マージする
+
+## 送り手ごとのレート制限を追加する（PR 2）
+
+**依存するPR**：PR 1（送り手ごとに件数を数える RateLimiter を作る）
+
+**変更するファイル**
+- [ ] `src/webhooks/handleWebhook.ts` を編集する
+
+**行う変更**
+- [ ] `handleWebhook` で `limiter.tryAcquire(senderId)` を呼び、上限を超えたら 429 を返す
+
+**観察できる結果**
+- [ ] 同じ送り手から1分に61件送ると、61件目でログに `rate_limited sender=sender-a` が出る
+
+**単体テスト**（テストだけでは検証済みにしない）
+- [ ] `handleWebhook.test.ts` に「61件目は 429 を返す」ケースを足し、`npm test` を実行する
+
+**ライブ確認**
+- [ ] 動いているサーバーに webhook を61件送り、61件目が 429 になることを確かめる
+
+**性能の確認**
+- [ ] webhook 1件あたりの処理時間を、変更前と変更後で比べる
+
+**利用者のレビュー**：なし（利用者の操作の流れは変わらない）
+
+**マージ**
+- [ ] 単体テスト、ライブ確認、性能の確認にすべてチェックが入ってから、マージする
+</code></pre>
+<p>実際のPlaybookの雛形は、もっと細かく書くよう求めています。たとえば、ライブ確認は10の観点に分けて、観点ごとにスクリーンショットと合格の条件を書きます。また、PRの部分の前に計画全体の進め方を書く節があり、後ろには付録（プロトタイプの証拠など）が付きます。</p>
+<p>このように、<strong>計画書にはPRごとに完了の証拠と確かめ方が定められ、計画は利用者が開始を指示してから実行されます</strong>。</p>
+<h2 id="12">要点12：計画書は一時的なもの</h2>
+<p>計画書は、「作業を実行するとき」と、「大きな作業の進捗をほかのエージェントに知らせるとき」に使う、<strong>一時的な文書</strong>です。</p>
+<h3 id="_9">記事の考え：計画書は、終わったら通常は消す</h3>
+<p>poteto氏は、1週間かかるような大きなプロジェクトでは、ほかのエージェントに進行中の作業を知らせるために、計画書をリポジトリに一時的にコミットすることがある、と書いています。</p>
+<p>ただし、<strong>作業が終わったら、通常は計画書を削除します</strong>。コードベースに混乱を残さないためです。</p>
+<p>計画書をずっと残しておくことに価値を感じない、とも書いています。</p>
+<h3 id="pstack-docs">pstack：計画書は、エージェントのストアの docs/ に置く</h3>
+<p>『<strong>Multi-phase or multi-PR plan</strong>』Playbookは、利用者が場所を指定しない限り、<strong>計画書を、エージェントのストアの <code>docs/</code> に書く</strong>よう定めています。</p>
+<p>!</p>
+<p><strong>エージェントのストア</strong>（原文では agent store）・・・ エージェントが使う保存領域です。ストアの場所は、エージェントのシステムプロンプト（エージェントに最初に渡される指示文）に書かれています（『Orchestrate』Playbook の記述）。</p>
+<h2 id="13poteto-mode">要点13：/poteto-modeに伝えること</h2>
+<p>人間は、<code>/poteto-mode</code> に手順を並べず、<strong>目的、制約、確認したい結果、レビューのタイミング</strong>を伝えます。</p>
+<h3 id="poteto-mode">記事の考え：たいていは /poteto-mode だけでよい</h3>
+<p>記事は、紹介したSkillの多くを <code>/poteto-mode</code> が自動で使うため、<strong>人間は、たいてい <code>/poteto-mode</code> に依頼するだけで済む</strong>と書いています。</p>
+<p>節『The workflow in practice』には、4つの場面それぞれについて、依頼の例が載っています。</p>
+<h4 id="1_1">例1）原因の分からない不具合の調査</h4>
+<p>1つ目は、本番環境で起きた、原因のはっきりしない不具合の調査です。</p>
+<pre><code>/poteto-mode investigate why background workers periodically fail with timeout errors. give me a breakdown of what we know, what data you used, and your best hypotheses.
+// バックグラウンドワーカーが定期的にタイムアウトエラーで失敗する理由を調べて。分かっていること、使ったデータ、有力な仮説を分けて示して。
+</code></pre>
+<p>この依頼は、目的に加えて、結果の形（分かっていること、使ったデータ、有力な仮説）を指定しています。</p>
+<p>この依頼を受けたエージェントは、コードを調べ、メトリクス（処理にかかった時間やエラーの件数など、システムの状態を数値で記録したデータ）と過去のコミットを並列に確かめて、問題がどこにありそうかについて、有力な推測を返します。</p>
+<h4 id="2_1">例2）設計の依頼</h4>
+<p>2つ目は、ほかのモジュールが依存する新しい仕組みを入れる場面です。</p>
+<p>poteto氏は、外部から届く webhook に、レート制限（一定時間に受け付ける要求の数の上限）を設ける設計を頼んでいます。</p>
+<pre><code>/poteto-mode we need to add rate limiting for external webhooks. /architect this first, and answer any open questions with prototypes. let me review before proceeding.
+// 外部の webhook にレート制限を追加する必要がある。まず /architect で設計して、未解決の疑問はプロトタイプで答えて。進める前に私にレビューさせて。
+</code></pre>
+<p>!</p>
+<p><strong>webhook</strong>・・・ 指定したURLにHTTPリクエストを送って、別のシステムにイベントを知らせる仕組みです（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/46bd1f">第25章</a>）。</p>
+<p>この依頼は、設計の進め方に加えて、「進める前に私にレビューさせて」と止まる場所を指定しています。</p>
+<p>この依頼を受けたエージェントは、今の webhook の仕組みを調べ、複数のモデルで設計案を競わせ、使い捨てのプロトタイプで性能を測って、整理された、検証済みのインターフェースを作ります。</p>
+<h4 id="3_1">例3）移行の計画</h4>
+<p>3つ目は、多くのファイルにまたがる移行の計画です。poteto氏は、UIライブラリ全体を<a href="https://stylexjs.com/">StyleX</a>（JavaScriptのコードの中でスタイルを書くためのライブラリ）へ移す作業を、複数のPRに分けた計画にするよう頼んでいます。</p>
+<pre><code>/poteto-mode create a plan to migrate our entire UI library to StyleX. break the migration into small, verifiable PRs. each PR must have its visual regression tests and live verification steps. i want the final result to be 100% identical compared to the original - bugs included
+// UIライブラリ全体をStyleXへ移す計画を作って。移行は、小さく検証できるPRに分けて。各PRには、見た目の回帰テストと、動くアプリで確かめる検証手順を必ず持たせて。最終結果は、不具合も含めて元と100%同じにしたい。
+</code></pre>
+<p>この依頼は、目的（UIライブラリ全体をStyleXへ移す）のほかに次の3つを指定していますが、どう移すかの手順は指定していません。</p>
+<ul>
+<li><strong>移行の分け方</strong>・・・ 小さく検証できるPR</li>
+<li><strong>各PRが持つべき検証</strong>・・・ 見た目の回帰テスト（変更の前後で画面の見た目が変わっていないかを確かめるテスト）と、動くアプリで確かめる手順</li>
+<li><strong>最終結果の条件（制約）</strong>・・・ 不具合も含めて元と同じ</li>
+</ul>
+<p>この依頼を受けたエージェントは、作業を互いに独立した段階に分け、点検できるチェックリストを書き、各段階を、ビルド、検証、マージまで安全に進められるように準備します。</p>
+<h4 id="4slack">例4）Slackで報告された不具合の修正</h4>
+<p>4つ目は、Slackで報告された不具合の修正です。</p>
+<p>この場面の依頼は2つあります。</p>
+<p>1つ目の依頼は、Slackのスレッドにすでに十分なコンテキストがあるときのものです。</p>
+<pre><code># thread already has sufficient context
+/poteto-mode do it
+// （スレッドには十分なコンテキストがすでにある）これをやって。
+</code></pre>
+<p>2つ目の依頼は、再現の手段と証拠を指定するものです。</p>
+<pre><code>/poteto-mode repro this with /control-app. if it repros on main, fix it and show me a video as proof
+// /control-app でこれを再現して。main で再現したら、直して、証拠として動画を見せて。
+</code></pre>
+<p>!</p>
+<p><strong>検証スキル</strong>・・・ エージェントがアプリを起動・操作して証拠を取るための、プロジェクト専用のSkillです。<br />
+利用者が <code>/create-verification-skill</code> を実行すると、エージェントが作ります。</p>
+<p><code>/control-app</code> は、『The Complete Guide to pstack』<a href="https://x.com/poteto/status/2094457600259842065">Part 1</a>で作った検証スキルを指す、記事での呼び名です（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/7d7081">第39章</a>）。</p>
+<h4 id="4_1">4つの例に共通すること</h4>
+<p>このように、4つの場面の依頼はどれも、<strong>細かな手順は <code>/poteto-mode</code> に任せ、目的と、必要に応じて次のことを伝えています</strong>。</p>
+<ul>
+<li>制約</li>
+<li>確認したい結果（結果の形）</li>
+<li>レビューのタイミング（止まる場所）</li>
+</ul>
+<p>ただし、<a href="#%E4%BE%8B2%EF%BC%89%E8%A8%AD%E8%A8%88%E3%81%AE%E4%BE%9D%E9%A0%BC">例2</a>の <code>/architect</code> や<a href="#%E4%BE%8B4%EF%BC%89slack%E3%81%A7%E5%A0%B1%E5%91%8A%E3%81%95%E3%82%8C%E3%81%9F%E4%B8%8D%E5%85%B7%E5%90%88%E3%81%AE%E4%BF%AE%E6%AD%A3">例4</a>の <code>/control-app</code> のように、依頼の中で使う手段を指定することもあります。</p>
+<p>また、<a href="#%E4%BE%8B4%EF%BC%89slack%E3%81%A7%E5%A0%B1%E5%91%8A%E3%81%95%E3%82%8C%E3%81%9F%E4%B8%8D%E5%85%B7%E5%90%88%E3%81%AE%E4%BF%AE%E6%AD%A3">例4</a>の <code>do it</code> では、目的やコンテキストは依頼ではなく、Slackのスレッドに書かれています。</p>
+<h3 id="pstackskill">pstack：Skillの名前は、選択を上書きしたいときだけ書く</h3>
+<p>同梱ガイドの <a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/02-poteto-mode.md"><code>docs/guide/02-poteto-mode.md</code></a> は、<code>/poteto-mode</code> が依頼の種類を見てPlaybookを選び、Playbookの手順の中で必要なSkillを呼ぶと説明しています。</p>
+<p>そのため、<strong>利用者は、どのSkillをどの順で使うかを依頼に書かずに済みます</strong>。</p>
+<p>同ページは、Skillの名前を書くのは次の場合だけにするよう勧めています（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/4fda7d">第7章</a>）。</p>
+<blockquote>
+<p>Name a skill only when you want to override a specific choice.</p>
+<p>Skillの名前を書くのは、特定の選択を上書きしたいときだけにする。</p>
+</blockquote>
+<p>ただし、<a href="#%E4%BE%8B2%EF%BC%89%E8%A8%AD%E8%A8%88%E3%81%AE%E4%BE%9D%E9%A0%BC">例2</a>のように、ほかのモジュールが依存する新しい仕組みを入れる変更では、<code>/poteto-mode</code> も、<a href="#%E8%A6%81%E7%82%B99%EF%BC%9A%2Farchitect%E3%81%A7%E3%80%81%E8%A4%87%E6%95%B0%E3%81%AE%E8%A8%AD%E8%A8%88%E3%82%92%E6%AF%94%E8%BC%83%E3%83%BB%E7%B5%B1%E5%90%88%E3%81%99%E3%82%8B">要点9</a>（<code>/architect</code>で、複数の設計を比較・統合する）で見た、次の基準を当てはめて、自分で <code>/architect</code> を選ぶことがあります。</p>
+<blockquote>
+<p>そのうえで、<strong>関数の境界をまたぐ変更や、責任の所在（どのモジュールが責任を持つか）を移す変更</strong>を <code>/architect</code> の対象としています。</p>
+</blockquote>
+<p>本書では、<a href="#%E4%BE%8B2%EF%BC%89%E8%A8%AD%E8%A8%88%E3%81%AE%E4%BE%9D%E9%A0%BC">例2</a>の依頼が <code>/architect</code> と書いているのは、<code>/architect</code> を使うかどうかを <code>/poteto-mode</code> の判断に任せず、実装より先に必ず設計させるためだと考えます。</p>
+<h2 id="13">13の要点を、一つの流れとして読む</h2>
+<p>13の要点を並べると、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/b22889">第6部</a>の「<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/b22889#%E3%81%93%E3%81%AE%E9%83%A8%E3%81%AE%E7%AB%A0">この部の章</a>」の表で示した、3つの段階の流れになります。</p>
+<ol>
+<li><strong>問題を理解する</strong>（要点1〜4、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/b4b9a1">第40章</a>）・・・ 人間が、エージェントに問題を自分と同じように理解させ、過去の作業のコンテキストを引き継がせる</li>
+<li><strong>解決策を試す</strong>（要点5〜8、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/7549a7">第41章</a>）・・・ エージェントが、使い方を書いた文書とプロトタイプで解決策を試し、人間が設計案を選ぶ</li>
+<li><strong>解決策を固めて、実行できる計画に変える</strong>（要点9〜13、この章）・・・ エージェントが、複数の案を比べて設計を固め、実装で得た証拠をもとに設計を見直し、検証できる計画に変える。計画書は一時的な文書で、poteto氏は、作業が終われば通常は消す、としている。人間は、入口の <code>/poteto-mode</code> に、手順ではなく、目的、制約、確認したい結果、レビューのタイミングを伝える</li>
+</ol>
+<p>3つの段階に共通するのは、<strong>判断の根拠を、文章だけの計画ではなく、調べて得た証拠や動かした結果に置くこと</strong>だと、本書では考えます。</p>
+<p>具体的には、判断の根拠にするのは、次の2種類の証拠です。</p>
+<ul>
+<li>コードや履歴を調べて得た証拠（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/b4b9a1#%E8%A6%81%E7%82%B93%EF%BC%9A%2Fhow%E3%83%BB%2Fwhy%E3%83%BB%2Fteach%E3%81%A7%E3%80%81%E4%BB%95%E7%B5%84%E3%81%BF%E3%81%A8%E7%90%86%E7%94%B1%E3%82%92%E7%9F%A5%E3%82%8B">要点3：/how・/why・/teachで、仕組みと理由を知る</a>／<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/b4b9a1#%E8%A6%81%E7%82%B94%EF%BC%9A%2Frecall%E3%81%A7%E3%80%81%E9%81%8E%E5%8E%BB%E3%81%AE%E4%BD%9C%E6%A5%AD%E3%82%92%E6%96%B0%E3%81%97%E3%81%84%E4%BC%9A%E8%A9%B1%E3%81%B8%E5%BC%95%E3%81%8D%E7%B6%99%E3%81%90">要点4：/recallで、過去の作業を新しい会話へ引き継ぐ</a>）</li>
+<li>プロトタイプを操作した結果や測定値、実装したときに無関係な箇所に現れた同じ回避策のような、実際に作って動かして得た証拠（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/7549a7#%E8%A6%81%E7%82%B97%EF%BC%9A%E8%A4%87%E6%95%B0%E6%A1%88%E3%81%AE%E3%83%97%E3%83%AD%E3%83%88%E3%82%BF%E3%82%A4%E3%83%97%E3%81%A7%E6%AF%94%E3%81%B9%E3%82%8B">要点7：複数案のプロトタイプで比べる</a>／<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/7549a7#%E8%A6%81%E7%82%B98%EF%BC%9A%E7%96%91%E5%95%8F%E3%81%AF%E3%80%81%E5%AE%9F%E9%A8%93%E3%81%A7%E7%A2%BA%E3%81%8B%E3%82%81%E3%81%95%E3%81%9B%E3%82%8B">要点8：疑問は、実験で確かめさせる</a>／<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/166acb#%E8%A6%81%E7%82%B910%EF%BC%9A%E5%AE%9F%E8%A3%85%E3%81%A7%E8%A8%AD%E8%A8%88%E3%81%AE%E8%AA%A4%E3%82%8A%E3%81%8C%E5%88%86%E3%81%8B%E3%81%A3%E3%81%9F%E3%82%89%E3%80%81%E8%A8%AD%E8%A8%88%E3%82%92%E8%A6%8B%E7%9B%B4%E3%81%99">要点10：実装で設計の誤りが分かったら、設計を見直す</a>）</li>
+</ul>
+<p>記事も、最後の節『The art of planning』で、<strong>抽象的な計画（まだコードで形にしていない、文章だけの計画）は、作業が進んでいるという錯覚を人間に与えるだけだ</strong>と書いています。</p>
+<p>長い計画書は、人間とエージェントがよく働いたように見せるものの、おそらく中身が伴っていない、とも書いています。</p>
+<p>そのうえで、pstackは、<strong>次の3つを組み合わせるための道具になる</strong>と述べています。</p>
+<ul>
+<li>徹底した調査</li>
+<li>実際に試して得た証拠</li>
+<li>厳密な検証</li>
+</ul>
+<p>そして、この節を次の文で締めくくっています。</p>
+<blockquote>
+<p>When you plan this way, engineering with agents stops feeling like a gamble. It becomes predictable and repeatable.</p>
+<p>このように計画すれば、エージェントとのエンジニアリングは賭けのようには感じられなくなる。予測でき、繰り返せるものになる。</p>
+</blockquote>
+<h2 id="_10">まとめ</h2>
+<ul>
+<li><strong>要点9：/architectで、複数の設計を比較・統合する</strong>・・・ 大きな変更では、人間はアーキテクチャやデータ構造、システムどうしの連携を考えることに時間を使い、エージェントは実装の細部を埋めることに時間を使います。エージェントは、<code>/architect</code> で、まず複数の設計案を比べて1つに統合し、それから実装します。</li>
+<li><strong>要点10：実装で設計の誤りが分かったら、設計を見直す</strong>・・・ エージェントは、骨組みとの食い違いが見つかったり、無関係な箇所に同じ回避策や型の逃げ道が繰り返し現れたりしたら、それらを設計が間違っている証拠とみなして設計を見直します。必要なら、骨組みを捨てて、問題を調べる段階から設計をやり直します。</li>
+<li><strong>要点11：小さく検証できる作業に分ける</strong>・・・ エージェントは、計画用のPlaybookで、作業を小さく検証できるPRに分け、PRごとに、テストだけでなく実際に動かして確かめた結果を完了の証拠として定めます。計画は、利用者が開始を指示してから実行されます。</li>
+<li><strong>要点12：計画書は一時的なもの</strong>・・・ 計画書は、作業を実行するときと、大きな作業の進み具合をほかのエージェントに知らせるときに使う一時的な文書で、poteto氏は、作業が終わったら通常は削除します。</li>
+<li><strong>要点13：/poteto-modeに伝えること</strong>・・・ 人間は、<code>/poteto-mode</code> に、手順ではなく、目的、制約、確認したい結果、レビューのタイミングを伝えます。</li>
+<li><strong>13の要点の流れ</strong>・・・ どの段階にも共通するのは、判断の根拠を文章だけの計画ではなく、調べて得た証拠や動かした結果に置くことだと、本書では考えます。</li>
+</ul>
+<p><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/b22889">第6部</a>はここで終わりです。</p>
+<p>この後の<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/80691b">付録</a>では、本書の内容を実践する開発の進め方として、RGDD（README駆動 with Grill Driven Development）を紹介します。</p>
+<p>RGDDは、私が考えた開発の進め方で、READMEや用語集など、エージェントが読み続けるコンテキストをコードより先に置いて開発します。</p>
+<p>最後の「<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/f903e4">おわりに</a>」では、本書の結論と、読み終えた後の最初の一歩を書きます。</p>
+  </div>
+  <footer class="article-footer">
+    <span>取得: 2026-10-06T23:37:37+09:00</span>
+    <a href="#article-top">↑ 先頭へ戻る</a>
+  </footer>
+</main>
+<script>
+(() => {
+  const progress = document.querySelector(".reading-progress > span");
+  const updateProgress = () => {
+    const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+    const ratio = scrollable > 0 ? window.scrollY / scrollable : 0;
+    if (progress) progress.style.width = `${Math.min(1, ratio) * 100}%`;
+  };
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  document.querySelectorAll("pre").forEach((block) => {
+    const button = document.createElement("button");
+    button.className = "copy-button";
+    button.type = "button";
+    button.textContent = "コピー";
+    button.addEventListener("click", async () => {
+      const text = block.querySelector("code")?.innerText || block.innerText;
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const textarea = document.createElement("textarea");
+          textarea.value = text;
+          textarea.style.position = "fixed";
+          textarea.style.opacity = "0";
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand("copy");
+          textarea.remove();
+        }
+        button.textContent = "コピー済み";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      } catch (error) {
+        button.textContent = "失敗";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      }
+    });
+    block.appendChild(button);
+  });
+
+  const links = new Map(
+    [...document.querySelectorAll(".toc a")].map((link) => [link.hash, link])
+  );
+  const headings = [...document.querySelectorAll(
+    ".article-body h2[id], .article-body h3[id], .article-body h4[id]"
+  )];
+  if ("IntersectionObserver" in window && headings.length) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        links.forEach((link) => link.classList.remove("is-active"));
+        links.get(`#${entry.target.id}`)?.classList.add("is-active");
+      });
+    }, { rootMargin: "-12% 0px -72% 0px" });
+    headings.forEach((heading) => observer.observe(heading));
+  }
+})();
+</script>
+</body>
+</html>

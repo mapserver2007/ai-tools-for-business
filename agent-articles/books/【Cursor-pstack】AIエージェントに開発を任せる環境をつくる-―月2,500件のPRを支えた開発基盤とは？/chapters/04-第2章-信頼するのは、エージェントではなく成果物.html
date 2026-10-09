@@ -1,0 +1,985 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="title" content="第2章 信頼するのは、エージェントではなく成果物">
+<meta name="book_title" content="【Cursor pstack】AIエージェントに開発を任せる環境をつくる ―月2,500件のPRを支えた開発基盤とは？">
+<meta name="source_url" content="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/27a183">
+<meta name="author" content="kaito">
+<meta name="published_at" content="2026-10-02">
+<meta name="retrieved_at" content="2026-10-06T23:37:26+09:00">
+<meta name="site" content="zenn.dev">
+<meta name="content_type" content="article">
+<meta name="chapter_position" content="4">
+<title>第2章 信頼するのは、エージェントではなく成果物</title>
+<style>
+:root {
+  color-scheme: light;
+  --ink: #172033;
+  --muted: #64748b;
+  --line: #dbe4ef;
+  --accent: #2563eb;
+  --accent-dark: #1d4ed8;
+  --accent-soft: #eff6ff;
+  font-family: -apple-system, BlinkMacSystemFont, "Avenir Next",
+    "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 8% 0%, #dbeafe 0, transparent 32rem),
+    radial-gradient(circle at 100% 12%, #e0e7ff 0, transparent 28rem),
+    #f4f7fb;
+  color: var(--ink);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(120deg, transparent 0 48%, rgba(255, 255, 255, 0.4));
+}
+.article {
+  position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
+  max-width: 920px;
+  margin: clamp(1rem, 5vw, 4rem) auto;
+  padding: clamp(2rem, 6vw, 5rem) clamp(1.25rem, 7vw, 5.5rem);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  border-radius: 24px;
+  min-height: 100vh;
+  box-shadow:
+    0 24px 70px rgba(30, 64, 175, 0.1),
+    0 4px 16px rgba(15, 23, 42, 0.04);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 5px;
+  content: "";
+  background: linear-gradient(90deg, #2563eb, #7c3aed, #db2777);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin: 0 0 2.5rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.72rem;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+a {
+  color: var(--accent-dark);
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: #7c3aed;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--ink);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 18ch;
+  margin: 0 0 2.5rem;
+  font-size: clamp(2.15rem, 5vw, 3.65rem);
+  letter-spacing: -0.045em;
+}
+h2 {
+  position: relative;
+  margin: 3.8rem 0 1.25rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--line);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 4.2rem;
+  height: 3px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), #7c3aed);
+  border-radius: 999px;
+}
+h3 {
+  margin: 2.6rem 0 0.8rem;
+  color: var(--accent-dark);
+  font-size: 1.3rem;
+}
+h4, h5, h6 {
+  margin-top: 2rem;
+}
+p {
+  margin: 1.15rem 0;
+}
+ul, ol {
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.35rem 0;
+}
+li::marker {
+  color: var(--accent);
+  font-weight: 700;
+}
+strong {
+  color: #111827;
+}
+blockquote {
+  margin: 1.6rem 0;
+  padding: 0.8rem 1.25rem;
+  color: #475569;
+  background: linear-gradient(90deg, var(--accent-soft), #fff);
+  border-left: 4px solid var(--accent);
+  border-radius: 0 12px 12px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 3rem 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+img {
+  display: block;
+  max-width: 100%;
+  margin: 1.75rem auto;
+  height: auto;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+}
+pre {
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  padding: 1.15rem 1.25rem;
+  color: #e2e8f0;
+  background: #111827;
+  border: 1px solid #253047;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+}
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+:not(pre) > code {
+  padding: 0.15rem 0.4rem;
+  color: #9f1239;
+  background: #fff1f2;
+  border-radius: 5px;
+}
+table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  border-collapse: collapse;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
+  text-align: left;
+}
+th {
+  color: #1e3a8a;
+  background: #eff6ff;
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: #f8fafc;
+}
+@media (max-width: 600px) {
+  .article {
+    margin: 0;
+    padding: 2rem 1rem 4rem;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(2rem, 10vw, 2.75rem);
+  }
+  .metadata {
+    margin-bottom: 2rem;
+  }
+}
+@media print {
+  body {
+    background: #fff;
+  }
+  .article {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  a {
+    color: inherit;
+  }
+}
+</style>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0f1419;
+  --surface: #1a2332;
+  --surface-raised: #202c3f;
+  --surface-soft: rgba(26, 35, 50, 0.72);
+  --border: #2d3a4f;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #58a6ff;
+  --accent-strong: #79c0ff;
+  --green: #3fb950;
+  --purple: #bc8cff;
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+    "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  line-height: 1.75;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+  background: var(--bg);
+}
+body {
+  min-width: 320px;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 2rem 1.5rem 5rem;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(31, 111, 235, 0.18), transparent 32rem),
+    radial-gradient(circle at 100% 12%, rgba(137, 87, 229, 0.14), transparent 28rem),
+    var(--bg);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black, transparent 75%);
+}
+.reading-progress {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 20;
+  height: 3px;
+  background: rgba(45, 58, 79, 0.7);
+}
+.reading-progress > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  box-shadow: 0 0 14px rgba(88, 166, 255, 0.8);
+  transition: width 80ms linear;
+}
+.article {
+  position: relative;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  background: rgba(15, 20, 25, 0.76);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(88, 166, 255, 0.035) inset;
+  backdrop-filter: blur(16px);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  border-radius: 16px 16px 0 0;
+}
+.article-header {
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.eyebrow-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--green);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(63, 185, 80, 0.75);
+}
+.eyebrow-separator {
+  color: var(--border);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  background: rgba(32, 44, 63, 0.68);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+.source-link {
+  color: var(--text);
+  text-decoration: none;
+}
+.source-link:hover {
+  border-color: var(--accent);
+  background: rgba(88, 166, 255, 0.12);
+}
+a {
+  color: var(--accent);
+  overflow-wrap: anywhere;
+  text-decoration: none;
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 24ch;
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  background: linear-gradient(120deg, #fff 12%, #b9d8ff 58%, #bc8cff);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+h2 {
+  position: relative;
+  margin: 3.2rem 0 1.1rem;
+  padding: 0.75rem 0 0.65rem;
+  border-bottom: 1px solid var(--border);
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 3.8rem;
+  height: 2px;
+  content: "";
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(88, 166, 255, 0.7);
+}
+h3 {
+  margin: 2.25rem 0 0.7rem;
+  color: var(--accent-strong);
+  font-size: 1.2rem;
+}
+h4, h5, h6 {
+  margin-top: 1.75rem;
+}
+p {
+  margin: 0.9rem 0;
+}
+ul, ol {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.3rem 0;
+}
+li::marker {
+  color: var(--accent);
+}
+strong {
+  color: #fff;
+}
+blockquote {
+  margin: 1.4rem 0;
+  padding: 0.85rem 1.15rem;
+  color: #c9d1d9;
+  background: linear-gradient(100deg, rgba(88, 166, 255, 0.1), rgba(26, 35, 50, 0.55));
+  border: 1px solid rgba(88, 166, 255, 0.18);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 2.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+}
+pre {
+  position: relative;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  padding: 1rem 1.15rem;
+  color: #dbeafe;
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+pre code {
+  color: inherit;
+  background: transparent;
+}
+code {
+  font-family: "SF Mono", "Fira Code", ui-monospace, monospace;
+  font-size: 0.86em;
+}
+:not(pre) > code {
+  padding: 0.12em 0.38em;
+  color: #ffabbc;
+  background: rgba(248, 81, 73, 0.11);
+  border-radius: 4px;
+}
+.copy-button {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  padding: 0.25rem 0.55rem;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.72rem;
+  background: rgba(32, 44, 63, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.copy-button:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  border-spacing: 0;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.6rem 0.75rem;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+th {
+  color: var(--accent);
+  background: var(--surface);
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: rgba(26, 35, 50, 0.42);
+}
+tr:last-child td {
+  border-bottom: 0;
+}
+th:last-child, td:last-child {
+  border-right: 0;
+}
+.toc {
+  margin: 1.75rem 0 2.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.toc-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--border);
+}
+.toc-title {
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.toc-count {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.toc ol {
+  margin: 0.7rem 0 0;
+  padding-left: 1.25rem;
+}
+.toc ol ol {
+  margin: 0.2rem 0;
+}
+.toc li {
+  margin: 0.18rem 0;
+  font-size: 0.86rem;
+}
+.toc li::marker {
+  color: var(--muted);
+}
+.toc a {
+  display: inline-block;
+  max-width: 100%;
+  color: var(--muted);
+  transition: color 160ms ease, transform 160ms ease;
+}
+.toc a:hover, .toc a.is-active {
+  color: var(--accent-strong);
+  text-decoration: none;
+  transform: translateX(2px);
+}
+.article-body {
+  max-width: 78ch;
+  margin: 0 auto;
+}
+.article-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 1rem;
+  color: var(--muted);
+  font-size: 0.74rem;
+  border-top: 1px solid var(--border);
+}
+.article-footer a {
+  color: var(--muted);
+}
+@media (max-width: 720px) {
+  body {
+    padding: 0 0 3rem;
+  }
+  .article {
+    min-height: 100vh;
+    padding: 1.5rem 1rem 3rem;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+  .article::before {
+    border-radius: 0;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(1.9rem, 9vw, 2.6rem);
+  }
+  .article-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+@media print {
+  :root {
+    color-scheme: light;
+  }
+  body {
+    padding: 0;
+    color: #111;
+    background: #fff;
+  }
+  .reading-progress, .toc, .copy-button {
+    display: none;
+  }
+  .article {
+    max-width: none;
+    padding: 0;
+    background: #fff;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  h1, h2, h3, h4, h5, h6, strong {
+    color: #111;
+    -webkit-text-fill-color: initial;
+  }
+  a {
+    color: inherit;
+    text-decoration: underline;
+  }
+  pre {
+    color: #111;
+    background: #f4f4f4;
+    box-shadow: none;
+  }
+}
+</style>
+</head>
+<body>
+<div class="reading-progress" aria-hidden="true"><span></span></div>
+<main id="article-top" class="article">
+  <header class="article-header">
+    <div class="eyebrow">
+      <span class="eyebrow-dot"></span>
+      <span>ARTICLE</span>
+      <span class="eyebrow-separator">/</span>
+      <span>zenn.dev</span>
+    </div>
+    <div class="metadata" aria-label="記事メタデータ"><span class="metadata-item"><span class="metadata-label">著者</span>kaito</span><span class="metadata-item"><span class="metadata-label">公開日</span>2026-10-02</span><a class="metadata-item source-link" href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/27a183"><span class="metadata-label">原文</span>読む</a><span class="metadata-item"><span class="metadata-label">サイト</span>zenn.dev</span><span class="metadata-item"><span class="metadata-label">形式</span>ARTICLE</span></div>
+    <h1 id="2">第2章 信頼するのは、エージェントではなく成果物</h1>
+  </header>
+<nav class="toc" aria-label="目次">
+  <div class="toc-heading">
+    <span class="toc-title">目次</span>
+    <span class="toc-count">14 セクション</span>
+  </div>
+  <ol><li><a href="#_1">この章の構成</a></li><li><a href="#_2">なぜ報告ではなく成果物を信頼するのか</a></li><li><a href="#_3">成果物を確かめるとは、何をどう確かめることなのか</a><ol><li><a href="#_4">実物を相手にする</a></li><li><a href="#_5">エージェント自身が実行する</a></li><li><a href="#_6">証拠が残る</a></li></ol></li><li><a href="#_7">返答の何を見れば、任せてよいと判断できるのか</a><ol><li><a href="#pstack">pstackは、主張ごとに証拠か「推測」のラベルを求める</a></li><li><a href="#_8">証拠が付いた返答なら、読む人が自分で正しさを判定できる</a></li><li><a href="#_9">「テストが通りました」だけでは、不具合が直ったとは判断できない</a></li><li><a href="#undefined">テストが振る舞いを確かめているかは、関数が undefined を返しても通るかで点検する</a></li><li><a href="#bug-fixplaybook">『Bug fix』Playbookは、失敗時と成功時の出力を返答に並べさせる</a></li></ol></li><li><a href="#_10">安心して任せられる状態に、どう近づけばよいのか</a></li><li><a href="#_11">まとめ：信頼の置き場所を、報告から成果物へ移す</a></li></ol>
+</nav>
+  <div class="article-body">
+
+<p>エージェントに仕事を任せるとき、信頼すべきなのはエージェントの報告ではなく、<strong>エージェントが作った成果物</strong>です。</p>
+<p>これは、poteto氏が<a href="https://x.com/poteto/status/2102050467505430555">講演</a>の最初のテーマ「信頼」で示した考えです。</p>
+<p>この章では、成果物を信頼するとはどういうことか、そしてpstackがそれをどう形にしているかを解説します。</p>
+<h2 id="_1">この章の構成</h2>
+<p>この章の構成は次のとおりです。</p>
+<ul>
+<li>なぜ報告ではなく成果物を信頼するのか</li>
+<li>成果物を確かめるとは、何をどう確かめることなのか</li>
+<li>返答の何を見れば、任せてよいと判断できるのか</li>
+<li>安心して任せられる状態に、どう近づけばよいのか</li>
+<li>まとめ：信頼の置き場所を、報告から成果物へ移す</li>
+</ul>
+<h2 id="_2">なぜ報告ではなく成果物を信頼するのか</h2>
+<p>成果物を信頼するのは、<strong>報告は正しさの証明にならないから</strong>です。</p>
+<p>エージェントの「直しました」「動くはずです」は、エージェントがそう判断した、という情報でしかありません。判断の材料がテストの合格なのか、コードを読んだ印象なのか、実際に動かした結果なのかは、報告だけでは分かりません。<br />
+人間が正しさを確かめるには、結局、自分で差分を読み、アプリを触るしかなくなります。</p>
+<p>この状態のまま仕事を増やすと、確かめていない変更が増えるだけです。講演でも、検証できないまま処理量だけを増やせば、<strong>増えるのは成果ではなく不具合</strong>だと述べられています。人間が隣で見張っている間しか品質を保てないなら、それは任せたことにはなりません。</p>
+<p>反対に、成果物を確かめられる状態になっていれば、人間は報告を信じる必要も、自分で全部を確かめ直す必要もなくなります。</p>
+<p>pstackではこれを、検証機構（仕組み）として提供しています。poteto氏は『The Complete Guide to pstack』<a href="https://x.com/poteto/status/2094457600259842065">Part 1</a>で、検証（verification）を「<strong>エージェントが自分の仕事を確かめられること</strong>」と定義しています。</p>
+<h2 id="_3">成果物を確かめるとは、何をどう確かめることなのか</h2>
+<p>成果物を確かめるとは、<strong>実物を、エージェント自身が、証拠が残る形で確かめること</strong>です。<br />
+これを具体的に言い換えると、次の3つの条件になります。</p>
+<ol>
+<li><strong>実物を相手にする</strong>・・・ ビルドの成否やテストの件数ではなく、動いているアプリ、実際に書き込まれた値、実際に出力されたファイルを確かめる</li>
+<li><strong>エージェント自身が実行する</strong>・・・ 人間が手でアプリを触るのではなく、エージェントが操作し、観察する</li>
+<li><strong>証拠が残る</strong>・・・ スクリーンショット、動画、トレース、コマンドの出力など、あとから人間が見て判断できるものが残る</li>
+</ol>
+<p>pstackのファイルでどう支えられているか、条件ごとに見ていきます。</p>
+<h3 id="_4">実物を相手にする</h3>
+<p>1つ目の条件は、原則『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-prove-it-works/SKILL.md"><strong>Prove It Works</strong></a>』が定めています。冒頭は次の一文です。</p>
+<blockquote>
+<p>Verify every task output by checking the real thing directly. Do not infer from proxies, self-reports, or "it compiles."</p>
+<p>すべての作業結果を、実物を直接確かめて検証する。代わりの指標、自己申告、「コンパイルが通った」から推測しない。</p>
+</blockquote>
+<p>この一文は、ビルドやテストを禁じてはいません。禁じているのは、「コンパイルが通った」ことを、動いている証拠として扱うことです。ビルドやテストに加えて、実物を動かして確かめる必要があります。</p>
+<p><code>SKILL.md</code> の <code>description</code> は、確かめ方の例として、以下の3つを挙げています。</p>
+<ol>
+<li>機能を実際に動かす</li>
+<li>実際の値を読む</li>
+<li>差分を見る</li>
+</ol>
+<p>また、この原則は、避けるべき間接的な確かめ方の例として、キャッシュされたスクリーンショットを挙げています。スクリーンショットは成果物に見えますが、今回の変更を反映した画面かどうかが分からなければ、検証の根拠としては弱いということです。ここから、成果物を見るときは<strong>その成果物が今回の変更のあとに作られたものか</strong>まで確かめるのがよい、と読み取ることができます。</p>
+<p>同じ考えは、エージェントがサブエージェントに仕事を任せる場面にも当てはめられています。<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/SKILL.md"><code>/poteto-mode</code></a> では、主エージェントがサブエージェントの報告をそのまま渡さず、差分を見てから返答するので、<strong>人間が受け取る返答は、その時点ですでに一度、成果物で確かめられたもの</strong>になります（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/096f3d">第8章</a>）。</p>
+<h3 id="_5">エージェント自身が実行する</h3>
+<p>2つ目の条件は、不具合の修正に使う『<strong>Bug fix</strong>』Playbook（<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/bug-fix.md"><code>playbooks/bug-fix.md</code></a>）が支えています。このPlaybookでは、担当エージェントがアプリを操作する道具（Playbookは control系Skill と呼んでいます）を使い、不具合が起きたのと同じ環境で自分で再現し、修正も同じ環境で確かめます（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/6fcb42">第11章</a>）。</p>
+<p>アプリを操作する道具は、pstack本体には含まれていません。ブラウザやElectron（デスクトップアプリを構築するためのフレームワーク）向けの <code>control-ui</code> と、CLIやTUI向けの <code>control-cli</code> は、別のプラグイン <a href="https://github.com/cursor/plugins/tree/main/cursor-team-kit"><code>cursor-team-kit</code></a> に入っています。自分のアプリ専用の道具を作る方法は、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a88ea5">第3章</a>と<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/7d7081">第39章</a>で扱います。</p>
+<p>利用者に再現を頼めるのは、操作の手段が対象に届かない具体的な理由を述べ、しかも手段で行けるところまで操作したあとだけです。</p>
+<p>たとえば、ログインの途中で実機の二要素認証が要り、道具ではその先に進めない場合なら、エージェントはそこまで操作したことと、止まった理由を添えて、利用者に再現を頼むことになります。</p>
+<p>私は、この限定が大事だと考えます。人間に頼む道を残しつつ、頼むには理由が要る形にしているので、エージェントが手間を理由に確認を人間へ戻しにくくなります。</p>
+<h3 id="_6">証拠が残る</h3>
+<p>3つ目の条件は、『<strong>Prove It Works</strong>』の節『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-prove-it-works/SKILL.md#script-the-check-when-you-can">Script the check when you can</a>』が支えています。</p>
+<blockquote>
+<p>The strongest proof is a deterministic script that re-runs the same comparison, not a one-time eyeball.</p>
+<p>最も強い証拠は、一度きりの目視ではなく、同じ比較を再実行できる決定的なスクリプトである。</p>
+</blockquote>
+<p>この節は、同じ比較を再実行できるスクリプトを作り、その実行結果を人間が見られる形に残すよう勧めています。再実行できるのはスクリプトで、人間が読むのは実行結果です。</p>
+<p>証拠をリポジトリにコミットまでするのは、大規模な移植や移行のように、あとから履歴を監査する必要がある場合に限られます。確かめ方をスクリプトにする方法は<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a88ea5">第3章</a>で扱います。</p>
+<p>私が一番見落とされやすいと感じるのは、この3つ目です。1つ目と2つ目の条件を満たしていても、証拠が残らなければ、人間の手元に届くのは「確かめました」という報告だけで、この章の出発点に戻ってしまいます。</p>
+<p>実際に検証の仕組みを作るときは、エージェントが確かめられるかだけでなく、<strong>確かめた結果が人間の見られる場所に残るか</strong>まで決めておくのがよいと思います。</p>
+<h2 id="_7">返答の何を見れば、任せてよいと判断できるのか</h2>
+<p>返答を見るときは、<strong>「〜しました」という主張のそれぞれに、確かめた証拠が付いているか</strong>を見れば判断できます。</p>
+<p>たとえば「不具合を直しました」とだけ書かれた返答は、正しいかどうか判断できません。直す前に不具合が出ていた出力と、直したあとに出なくなった出力が付いていれば、読む人が自分で判断できます。</p>
+<h3 id="pstack">pstackは、主張ごとに証拠か「推測」のラベルを求める</h3>
+<p>pstackでは、作業を始めるときに使う <code>/poteto-mode</code>（<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/SKILL.md"><code>skills/poteto-mode/SKILL.md</code></a>）が、返答の書き方として次のルールを持っています。</p>
+<blockquote>
+<p>Every claim carries its evidence or its label in the same sentence. Measured, inferred, or guess.</p>
+<p>すべての主張は、同じ文の中に証拠か、種類のラベルを持つ。測定したのか、推論したのか、推測なのか。</p>
+</blockquote>
+<p>エージェントは、証拠があれば証拠を付け、証拠がなければ「推論です」「推測です」と正直に書きます。pstackに同梱されているガイドの検証のページ（<a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/06-verify-and-ship.md"><code>docs/guide/06-verify-and-ship.md</code></a>）も、同じ考えで返答の良し悪しを見分けています。</p>
+<blockquote>
+<p>If a check couldn't run, a good reply says "inconclusive", and you should treat a confident reply without evidence as a red flag.</p>
+<p>確認を実行できなかったなら、良い返答は「結論が出ない」と言う。証拠のない自信満々の返答は、危険信号として扱うべきだ。</p>
+</blockquote>
+<p>たとえば、テストを実行する環境がなかったのに「修正しました、問題ありません」と返ってきたら、それは危険信号です。</p>
+<h3 id="_8">証拠が付いた返答なら、読む人が自分で正しさを判定できる</h3>
+<p>同ページでは、変更の種類ごとに合った確認を挙げています。それをもとに、報告だけの返答と、証拠が付いた返答を並べると次のようになります。中央の列は、比べるために私が作った例です。</p>
+<table>
+<thead>
+<tr>
+<th>変更の種類</th>
+<th>報告だけの返答</th>
+<th>証拠が付いた返答</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CLIの変更</td>
+<td>「フラグを追加しました」</td>
+<td>実際のコマンドを実行した出力</td>
+</tr>
+<tr>
+<td>UIの変更</td>
+<td>「表示を直しました」</td>
+<td>変更した画面の流れを、動いているアプリで操作した記録</td>
+</tr>
+<tr>
+<td>パーサーや移行処理</td>
+<td>「変換処理を修正しました」</td>
+<td>保存しておいた入力を流し直した結果</td>
+</tr>
+<tr>
+<td>性能の改善</td>
+<td>「速くなったはずです」</td>
+<td>変更前と変更後のプロファイルの比較</td>
+</tr>
+<tr>
+<td>保存処理の変更</td>
+<td>「書き込むようにしました」</td>
+<td>書き込んだ値を読み戻した結果</td>
+</tr>
+</tbody>
+</table>
+<p>中央の列は嘘ではないかもしれませんが、正しいかを判定する材料がありません。右の列は、読む人が自分で判定できます。</p>
+<h3 id="_9">「テストが通りました」だけでは、不具合が直ったとは判断できない</h3>
+<p>間違えやすいのは、「テストが通りました」を右の列に入れてしまうことです。<br />
+『<strong>Bug fix</strong>』Playbookの「修正を確かめる手順（手順4）」も、単体テストに合格しただけでは不具合が直ったとは判断できないとしています。テストで用意した条件で処理が動いても、報告された不具合が起きた操作で直ったかは、同じ操作を再現して確かめる必要があります。</p>
+<h3 id="undefined">テストが振る舞いを確かめているかは、関数が <code>undefined</code> を返しても通るかで点検する</h3>
+<p>テストが<strong>コードの振る舞い</strong>、つまり、コードを使う人が実際に受け取る結果を確かめているかどうかは、原則『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-test-behavior-not-implementation/SKILL.md"><strong>Test Behavior, Not Implementation</strong></a>』で確かめられます。</p>
+<p>この原則は、<strong>テストとは、コードを使う人と同じ方法でコードを呼び出し、その人が受け取る結果を具体的な期待値と比べるもの</strong>だとしています。テストが実際にその結果を見ているかは、次の問いで点検されます。</p>
+<blockquote>
+<p>The check: before you keep a test, ask whether it would still pass if every function it imports returned <code>undefined</code>. If yes, it observes no behavior and cannot fail for a defect.</p>
+<p>確認：テストを残す前に、テストが読み込む関数がすべて <code>undefined</code> を返しても、そのテストがまだ通るかを問う。通るなら、そのテストは何の振る舞いも観察しておらず、欠陥があっても落ちることがない。</p>
+</blockquote>
+<p>たとえば、関数が呼ばれたかどうかだけを確かめるテストは、関数が <code>undefined</code> を返しても通ります。この原則は、こうしたテストを書き直すか消すよう求めています。</p>
+<p>ただし、この問いに合格しても、分かるのは「コードが返す結果を確かめているテストだ」ということだけです。不具合がないことの証明にはなりません。</p>
+<h3 id="bug-fixplaybook">『<strong>Bug fix</strong>』Playbookは、失敗時と成功時の出力を返答に並べさせる</h3>
+<p>最後に、返答に何が残るかを、不具合を直す『<strong>Bug fix</strong>』Playbookで確かめておきます。</p>
+<p>同Playbookは、返答に書く内容を次のように定めています。ここでいう「再現」は、<a href="#%E3%82%A8%E3%83%BC%E3%82%B8%E3%82%A7%E3%83%B3%E3%83%88%E8%87%AA%E8%BA%AB%E3%81%8C%E5%AE%9F%E8%A1%8C%E3%81%99%E3%82%8B">前の節</a>で見たとおり、不具合が起きる操作を実際に行い、同じ不具合が起きることを確認する作業です。</p>
+<blockquote>
+<p><strong>Reply:</strong> what was broken, root cause, fix, how you verified. Paste failing-then-passing repro output verbatim.</p>
+<p>返答：何が壊れていたか、根本原因、修正内容、どう確かめたか。再現が失敗していたときの出力と、通るようになったときの出力を、そのまま貼る。</p>
+</blockquote>
+<p><strong>不具合が出ていたときの出力と、出なくなったときの出力が、返答に並びます</strong>。</p>
+<h2 id="_10">安心して任せられる状態に、どう近づけばよいのか</h2>
+<p>安心して任せられる状態へ近づくには、<strong>足りない確認を見つけ、それを一つずつ仕組みに移していく</strong>のが良いと思います。</p>
+<p>まず、次の5項目で足りない点を探します。5項目は、この章で見てきた内容を、私が確認の形にまとめたものです。</p>
+<table>
+<thead>
+<tr>
+<th>確かめること</th>
+<th>答えが「いいえ」なら</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>完了の条件は、実行して合否が出る形になっているか</td>
+<td>依頼に「何ができたら終わりか」を追加する</td>
+</tr>
+<tr>
+<td>エージェントは、実際のアプリや成果物を自分で動かせるか</td>
+<td>アプリを操作する手段を用意する（<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a88ea5">第3章</a>）</td>
+</tr>
+<tr>
+<td>動かした結果が、証拠として残るか</td>
+<td>スクリーンショット、出力、トレースを残す手順を決める</td>
+</tr>
+<tr>
+<td>確かめられなかったとき、そう正直に返ってくるか</td>
+<td>「結論が出ない」を許し、証拠のない成功報告を受け取らない</td>
+</tr>
+<tr>
+<td>人間が席を外しても、上の4つが回るか</td>
+<td>回らない部分を仕組みに置き換える（第3〜5章）</td>
+</tr>
+</tbody>
+</table>
+<p>1つ目の「完了の条件」は、同梱ガイドの検証のページ（<a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/06-verify-and-ship.md"><code>docs/guide/06-verify-and-ship.md</code></a>）が、『State the finish condition up front』で扱っています。</p>
+<blockquote>
+<p>Put what done means in the first prompt, in whatever words fit:</p>
+<p>何をもって終わりとするかを、最初の依頼に、合う言葉で書く。</p>
+</blockquote>
+<p>例として挙がっているのは次の依頼です。</p>
+<pre><code>/poteto-mode add json output to this command. text output stays byte-identical, the json parses, both run against the sample project. show me the evidence.
+// このコマンドにJSON出力を加えて。テキスト出力は1バイトも変えない。JSONはパースできる。どちらもサンプルプロジェクトで実行する。証拠を見せて。
+</code></pre>
+<p>ガイドは、こう書くことで、<strong>エージェントは、満たしたかを感覚で決めるしかない目標ではなく、実行して確かめられる3つの確認を持つ</strong>ことになる、と説明しています。</p>
+<p>完了の条件を書くと、2つ目以降の確認項目も一緒に決まります。「テキスト出力は1バイトも変えない」と書けば、変更前後の出力を比べる手順が要ります。「サンプルプロジェクトで実行する」と書けば、エージェントがそのプロジェクトを動かせる必要があります。</p>
+<p>完了の条件を、実行して合否が出る形で書けないときは、仕様が決まっているか、合否を判定する手段があるかを見直すきっかけになります。</p>
+<p>表の右の列にある仕組みの多くは、依頼文だけでは用意できません。アプリを動かす道具、証拠を残す手順、人間が席を外しても回る仕組みが要ります。これが<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a88ea5">第3章</a>以降のテーマです。</p>
+<h2 id="_11">まとめ：信頼の置き場所を、報告から成果物へ移す</h2>
+<ul>
+<li><strong>なぜ報告ではなく成果物を信頼するのか</strong>・・・ 報告は正しさの証明にならず、見張っている間しか品質を保てない状態では任せたことにならないからです。</li>
+<li><strong>成果物を確かめるとは何か</strong>・・・ 実物を、エージェント自身が、証拠が残る形で確かめることです。pstackでは、原則『<strong>Prove It Works</strong>』、<code>/poteto-mode</code>、『<strong>Bug fix</strong>』Playbookがこの条件を支えています。見落とされやすいのは、証拠が残ることです。</li>
+<li><strong>返答の何を見るか</strong>・・・ 「〜しました」という主張のそれぞれに、確かめた証拠が付いているかを見ます。テストの合格は、そのテストがコードの振る舞いを確かめているときの判断材料の一つにすぎず、不具合がないことの証明にはなりません。</li>
+<li><strong>どう近づくか</strong>・・・ 5つの確認項目で足りないところを見つけ、それを一つずつ仕組みに移します。</li>
+</ul>
+<p>『<strong>Prove It Works</strong>』をはじめとするVerificationグループの原則は、<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/1fb019">第19章</a>で詳しく扱います。</p>
+<p>信頼の対象がはっきりしたら、次は信頼を増やす方法です。一度だけ成果物を確かめても、次の変更で同じ確認ができなければ、信頼は積み上がりません。<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a88ea5">第3章</a>では、信頼を高める3つの方法と、訂正した教訓を仕組みに残す方法を解説します。</p>
+  </div>
+  <footer class="article-footer">
+    <span>取得: 2026-10-06T23:37:26+09:00</span>
+    <a href="#article-top">↑ 先頭へ戻る</a>
+  </footer>
+</main>
+<script>
+(() => {
+  const progress = document.querySelector(".reading-progress > span");
+  const updateProgress = () => {
+    const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+    const ratio = scrollable > 0 ? window.scrollY / scrollable : 0;
+    if (progress) progress.style.width = `${Math.min(1, ratio) * 100}%`;
+  };
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  document.querySelectorAll("pre").forEach((block) => {
+    const button = document.createElement("button");
+    button.className = "copy-button";
+    button.type = "button";
+    button.textContent = "コピー";
+    button.addEventListener("click", async () => {
+      const text = block.querySelector("code")?.innerText || block.innerText;
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const textarea = document.createElement("textarea");
+          textarea.value = text;
+          textarea.style.position = "fixed";
+          textarea.style.opacity = "0";
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand("copy");
+          textarea.remove();
+        }
+        button.textContent = "コピー済み";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      } catch (error) {
+        button.textContent = "失敗";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      }
+    });
+    block.appendChild(button);
+  });
+
+  const links = new Map(
+    [...document.querySelectorAll(".toc a")].map((link) => [link.hash, link])
+  );
+  const headings = [...document.querySelectorAll(
+    ".article-body h2[id], .article-body h3[id], .article-body h4[id]"
+  )];
+  if ("IntersectionObserver" in window && headings.length) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        links.forEach((link) => link.classList.remove("is-active"));
+        links.get(`#${entry.target.id}`)?.classList.add("is-active");
+      });
+    }, { rootMargin: "-12% 0px -72% 0px" });
+    headings.forEach((heading) => observer.observe(heading));
+  }
+})();
+</script>
+</body>
+</html>

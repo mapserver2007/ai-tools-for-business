@@ -1,0 +1,1044 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="title" content="第4部 Principleがエージェントの判断を支える">
+<meta name="book_title" content="【Cursor pstack】AIエージェントに開発を任せる環境をつくる ―月2,500件のPRを支えた開発基盤とは？">
+<meta name="source_url" content="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/4b3166">
+<meta name="author" content="kaito">
+<meta name="published_at" content="2026-10-02">
+<meta name="retrieved_at" content="2026-10-06T23:37:29+09:00">
+<meta name="site" content="zenn.dev">
+<meta name="content_type" content="article">
+<meta name="chapter_position" content="21">
+<title>第4部 Principleがエージェントの判断を支える</title>
+<style>
+:root {
+  color-scheme: light;
+  --ink: #172033;
+  --muted: #64748b;
+  --line: #dbe4ef;
+  --accent: #2563eb;
+  --accent-dark: #1d4ed8;
+  --accent-soft: #eff6ff;
+  font-family: -apple-system, BlinkMacSystemFont, "Avenir Next",
+    "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 8% 0%, #dbeafe 0, transparent 32rem),
+    radial-gradient(circle at 100% 12%, #e0e7ff 0, transparent 28rem),
+    #f4f7fb;
+  color: var(--ink);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(120deg, transparent 0 48%, rgba(255, 255, 255, 0.4));
+}
+.article {
+  position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
+  max-width: 920px;
+  margin: clamp(1rem, 5vw, 4rem) auto;
+  padding: clamp(2rem, 6vw, 5rem) clamp(1.25rem, 7vw, 5.5rem);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  border-radius: 24px;
+  min-height: 100vh;
+  box-shadow:
+    0 24px 70px rgba(30, 64, 175, 0.1),
+    0 4px 16px rgba(15, 23, 42, 0.04);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 5px;
+  content: "";
+  background: linear-gradient(90deg, #2563eb, #7c3aed, #db2777);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin: 0 0 2.5rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.72rem;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+a {
+  color: var(--accent-dark);
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: #7c3aed;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--ink);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 18ch;
+  margin: 0 0 2.5rem;
+  font-size: clamp(2.15rem, 5vw, 3.65rem);
+  letter-spacing: -0.045em;
+}
+h2 {
+  position: relative;
+  margin: 3.8rem 0 1.25rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--line);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 4.2rem;
+  height: 3px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), #7c3aed);
+  border-radius: 999px;
+}
+h3 {
+  margin: 2.6rem 0 0.8rem;
+  color: var(--accent-dark);
+  font-size: 1.3rem;
+}
+h4, h5, h6 {
+  margin-top: 2rem;
+}
+p {
+  margin: 1.15rem 0;
+}
+ul, ol {
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.35rem 0;
+}
+li::marker {
+  color: var(--accent);
+  font-weight: 700;
+}
+strong {
+  color: #111827;
+}
+blockquote {
+  margin: 1.6rem 0;
+  padding: 0.8rem 1.25rem;
+  color: #475569;
+  background: linear-gradient(90deg, var(--accent-soft), #fff);
+  border-left: 4px solid var(--accent);
+  border-radius: 0 12px 12px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 3rem 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+img {
+  display: block;
+  max-width: 100%;
+  margin: 1.75rem auto;
+  height: auto;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+}
+pre {
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  padding: 1.15rem 1.25rem;
+  color: #e2e8f0;
+  background: #111827;
+  border: 1px solid #253047;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+}
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+:not(pre) > code {
+  padding: 0.15rem 0.4rem;
+  color: #9f1239;
+  background: #fff1f2;
+  border-radius: 5px;
+}
+table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.6rem 0;
+  border-collapse: collapse;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
+  text-align: left;
+}
+th {
+  color: #1e3a8a;
+  background: #eff6ff;
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: #f8fafc;
+}
+@media (max-width: 600px) {
+  .article {
+    margin: 0;
+    padding: 2rem 1rem 4rem;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(2rem, 10vw, 2.75rem);
+  }
+  .metadata {
+    margin-bottom: 2rem;
+  }
+}
+@media print {
+  body {
+    background: #fff;
+  }
+  .article {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  a {
+    color: inherit;
+  }
+}
+</style>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0f1419;
+  --surface: #1a2332;
+  --surface-raised: #202c3f;
+  --surface-soft: rgba(26, 35, 50, 0.72);
+  --border: #2d3a4f;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #58a6ff;
+  --accent-strong: #79c0ff;
+  --green: #3fb950;
+  --purple: #bc8cff;
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+    "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  line-height: 1.75;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+  background: var(--bg);
+}
+body {
+  min-width: 320px;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 2rem 1.5rem 5rem;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(31, 111, 235, 0.18), transparent 32rem),
+    radial-gradient(circle at 100% 12%, rgba(137, 87, 229, 0.14), transparent 28rem),
+    var(--bg);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black, transparent 75%);
+}
+.reading-progress {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 20;
+  height: 3px;
+  background: rgba(45, 58, 79, 0.7);
+}
+.reading-progress > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  box-shadow: 0 0 14px rgba(88, 166, 255, 0.8);
+  transition: width 80ms linear;
+}
+.article {
+  position: relative;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  background: rgba(15, 20, 25, 0.76);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(88, 166, 255, 0.035) inset;
+  backdrop-filter: blur(16px);
+}
+.article::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent), var(--purple), #f778ba);
+  border-radius: 16px 16px 0 0;
+}
+.article-header {
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.eyebrow-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--green);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(63, 185, 80, 0.75);
+}
+.eyebrow-separator {
+  color: var(--border);
+}
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.metadata-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  background: rgba(32, 44, 63, 0.68);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.metadata-label {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+.source-link {
+  color: var(--text);
+  text-decoration: none;
+}
+.source-link:hover {
+  border-color: var(--accent);
+  background: rgba(88, 166, 255, 0.12);
+}
+a {
+  color: var(--accent);
+  overflow-wrap: anywhere;
+  text-decoration: none;
+  text-underline-offset: 0.18em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+a:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+}
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 {
+  max-width: 24ch;
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  background: linear-gradient(120deg, #fff 12%, #b9d8ff 58%, #bc8cff);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+h2 {
+  position: relative;
+  margin: 3.2rem 0 1.1rem;
+  padding: 0.75rem 0 0.65rem;
+  border-bottom: 1px solid var(--border);
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  letter-spacing: -0.025em;
+}
+h2::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 3.8rem;
+  height: 2px;
+  content: "";
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(88, 166, 255, 0.7);
+}
+h3 {
+  margin: 2.25rem 0 0.7rem;
+  color: var(--accent-strong);
+  font-size: 1.2rem;
+}
+h4, h5, h6 {
+  margin-top: 1.75rem;
+}
+p {
+  margin: 0.9rem 0;
+}
+ul, ol {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+li {
+  margin: 0.3rem 0;
+}
+li::marker {
+  color: var(--accent);
+}
+strong {
+  color: #fff;
+}
+blockquote {
+  margin: 1.4rem 0;
+  padding: 0.85rem 1.15rem;
+  color: #c9d1d9;
+  background: linear-gradient(100deg, rgba(88, 166, 255, 0.1), rgba(26, 35, 50, 0.55));
+  border: 1px solid rgba(88, 166, 255, 0.18);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+blockquote p:first-child {
+  margin-top: 0;
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+hr {
+  margin: 2.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+}
+pre {
+  position: relative;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  padding: 1rem 1.15rem;
+  color: #dbeafe;
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+pre code {
+  color: inherit;
+  background: transparent;
+}
+code {
+  font-family: "SF Mono", "Fira Code", ui-monospace, monospace;
+  font-size: 0.86em;
+}
+:not(pre) > code {
+  padding: 0.12em 0.38em;
+  color: #ffabbc;
+  background: rgba(248, 81, 73, 0.11);
+  border-radius: 4px;
+}
+.copy-button {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  padding: 0.25rem 0.55rem;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.72rem;
+  background: rgba(32, 44, 63, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.copy-button:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.35rem 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  border-spacing: 0;
+}
+th, td {
+  min-width: 7rem;
+  padding: 0.6rem 0.75rem;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+th {
+  color: var(--accent);
+  background: var(--surface);
+  font-weight: 700;
+}
+tr:nth-child(even) td {
+  background: rgba(26, 35, 50, 0.42);
+}
+tr:last-child td {
+  border-bottom: 0;
+}
+th:last-child, td:last-child {
+  border-right: 0;
+}
+.toc {
+  margin: 1.75rem 0 2.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.toc-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--border);
+}
+.toc-title {
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.toc-count {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.toc ol {
+  margin: 0.7rem 0 0;
+  padding-left: 1.25rem;
+}
+.toc ol ol {
+  margin: 0.2rem 0;
+}
+.toc li {
+  margin: 0.18rem 0;
+  font-size: 0.86rem;
+}
+.toc li::marker {
+  color: var(--muted);
+}
+.toc a {
+  display: inline-block;
+  max-width: 100%;
+  color: var(--muted);
+  transition: color 160ms ease, transform 160ms ease;
+}
+.toc a:hover, .toc a.is-active {
+  color: var(--accent-strong);
+  text-decoration: none;
+  transform: translateX(2px);
+}
+.article-body {
+  max-width: 78ch;
+  margin: 0 auto;
+}
+.article-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 1rem;
+  color: var(--muted);
+  font-size: 0.74rem;
+  border-top: 1px solid var(--border);
+}
+.article-footer a {
+  color: var(--muted);
+}
+@media (max-width: 720px) {
+  body {
+    padding: 0 0 3rem;
+  }
+  .article {
+    min-height: 100vh;
+    padding: 1.5rem 1rem 3rem;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+  .article::before {
+    border-radius: 0;
+  }
+  h1 {
+    max-width: none;
+    font-size: clamp(1.9rem, 9vw, 2.6rem);
+  }
+  .article-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+@media print {
+  :root {
+    color-scheme: light;
+  }
+  body {
+    padding: 0;
+    color: #111;
+    background: #fff;
+  }
+  .reading-progress, .toc, .copy-button {
+    display: none;
+  }
+  .article {
+    max-width: none;
+    padding: 0;
+    background: #fff;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .article::before {
+    display: none;
+  }
+  h1, h2, h3, h4, h5, h6, strong {
+    color: #111;
+    -webkit-text-fill-color: initial;
+  }
+  a {
+    color: inherit;
+    text-decoration: underline;
+  }
+  pre {
+    color: #111;
+    background: #f4f4f4;
+    box-shadow: none;
+  }
+}
+</style>
+</head>
+<body>
+<div class="reading-progress" aria-hidden="true"><span></span></div>
+<main id="article-top" class="article">
+  <header class="article-header">
+    <div class="eyebrow">
+      <span class="eyebrow-dot"></span>
+      <span>ARTICLE</span>
+      <span class="eyebrow-separator">/</span>
+      <span>zenn.dev</span>
+    </div>
+    <div class="metadata" aria-label="記事メタデータ"><span class="metadata-item"><span class="metadata-label">著者</span>kaito</span><span class="metadata-item"><span class="metadata-label">公開日</span>2026-10-02</span><a class="metadata-item source-link" href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/4b3166"><span class="metadata-label">原文</span>読む</a><span class="metadata-item"><span class="metadata-label">サイト</span>zenn.dev</span><span class="metadata-item"><span class="metadata-label">形式</span>ARTICLE</span></div>
+    <h1 id="4-principle">第4部 Principleがエージェントの判断を支える</h1>
+  </header>
+<nav class="toc" aria-label="目次">
+  <div class="toc-heading">
+    <span class="toc-title">目次</span>
+    <span class="toc-count">3 セクション</span>
+  </div>
+  <ol><li><a href="#4">第4部で分かること</a></li><li><a href="#_1">この部の章</a></li><li><a href="#principle">全Principleの早見表</a></li></ol>
+</nav>
+  <div class="article-body">
+
+<p>第4部では、pstackの全Principle（24件）を網羅的に取り扱います。</p>
+<p>!</p>
+<p>この部は読み飛ばしても構いません。関心のある章だけを読む使い方を推奨します。</p>
+<p>各Principleの原文は、<a href="https://github.com/cursor/plugins/tree/main/pstack">pstack</a>のリポジトリでいつでも読めます。pstackは頻繁に更新されるため、すべてを先に読むより、必要になったときに該当する章と原文のファイルを参照するほうが確実です。</p>
+<h2 id="4">第4部で分かること</h2>
+<ul>
+<li>各Principleが何を選び、何を避けるか、それが必要な理由（例：『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-prove-it-works/SKILL.md"><strong>Prove It Works</strong></a>』は、ビルドが通っただけでは完了とせず、書き出したファイルや画面を直接確かめる）</li>
+<li>各Principleが当てはまる場面と、当てはまらない場面（例：『<a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-outcome-oriented-execution/SKILL.md"><strong>Outcome-Oriented Execution</strong></a>』は、計画済みの移行では使うが、区切りのない普段の小さな修正には使わない）</li>
+<li>依頼の中で、Principleの名前を使ってエージェントの作業の方向を変える方法（例：<code>apply prove it works.</code> と書き、実際にインポートを流して、書き込まれたレコードを見せるよう求める）</li>
+</ul>
+<p>Principleは、<strong>エージェントが作業の途中で下す判断の基準</strong>です。Playbookは作業の順番を決めますが、エージェントが各手順を進める中には、「この抽象化を追加すべきか」「コンパイルが通った今、完了と言ってよいか」といった判断が残ります。こうした場面で、エージェントは、Principleに沿って「この変更を入れるか」「まだ完了と言えないか」を決めます。</p>
+<p>24件のPrincipleは、扱う判断の種類ごとに、次の5つのグループに分かれています。グループが分かれているので、読み手は、いま迷っている判断の種類から、読むべき章を選べます。</p>
+<table>
+<thead>
+<tr>
+<th>グループ</th>
+<th>件数</th>
+<th>扱う判断</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Core（中核）</td>
+<td>10</td>
+<td>どれだけ作るか、いつ設計を見直すか</td>
+</tr>
+<tr>
+<td>Architecture（設計）</td>
+<td>6</td>
+<td>状態、検証、互換性をどこに置くか</td>
+</tr>
+<tr>
+<td>Verification（検証）</td>
+<td>5</td>
+<td>何をもって証明するか</td>
+</tr>
+<tr>
+<td>Delegation（委任）</td>
+<td>2</td>
+<td>並列の作業と委任を、どう破綻させずに進めるか</td>
+</tr>
+<tr>
+<td>Meta（仕組み自体の改善）</td>
+<td>1</td>
+<td>仕組みそのものをどう改善するか</td>
+</tr>
+</tbody>
+</table>
+<p>Principleは、利用者が明示的に呼び出すものではなく、<strong>エージェントが、作業が当てはまる場面かどうかを判定して読むもの</strong>です。</p>
+<p><code>/poteto-mode</code>（作業を始めるときに使うSkill。<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/4fda7d">第7章</a>）は、手順が複数ある作業の始めに、Principleの索引を読みます。</p>
+<p>索引は <code>/poteto-mode</code> の <code>SKILL.md</code> にある一覧で、各Principleの名前と、当てはまる場面（例：『Prove It Works』なら「作業を終えた後、完了を宣言する前」）が1行ずつ書かれています。エージェントは、作業がその場面に当てはまったPrincipleについて、本体の <code>SKILL.md</code> を全文読んでから適用し、返答の中で、適用したPrincipleの名前と、それによって変わった判断を挙げます。</p>
+<p><strong>エージェントが作業の始めに読むのは、Principleの名前と当てはまる場面の一覧だけです</strong>。本文は、作業がその場面に当てはまったときにだけ読み、判断に使います。そのため、24件すべての本文を毎回読み込まずに済み、コンテキストを無駄に使いません。</p>
+<p>利用者は、この仕組みを、<strong>依頼にPrincipleの名前を書くこと</strong>で明示することもできます。エージェントが当てはまる場面を見落としているときに、依頼にPrincipleの名前を一言書けば、エージェントはその名前が指すルールに沿って作業の方向を修正できます。</p>
+<p>Principleの名前を一言書くことは、長い指示を書くより正確に伝わります。名前が、そのPrincipleの <code>SKILL.md</code> に書かれた完全なルールを指すので、利用者が具体的なPrincipleの中身を伝え直す必要がないからです。</p>
+<p>たとえば、ビルドが通っただけで完了を宣言しようとしているエージェントには、同梱ガイド（pstackに同梱されている <code>docs/guide/</code> のガイド。<a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/33f073">第6章</a>）の <a href="https://github.com/cursor/plugins/blob/main/pstack/docs/guide/08-principles.md"><code>docs/guide/08-principles.md</code></a> にある例のように書きます。</p>
+<pre><code>apply prove it works. run the real import flow and show me the written records.
+// prove it works を適用して。実際のインポートを流して、書き込まれたレコードを見せて。
+</code></pre>
+<h2 id="_1">この部の章</h2>
+<table>
+<thead>
+<tr>
+<th>章</th>
+<th>役割</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a8e80b">第17章 Core ― 作業の進め方を決める10の原則</a></td>
+<td>作る量、設計の見直し方、プロトタイプの作り方、道具を作るかどうか</td>
+</tr>
+<tr>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/cdc49b">第18章 Architecture ― 境界と依存を設計する6つの原則</a></td>
+<td>データ構造、外から来たデータを境界（フォームの入力やAPIの応答のように、外からデータが入ってくる場所）で確かめること、型、冪等性（同じ操作を何度しても結果が変わらない性質）、古いAPIからの移行、共有状態</td>
+</tr>
+<tr>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/1fb019">第19章 Verification ― 実際の挙動で確かめる5つの原則</a></td>
+<td>完了を本物の出力で確かめる、不具合の原因を直す、小さく確かめながら進む、振る舞いをテストする、測った数値が何を測ったかを確かめる</td>
+</tr>
+<tr>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/c155cc">第20章 Delegation ― 委任と並列化を扱う2つの原則</a></td>
+<td>エージェントのコンテキストを守る、人間の確認を待たずに進む</td>
+</tr>
+<tr>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/dd2d9f">第21章 Meta ― 仕組み自体を改善する原則</a></td>
+<td>教訓を、文章ではなく仕組みで残す</td>
+</tr>
+</tbody>
+</table>
+<p>この部では、pstackの同梱ガイドの並びに合わせて、Coreを最初に置いています。</p>
+<h2 id="principle">全Principleの早見表</h2>
+<table>
+<thead>
+<tr>
+<th>Principle</th>
+<th>概要</th>
+<th>発火条件</th>
+<th>解説</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-laziness-protocol/SKILL.md">Laziness Protocol</a></td>
+<td>コードの削除を優先し、問題を解決する最小の変更を選ぶ</td>
+<td>エージェントがリファクタリングや差分の大きさの見積もりをするとき、または抽象化や層の追加、新しい値を何層にもまたいで受け渡すことをしたくなったとき</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a8e80b">第17章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-subtract-before-you-add/SKILL.md">Subtract Before You Add</a></td>
+<td>機能を追加する前に、使われていないコードや重複した検証などの複雑さを削る</td>
+<td>エージェントが、機能や処理の追加、リファクタリング、書き直しを、どの順番で進めるかを決めるとき</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a8e80b">第17章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-minimize-reader-load/SKILL.md">Minimize Reader Load</a></td>
+<td>読み手がたどる間接参照の層と、覚えておく必要があるコードの状態を減らす</td>
+<td>エージェントが処理を追いにくいコードをレビューするとき、またはそうしたコードを書いたり、構成を組み直したりするとき</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a8e80b">第17章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-foundational-thinking/SKILL.md">Foundational Thinking</a></td>
+<td>ロジックを書く前に、データ構造と土台（CI、lint、テスト基盤、共有の型など）を決める</td>
+<td>エージェントがロジックを書く前に中心の型やデータ構造を選ぶとき、土台と機能のどちらを先に作るかを決めるとき、または並行して動く複数の主体が何を共有するかを考えるとき</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a8e80b">第17章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-redesign-from-first-principles/SKILL.md">Redesign from First Principles</a></td>
+<td>新しい要件を既存の設計に後付けせず、最初からあった前提として設計を組み直す</td>
+<td>エージェントが新しい要件を今ある設計に組み込むとき</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a8e80b">第17章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-attack-the-premise/SKILL.md">Attack the Premise</a></td>
+<td>同じ前提に立つ修正をさらに重ねず、次の修正を書く前に、その前提そのものを疑う</td>
+<td>一つの前提を共有する2つ以上の修正が、同じ gate（修正が通らなければならないテストやチェック）で落ちたとき</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a8e80b">第17章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-outcome-oriented-execution/SKILL.md">Outcome-Oriented Execution</a></td>
+<td>移行途中のコードの整合性を保つための一時的なコードより、確かめられる最終形を優先する</td>
+<td>エージェントが、段階の区切りがあらかじめ決まっている、計画済みの書き直しや移行を進めているとき</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a8e80b">第17章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-experience-first/SKILL.md">Experience First</a></td>
+<td>実装の都合より、ユーザーの体験を選び、機能を少なく作ってよく仕上げる</td>
+<td>エージェントが、プロダクト、UX、機能の範囲について、どちらかを取ればどちらかを諦めるトレードオフを選ぶとき</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a8e80b">第17章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-exhaust-the-design-space/SKILL.md">Exhaust the Design Space</a></td>
+<td>形の異なる2〜3案のプロトタイプを作り、並べて比べてから設計を決める</td>
+<td>エージェントが、コードベースに前例のないUIの操作を作るとき、実現できる方法が複数あるアーキテクチャを選ぶとき、または使い心地が理屈より感覚で決まるプロダクトの設計を判断するとき</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a8e80b">第17章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-build-the-lever/SKILL.md">Build the Lever</a></td>
+<td>手作業の代わりに、作業をする道具か、作業の正しさを証明する道具（codemod、スクリプト、生成器、サブエージェントが従うSkill）を作る</td>
+<td>エージェントが、編集、移行、分析、チェックを問わず、見ればすぐ分かる数か所の修正より手間のかかる作業をするとき</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/a8e80b">第17章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-model-the-domain/SKILL.md">Model the Domain</a></td>
+<td>ドメインを、散らばった条件分岐ではなく構造（状態機械、型付きのオブジェクト、参照表、reducerなど）で表す</td>
+<td>エージェントが状態を持つロジックを書くとき、分岐が多いコードを書くとき、または「このデータにはこの項目がある」という同じ前提を複数のファイルで繰り返しているとき</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/cdc49b">第18章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-boundary-discipline/SKILL.md">Boundary Discipline</a></td>
+<td>検証とエラー処理を外からデータが入る境界に集め、境界の内側のコードでは、型の付いた値を確かめ直さずに使い、業務のロジックを純粋関数に保つ</td>
+<td>エージェントが入力の検証やエラー処理を組み込むとき、またはフレームワークと自分のコードをつなぐ部分（アダプタ）を書くとき</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/cdc49b">第18章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-type-system-discipline/SKILL.md">Type System Discipline</a></td>
+<td>型の検査を使い、ありえない状態をコンパイルの時点で作れなくする</td>
+<td>エージェントが型を設計するとき、関数のシグネチャをレビューするとき、または静的型付き言語でコードを書くとき</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/cdc49b">第18章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-make-operations-idempotent/SKILL.md">Make Operations Idempotent</a></td>
+<td>状態を変える操作を、何度実行しても、途中から実行し直しても、最後は同じ状態になるように作る</td>
+<td>エージェントが、途中で止まったり、再起動や再試行で実行し直されたりすることがあるコマンド、起動や終了などの手順、処理を繰り返すループを設計するとき</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/cdc49b">第18章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-migrate-callers-then-delete-legacy-apis/SKILL.md">Migrate Callers Then Delete Legacy APIs</a></td>
+<td>呼び出し元を新しいAPIに移し、その変更の中で古いAPIも消す</td>
+<td>エージェントが、古い呼び出し元が残っている状態で、新しい内部APIを導入するとき</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/cdc49b">第18章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-separate-before-serializing-shared-state/SKILL.md">Separate Before Serializing Shared State</a></td>
+<td>複数の主体が共有する書き込み先を先に分け、分けられないときだけ、ロックなどで書き込みを直列化する</td>
+<td>並行して動く複数の主体が、同じファイル、ブランチ、キー、状態を持つオブジェクトに書き込むかもしれないとき</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/cdc49b">第18章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-prove-it-works/SKILL.md">Prove It Works</a></td>
+<td>作業の結果を、ビルドの成功のような代理指標ではなく、実際に動かした機能や実際の値を直接見て確かめる</td>
+<td>エージェントが作業を終え、完了を宣言しようとするとき</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/1fb019">第19章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-fix-root-causes/SKILL.md">Fix Root Causes</a></td>
+<td>不具合の症状を隠すガードを追加せず、症状を起こした根本原因を突き止めて直す</td>
+<td>エージェントが不具合をデバッグするとき</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/1fb019">第19章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-sequence-verifiable-units/SKILL.md">Sequence Work into Verifiable Units</a></td>
+<td>作業を確かめられる小さな単位に分け、各単位のチェック（テストなど）が通ってから次へ進み、コミットを正しさを示す順に並べる</td>
+<td>エージェントが複数の段階がある作業（一括の修正、移行、似た編集の連続）をするとき、またはコミットやPRを並べる順番を決めるとき</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/1fb019">第19章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-test-behavior-not-implementation/SKILL.md">Test Behavior, Not Implementation</a></td>
+<td>コードを、そのコードを使う側と同じ方法で呼び、観察できる結果を、テストに直接書いた期待値と比べる</td>
+<td>エージェントがテストを書くとき、変えるとき、または残すかどうかを決めるとき</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/1fb019">第19章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-explain-the-number/SKILL.md">Explain the Number</a></td>
+<td>測った数値を信じる前に「何がその数値を頭打ちにしているか」を突き止め、エラーやキャッシュなど、別のものを測った可能性を証拠で消す</td>
+<td>エージェントが、測った数値（高速化、性能の低下、スループット、レイテンシ、評価の結果）を、信じたり、報告したり、その数値をもとに作業したりする前</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/1fb019">第19章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-guard-the-context-window/SKILL.md">Guard the Context Window</a></td>
+<td>大きな出力や文書をサブエージェントに読ませ、主スレッドには要約だけを置く</td>
+<td>大きな出力、長いファイル、同じファイルの読み直しで、エージェントのコンテキストが埋まってきたとき、またはエージェントが仕事を複数のサブエージェントに分けて並列に進める計画を立てるとき</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/c155cc">第20章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-never-block-on-the-human/SKILL.md">Never Block on the Human</a></td>
+<td>元に戻せる作業は人間の確認を待たずに進めて結果を見せ、元に戻せない操作だけを実行する前に人間に確認する</td>
+<td>エージェントが、元に戻せる作業について「Xをしてもいいですか」と人間に聞きたくなったとき</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/c155cc">第20章</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/cursor/plugins/blob/main/pstack/skills/principle-encode-lessons-in-structure/SKILL.md">Encode Lessons in Structure</a></td>
+<td>繰り返し必要になる修正を、文章の指示ではなく仕組み（lintのルール、メタデータのフラグ、実行時チェック、スクリプト）に組み込む</td>
+<td>エージェントが、同じ指示を2回目に書いていると気づいたとき、または同じ訂正が繰り返されていると気づいたとき</td>
+<td><a href="https://zenn.dev/sc30gsw/books/080faba713547b/viewer/dd2d9f">第21章</a></td>
+</tr>
+</tbody>
+</table>
+  </div>
+  <footer class="article-footer">
+    <span>取得: 2026-10-06T23:37:29+09:00</span>
+    <a href="#article-top">↑ 先頭へ戻る</a>
+  </footer>
+</main>
+<script>
+(() => {
+  const progress = document.querySelector(".reading-progress > span");
+  const updateProgress = () => {
+    const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+    const ratio = scrollable > 0 ? window.scrollY / scrollable : 0;
+    if (progress) progress.style.width = `${Math.min(1, ratio) * 100}%`;
+  };
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  document.querySelectorAll("pre").forEach((block) => {
+    const button = document.createElement("button");
+    button.className = "copy-button";
+    button.type = "button";
+    button.textContent = "コピー";
+    button.addEventListener("click", async () => {
+      const text = block.querySelector("code")?.innerText || block.innerText;
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const textarea = document.createElement("textarea");
+          textarea.value = text;
+          textarea.style.position = "fixed";
+          textarea.style.opacity = "0";
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand("copy");
+          textarea.remove();
+        }
+        button.textContent = "コピー済み";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      } catch (error) {
+        button.textContent = "失敗";
+        window.setTimeout(() => { button.textContent = "コピー"; }, 1600);
+      }
+    });
+    block.appendChild(button);
+  });
+
+  const links = new Map(
+    [...document.querySelectorAll(".toc a")].map((link) => [link.hash, link])
+  );
+  const headings = [...document.querySelectorAll(
+    ".article-body h2[id], .article-body h3[id], .article-body h4[id]"
+  )];
+  if ("IntersectionObserver" in window && headings.length) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        links.forEach((link) => link.classList.remove("is-active"));
+        links.get(`#${entry.target.id}`)?.classList.add("is-active");
+      });
+    }, { rootMargin: "-12% 0px -72% 0px" });
+    headings.forEach((heading) => observer.observe(heading));
+  }
+})();
+</script>
+</body>
+</html>
